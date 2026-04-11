@@ -282,9 +282,10 @@ function openCreateMobilier() {
 }
 
 function editMobilier(uuid) {
-    const mob = state.mobiliers.find(m => m.uuid === uuid); if(!mob) return;
-    const gab = state.maps.g.get(mob.gabarit_id);
+    const mob = state.mobiliers.find(m => m.uuid === uuid); 
+    if(!mob) return;
     
+    // Remplissage des champs du formulaire
     document.getElementById('edit-mob-uuid').value = mob.uuid;
     document.getElementById('edit-mob-id').value = mob.id_metier;
     fillSelectOptions('edit-mob-gabarit', state.gabarits, 'id', 'nom_descriptif', mob.gabarit_id);
@@ -293,12 +294,7 @@ function editMobilier(uuid) {
     document.getElementById('edit-mob-statut').value = mob.statut;
     document.getElementById('edit-mob-remarques').value = mob.remarques || '';
     
-    document.getElementById('qrcode-container').innerHTML = '';
-    new QRCode(document.getElementById('qrcode-container'), { text: mob.id_metier, width: 90, height: 90, correctLevel : QRCode.CorrectLevel.H });
-    document.getElementById('qr-label').innerText = mob.id_metier;
-    document.getElementById('qr-desc').innerText = gab ? gab.nom_descriptif : 'Mobilier';
-    document.querySelectorAll('.print-only').forEach(el => el.style.display = 'block');
-    
+    // Affichage de la vue
     showSubView('view-mobilier-detail', 'panel-mobilier');
 }
 
@@ -970,56 +966,77 @@ async function deleteLieu() {
 /**
  * Génère des étiquettes pour une plage de numéros MOB-XXXXXX
  */
+/**
+ * Génère des étiquettes pour une plage de numéros MOB-XXXXXX
+ * (Version robuste et asynchrone pour éviter les pages blanches)
+ */
+/**
+ * Génère des étiquettes pour une plage de numéros MOB-XXXXXX
+ * (Version "Aperçu avant impression" pour forcer le rendu des QR Codes)
+ */
+/**
+ * Génère des étiquettes pour une plage de numéros MOB-XXXXXX
+ * (Version "Aperçu" sécurisée contre les erreurs DOM)
+ */
+/**
+ * Génère des étiquettes (Méthode propre via CSS @media print)
+ */
 async function generateRangeLabels() {
     const start = parseInt(document.getElementById('print-start').value);
     const end = parseInt(document.getElementById('print-end').value);
     const format = document.getElementById('print-format').value;
 
     if (isNaN(start) || isNaN(end) || start > end) {
-        showAlert("Erreur", "Veuillez saisir une plage de numéros valide.", "error");
+        showAlert("Erreur", "Veuillez saisir une plage valide.", "error");
         return;
     }
 
     const containerId = format === 'individual' ? 'batch-print-area' : 'a4-print-area';
     const container = document.getElementById(containerId);
-    container.innerHTML = ''; // Nettoyage
-
-    // Gestion des classes sur le body pour le CSS
+    
+    // 1. Nettoyage
+    container.innerHTML = ''; 
     document.body.classList.remove('mode-batch-print', 'mode-a4-print');
-    if (format === 'individual') {
-        document.body.classList.add('mode-batch-print');
-    } else {
-        document.body.classList.add('mode-a4-print');
-    }
+    
+    // 2. Application du mode d'impression pour le CSS
+    document.body.classList.add(format === 'individual' ? 'mode-batch-print' : 'mode-a4-print');
 
-    // Génération de la plage
+    const qrPromises = [];
+
+    // 3. Génération des étiquettes
     for (let i = start; i <= end; i++) {
         const idMetier = `MOB-${String(i).padStart(6, '0')}`;
-        const uuid = "RANGE-PRINT"; // On ne lie pas à un UUID réel car c'est une édition par plage
+        const qrId = `qr-range-${i}`;
         
         const labelDiv = document.createElement('div');
         labelDiv.className = 'batch-label';
-        
-        const qrId = `qr-range-${i}`;
         labelDiv.innerHTML = `
             <div id="${qrId}" class="batch-qr"></div>
-            <p><strong>${idMetier}</strong></p>
-            <p>Inventaire TRACE</p>
+            <p class="lbl-id">${idMetier}</p>
+            <p class="lbl-desc">Inventaire TRACE</p>
         `;
         container.appendChild(labelDiv);
 
-        // Génération du QR (URL générique ou spécifique selon besoin)
-        new QRCode(document.getElementById(qrId), {
-            text: `${window.location.origin}${window.location.pathname}?id=${idMetier}`,
-            width: 128,
-            height: 128,
-            useSVG: true // Plus propre à l'impression
+        // Rendu asynchrone du SVG
+        const qrPromise = new Promise((resolve) => {
+            setTimeout(() => {
+                new QRCode(document.getElementById(qrId), {
+                    text: `${window.location.origin}${window.location.pathname}?id=${idMetier}`,
+                    width: 70, height: 70, useSVG: true 
+                });
+                resolve();
+            }, 0);
         });
+        qrPromises.push(qrPromise);
     }
 
-    // Laisser un court délai pour le rendu des QR avant l'impression
+    // 4. On attend la fin de la génération, puis on imprime
+    await Promise.all(qrPromises);
+    
     setTimeout(() => {
         window.print();
+        // Optionnel : nettoyage après impression
+        // document.body.classList.remove('mode-batch-print', 'mode-a4-print');
     }, 500);
 }
 

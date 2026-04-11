@@ -68,12 +68,28 @@ openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
     -subj "/C=FR/ST=Paris/L=Paris/O=DGFIP/OU=TRACE/CN=localhost" 2>/dev/null
 
 # Correction critique : Le master process Nginx (root) doit pouvoir lire la clé
-chown root:root "$SSL_DIR/trace.key"
+#chown root:root "$SSL_DIR/trace.key"
+#chmod 600 "$SSL_DIR/trace.key"
+
+# 1. On donne tout à postgres
+chown postgres:postgres "$SSL_DIR/trace.key" "$SSL_DIR/trace.crt"
+
+# 2. Droits ultra-restrictifs (Postgres l'exige, Nginx-root s'en moque)
 chmod 600 "$SSL_DIR/trace.key"
+chmod 644 "$SSL_DIR/trace.crt"
+
+# 3. On s'assure que Nginx peut au moins entrer dans le dossier
+# (Il faut le droit 'x' sur les dossiers parents)
+chmod 755 $SSL_DIR
 
 # ------------------------------------------------------------------------------
 # 4. INITIALISATION DE LA BASE DE DONNÉES
 # ------------------------------------------------------------------------------
+usermod -aG ssl-cert postgres
+
+# 2. Redémarre le cluster
+pg_ctlcluster 17 main start
+
 echo -e "\n--- 4. Initialisation de la base de données ---"
 SCRIPT_DIR=$(dirname "$(readlink -f "$0")")
 mkdir -p /tmp/trace_csv
