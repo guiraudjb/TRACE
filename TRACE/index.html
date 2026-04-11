@@ -341,64 +341,73 @@
                 </div>
 
                 <div id="panel-admin" class="fr-tabs__panel fr-container-fluid fr-px-2w fr-px-md-6w" role="tabpanel" aria-labelledby="tab-admin" tabindex="0">
-                    <div id="view-users-list" class="sub-view active">
-                        <div class="fr-grid-row fr-grid-row--middle fr-mb-4w">
-                            <div class="fr-col-12 fr-col-md-6"><h2 class="fr-m-0">Gestion des Comptes</h2></div>
-                            <div class="fr-col-12 fr-col-md-6 fr-text-md-right fr-mt-2w fr-mt-md-0">
-                                <button class="fr-btn fr-icon-user-add-line fr-btn--icon-left" onclick="openCreateUser()">Nouvel utilisateur</button>
-                            </div>
-                        </div>
-                        <div class="trace-card">
-                            <div class="fr-table fr-table--bordered">
-                                <table>
-                                    <thead>
-                                        <tr>
-                                            <th style="width:40%">Identifiant / Mél</th>
-                                            <th style="width:20%">Rôle</th>
-                                            <th style="width:40%">Actions</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody id="table-users-body"></tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
+    
+    <div class="fr-grid-row fr-grid-row--gutters fr-mb-4w no-print">
+        <div class="fr-col-12">
+            <ul class="fr-btns-group fr-btns-group--inline fr-btns-group--sm">
+                <li><button class="fr-btn fr-btn--secondary" onclick="showSubView('view-users-list', 'panel-admin')">Utilisateurs</button></li>
+                <li><button class="fr-btn fr-btn--secondary" onclick="showSubView('view-ua-list', 'panel-admin')">Services (UA)</button></li>
+                <li><button class="fr-btn fr-btn--secondary" onclick="showSubView('view-lieux-list', 'panel-admin')">Lieux physiques</button></li>
+            </ul>
+        </div>
+    </div>
 
-                    <div id="view-users-form" class="sub-view">
-                        <button class="fr-btn fr-btn--secondary fr-btn--icon-left fr-icon-arrow-left-line fr-mb-4w" onclick="showSubView('view-users-list', 'panel-admin')">Retour</button>
-                        <div class="trace-card">
-                            <h3 class="fr-mb-4w">Créer un profil Administrateur / Agent</h3>
-                            <form onsubmit="saveUser(event)">
-                                <div class="fr-grid-row fr-grid-row--gutters fr-mb-4w">
-                                    <div class="fr-col-12 fr-col-md-6">
-                                        <div class="fr-input-group">
-                                            <label class="fr-label">Adresse mél (Identifiant)</label>
-                                            <input class="fr-input" type="email" id="new-user-email" required placeholder="nom@dgfip.finances.gouv.fr">
-                                        </div>
-                                    </div>
-                                    <div class="fr-col-12 fr-col-md-6">
-                                        <div class="fr-select-group">
-                                            <label class="fr-label">Rôle</label>
-                                            <select class="fr-select" id="new-user-role" required>
-                                                <option value="" selected disabled hidden>Sélectionner...</option>
-                                                <option value="agent">Agent (Lecture/Écriture inventaire)</option>
-                                                <option value="administrateur">Administrateur (Gestion complète)</option>
-                                            </select>
-                                        </div>
-                                    </div>
-                                </div>
-                                <div class="fr-input-group fr-mb-4w">
-                                    <label class="fr-label">Mot de passe temporaire</label>
-                                    <input class="fr-input" type="text" id="new-user-pwd" required minlength="8">
-                                </div>
-                                
-                                <div style="border-top: 1px solid var(--border-default-grey); padding-top: 1rem;">
-                                    <button type="submit" class="fr-btn fr-icon-check-line fr-btn--icon-left">Créer le compte</button>
-                                </div>
-                            </form>
-                        </div>
-                    </div>
-                </div>
+    <div id="view-users-list" class="sub-view active">
+        <div class="fr-grid-row fr-grid-row--middle fr-mb-2w">
+            <div class="fr-col-6"><h3 class="fr-m-0">Comptes Accès</h3></div>
+            <div class="fr-col-6 fr-text-right"><button class="fr-btn fr-icon-user-add-line fr-btn--icon-left" onclick="openCreateUser()">Nouveau</button></div>
+        </div>
+        <div class="trace-card"><div class="fr-table fr-table--bordered"><table><thead><tr><th>Mél</th><th>Rôle</th><th>Actions</th></tr></thead><tbody id="table-users-body"></tbody></table></div></div>
+    </div>
+
+    <div id="view-ua-list" class="sub-view">
+        <div class="fr-grid-row fr-grid-row--middle fr-mb-2w">
+            <div class="fr-col-6"><h3 class="fr-m-0">Services (Structures)</h3></div>
+            <div class="fr-col-6 fr-text-right"><button class="fr-btn fr-icon-add-line fr-btn--icon-left" onclick="openEditUA(null)">Ajouter UA</button></div>
+        </div>
+        <div class="trace-card"><div class="fr-table fr-table--bordered"><table><thead><tr><th style="width:20%">Code Sages</th><th style="width:60%">Libellé du service</th><th style="width:20%">Actions</th></tr></thead><tbody id="table-ua-body"></tbody></table></div></div>
+    </div>
+
+    <div id="view-lieux-list" class="sub-view">
+        <div class="fr-grid-row fr-grid-row--middle fr-mb-2w">
+            <div class="fr-col-6"><h3 class="fr-m-0">Lieux Physiques</h3></div>
+            <div class="fr-col-6 fr-text-right"><button class="fr-btn fr-icon-add-line fr-btn--icon-left" onclick="openEditLieu(null)">Ajouter Lieu</button></div>
+        </div>
+        <div class="trace-card"><div class="fr-table fr-table--bordered"><table><thead><tr><th style="width:80%">Nom du bâtiment / bureau</th><th style="width:20%">Actions</th></tr></thead><tbody id="table-lieux-body"></tbody></table></div></div>
+    </div>
+
+    <div id="view-ua-form" class="sub-view">
+        <button class="fr-btn fr-btn--secondary fr-icon-arrow-left-line fr-btn--icon-left fr-mb-2w" onclick="showSubView('view-ua-list', 'panel-admin')">Retour</button>
+        <div class="trace-card">
+            <h4 id="ua-form-title">Modifier le Service</h4>
+            <form onsubmit="saveUA(event)">
+                <input type="hidden" id="ua-is-new">
+                <div class="fr-input-group"><label class="fr-label">Code SAGES</label><input class="fr-input" id="ua-code" required></div>
+                <div class="fr-input-group"><label class="fr-label">Libellé complet</label><input class="fr-input" id="ua-libelle" required></div>
+                <button type="submit" class="fr-btn">Enregistrer</button>
+                <button type="button" id="btn-del-ua" class="fr-btn fr-btn--secondary" onclick="deleteUA()">Supprimer</button>
+            </form>
+        </div>
+    </div>
+    <div id="view-lieu-form" class="sub-view">
+    <button class="fr-btn fr-btn--secondary fr-icon-arrow-left-line fr-btn--icon-left fr-mb-2w" onclick="showSubView('view-lieux-list', 'panel-admin')">Retour</button>
+    <div class="trace-card">
+        <h4 id="lieu-form-title">Modifier le Lieu</h4>
+        <form onsubmit="saveLieu(event)">
+            <input type="hidden" id="lieu-id">
+            <div class="fr-input-group">
+                <label class="fr-label">Désignation du lieu</label>
+                <input class="fr-input" id="lieu-nom" required placeholder="Ex: Bâtiment A - Bureau 102">
+            </div>
+            <div class="fr-mt-2w">
+                <button type="submit" class="fr-btn fr-icon-check-line fr-btn--icon-left">Enregistrer</button>
+                <button type="button" id="btn-del-lieu" class="fr-btn fr-btn--secondary fr-icon-delete-line fr-btn--icon-left" style="color: var(--text-default-error); box-shadow: inset 0 0 0 1px var(--text-default-error);" onclick="deleteLieu()">Supprimer</button>
+            </div>
+        </form>
+    </div>
+</div>
+    
+</div>
             </div>
         </div>
     </main>

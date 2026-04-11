@@ -92,6 +92,8 @@ async function loadData() {
         populateSelectWithData('filter-ua', state.structures, 'code_sages', 'libelle', 'Toutes les affectations');
 
         renderGabarits();
+        renderStructures(); // À ajouter
+		renderLieux();      // À ajouter (si implémenté)
         applyFiltersAndSort();
     } catch (e) { 
         showAlert("Sécurité", e.message, "error"); 
@@ -827,6 +829,146 @@ function exportToCSV() {
     link.click();
     document.body.removeChild(link);
 }
+
+// ============================================================================
+// GESTION DES RÉFÉRENTIELS (UA ET LIEUX)
+// ============================================================================
+
+// --- STRUCTURES (UA) ---
+function renderStructures() {
+    const tbody = document.getElementById('table-ua-body');
+    tbody.innerHTML = '';
+    state.structures.forEach(ua => {
+        tbody.innerHTML += `<tr>
+            <td class="fr-text--bold">${ua.code_sages}</td>
+            <td>${ua.libelle}</td>
+            <td><button onclick="openEditUA('${ua.code_sages}')" class="fr-btn fr-btn--secondary fr-btn--sm fr-icon-edit-line"></button></td>
+        </tr>`;
+    });
+}
+
+function openEditUA(code) {
+    const ua = code ? state.structures.find(s => s.code_sages === code) : { code_sages: '', libelle: '' };
+    document.getElementById('ua-is-new').value = code ? "0" : "1";
+    document.getElementById('ua-code').value = ua.code_sages;
+    document.getElementById('ua-code').readOnly = !!code;
+    document.getElementById('ua-libelle').value = ua.libelle;
+    document.getElementById('ua-form-title').innerText = code ? "Modifier le Service" : "Nouveau Service";
+    document.getElementById('btn-del-ua').style.display = code ? "inline-flex" : "none";
+    showSubView('view-ua-form', 'panel-admin');
+}
+
+async function saveUA(e) {
+    e.preventDefault();
+    const isNew = document.getElementById('ua-is-new').value === "1";
+    const code = document.getElementById('ua-code').value;
+    const payload = { code_sages: code, libelle: document.getElementById('ua-libelle').value };
+
+    try {
+        const url = isNew ? `${API_URL}/structures` : `${API_URL}/structures?code_sages=eq.${code}`;
+        const method = isNew ? 'POST' : 'PATCH';
+        const res = await fetch(url, { method, headers: getHeaders(), body: JSON.stringify(payload) });
+        if(!res.ok) throw new Error("Erreur de sauvegarde");
+        showAlert("Succès", "Référentiel UA mis à jour", "success");
+        await loadData(); // Recharge tout et rafraîchit les selects
+        renderStructures();
+        showSubView('view-ua-list', 'panel-admin');
+    } catch (err) { showAlert("Erreur", err.message, "error"); }
+}
+
+async function deleteUA() {
+    const code = document.getElementById('ua-code').value;
+    if(!confirm("Supprimer ce service ? Cela échouera si des équipements y sont rattachés.")) return;
+    try {
+        const res = await fetch(`${API_URL}/structures?code_sages=eq.${code}`, { method: 'DELETE', headers: getHeaders() });
+        if(!res.ok) throw new Error("Impossible de supprimer (UA utilisée)");
+        await loadData();
+        renderStructures();
+        showSubView('view-ua-list', 'panel-admin');
+    } catch (err) { showAlert("Erreur", err.message, "error"); }
+}
+
+// --- LIEUX PHYSIQUES ---
+
+/** Affiche la liste des lieux dans le tableau d'administration */
+function renderLieux() {
+    const tbody = document.getElementById('table-lieux-body');
+    tbody.innerHTML = '';
+    // On trie par nom pour faciliter la lecture
+    [...state.lieux].sort((a, b) => a.nom.localeCompare(b.nom)).forEach(l => {
+        tbody.innerHTML += `<tr>
+            <td class="fr-text--bold">${l.nom}</td>
+            <td>
+                <button onclick="openEditLieu(${l.id})" class="fr-btn fr-btn--secondary fr-btn--sm fr-icon-edit-line" title="Modifier"></button>
+            </td>
+        </tr>`;
+    });
+}
+
+/** Ouvre le formulaire en mode création (id=null) ou édition */
+function openEditLieu(id) {
+    const lieu = id ? state.lieux.find(l => l.id === id) : { id: '', nom: '' };
+    
+    document.getElementById('lieu-id').value = lieu.id;
+    document.getElementById('lieu-nom').value = lieu.nom;
+    
+    document.getElementById('lieu-form-title').innerText = id ? "Modifier le Lieu" : "Nouveau Lieu";
+    document.getElementById('btn-del-lieu').style.display = id ? "inline-flex" : "none";
+    
+    showSubView('view-lieu-form', 'panel-admin');
+}
+
+/** Enregistre les modifications en base de données */
+async function saveLieu(e) {
+    e.preventDefault();
+    const id = document.getElementById('lieu-id').value;
+    const payload = { nom: document.getElementById('lieu-nom').value.trim() };
+
+    try {
+        const url = id ? `${API_URL}/lieux?id=eq.${id}` : `${API_URL}/lieux`;
+        const method = id ? 'PATCH' : 'POST';
+        
+        const res = await fetch(url, { 
+            method, 
+            headers: getHeaders(), 
+            body: JSON.stringify(payload) 
+        });
+        
+        if(!res.ok) throw new Error("Erreur lors de la sauvegarde du lieu.");
+        
+        showAlert("Succès", "Référentiel des lieux mis à jour.", "success");
+        await loadData(); // Recharge le state global et les maps
+        renderLieux();
+        showSubView('view-lieux-list', 'panel-admin');
+    } catch (err) { 
+        showAlert("Erreur", err.message, "error"); 
+    }
+}
+
+/** Supprime un lieu si aucun mobilier n'y est rattaché */
+async function deleteLieu() {
+    const id = document.getElementById('lieu-id').value;
+    if(!confirm("Supprimer ce lieu ? Cette action est impossible si des équipements y sont localisés.")) return;
+    
+    try {
+        const res = await fetch(`${API_URL}/lieux?id=eq.${id}`, { 
+            method: 'DELETE', 
+            headers: getHeaders() 
+        });
+        
+        if(!res.ok) throw new Error("Impossible de supprimer : ce lieu est actuellement utilisé dans l'inventaire.");
+        
+        showAlert("Succès", "Lieu retiré du référentiel.", "success");
+        await loadData();
+        renderLieux();
+        showSubView('view-lieux-list', 'panel-admin');
+    } catch (err) { 
+        showAlert("Action refusée", err.message, "error"); 
+    }
+}
+
+
+// Note : Une logique identique doit être appliquée pour renderLieux(), openEditLieu(), etc.
 
 // ============================================================================
 // INIT
