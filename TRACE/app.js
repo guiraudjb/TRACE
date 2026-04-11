@@ -507,6 +507,99 @@ async function processScan(event) {
         logArea.insertAdjacentHTML('afterbegin', `<li class="fr-mb-1v"><span class="fr-badge fr-badge--error">${idMetier}</span> Échec MAJ.</li>`);
     }
 }
+// ============================================================================
+// RÉAFFECTATION PAR SCAN (FICHIER PLAT)
+// ============================================================================
+// Ouvre l'interface d'import et pré-remplit les sélecteurs
+function openImportFile() {
+    fillSelectOptions('import-target-ua', state.structures, 'code_sages', 'libelle');
+    fillSelectOptions('import-target-lieu', state.lieux, 'id', 'nom');
+    document.getElementById('file-upload').value = '';
+    document.getElementById('import-log').innerHTML = '';
+    document.querySelector('#import-progress p').innerText = "Progression...";
+    document.getElementById('import-progress').style.display = 'none';
+    showSubView('view-mobilier-import', 'panel-mobilier');
+}
+
+async function processFileImport() {
+    const fileInput = document.getElementById('file-upload');
+    const logArea = document.getElementById('import-log');
+    const progressBar = document.querySelector('#import-progress progress');
+    const progressDiv = document.getElementById('import-progress');
+
+    if (!fileInput.files[0]) {
+        showAlert("Attention", "Veuillez sélectionner un fichier .txt", "warning");
+        return;
+    }
+
+    const ua = document.getElementById('import-target-ua').value;
+    const lieu = parseInt(document.getElementById('import-target-lieu').value);
+    const statut = document.getElementById('import-target-statut').value;
+
+    if (!ua || !lieu || !statut) {
+        showAlert("Erreur", "Veuillez définir la destination complète (Service, Lieu, Statut).", "error");
+        return;
+    }
+
+    const file = fileInput.files[0];
+    const reader = new FileReader();
+
+    reader.onload = async (e) => {
+        // Extraction des IDs (on nettoie les espaces et on ignore les lignes vides) 
+        const content = e.target.result;
+        const ids = content.split(/\r?\n/).map(id => id.trim().toUpperCase()).filter(id => id.length > 0);
+
+        if (ids.length === 0) {
+            showAlert("Erreur", "Le fichier est vide.", "error");
+            return;
+        }
+
+        logArea.innerHTML = '';
+        progressDiv.style.display = 'block';
+        let successCount = 0;
+
+        for (let i = 0; i < ids.length; i++) {
+            const idMetier = ids[i];
+            const mob = state.mobiliers.find(m => m.id_metier === idMetier);
+            
+            // Mise à jour de la barre de progression
+            progressBar.value = ((i + 1) / ids.length) * 100;
+
+            if (!mob) {
+                logArea.insertAdjacentHTML('afterbegin', `<li class="fr-mb-1v"><span class="fr-badge fr-badge--error">${idMetier}</span> Inconnu</li>`);
+                continue;
+            }
+
+            try {
+                const payload = { code_sages: ua, lieu_id: lieu, statut: statut };
+                const res = await fetch(`${API_URL}/mobiliers?uuid=eq.${mob.uuid}`, { 
+                    method: 'PATCH', 
+                    headers: getHeaders(), 
+                    body: JSON.stringify(payload) 
+                });
+
+                if (!res.ok) throw new Error();
+
+                // MAJ locale [cite: 27]
+                mob.code_sages = ua;
+                mob.lieu_id = lieu;
+                mob.statut = statut;
+                successCount++;
+
+                logArea.insertAdjacentHTML('afterbegin', `<li class="fr-mb-1v"><span class="fr-badge fr-badge--success">${idMetier}</span> Mis à jour</li>`);
+            } catch (err) {
+                logArea.insertAdjacentHTML('afterbegin', `<li class="fr-mb-1v"><span class="fr-badge fr-badge--error">${idMetier}</span> Échec API</li>`);
+            }
+        }
+        
+        document.querySelector('#import-progress p').innerText = "Import terminé";
+        showAlert("Terminé", `${successCount} équipement(s) réaffecté(s) sur ${ids.length}.`, "success");
+        applyFiltersAndSort(); // Rafraîchit l'inventaire principal
+    };
+
+    reader.readAsText(file);
+}
+
 
 
 // ============================================================================
@@ -661,6 +754,7 @@ async function saveUser(e) {
     } catch (err) { showAlert("Erreur", err.message, "error"); }
 }
 
+
 async function deleteUser(email) {
     if(!confirm(`Êtes-vous sûr de vouloir révoquer l'accès pour ${email} ?`)) return;
     try {
@@ -682,6 +776,56 @@ async function resetUserPassword(email) {
         if(!res.ok) throw new Error("Échec de la réinitialisation.");
         showAlert("Succès", `Mot de passe mis à jour pour ${email}.`, "success");
     } catch (err) { showAlert("Erreur", err.message, "error"); }
+}
+
+/**
+ * EXPORTATION CSV
+ * Génère un fichier compatible Excel (FR) avec les équipements visibles.
+ */
+function exportToCSV() {
+    if (state.filteredData.length === 0) {
+        showAlert("Export impossible", "Aucune donnée à exporter.", "warning");
+        return;
+    }
+
+    // Définition des colonnes
+    const headers = ["ID Métier", "Modèle", "Catégorie", "Affectation", "Lieu", "Statut", "Remarques"];
+    
+    // Transformation des données en utilisant les Maps de correspondance
+    const rows = state.filteredData.map(mob => {
+        const gab = state.maps.g.get(mob.gabarit_id) || {};
+        const ua = state.maps.s.get(mob.code_sages) || {};
+        const lieu = state.maps.l.get(mob.lieu_id) || {};
+        
+        return [
+            mob.id_metier,
+            gab.nom_descriptif || 'Inconnu',
+            gab.categorie || 'Autre',
+            ua.libelle || mob.code_sages,
+            lieu.nom || 'Inconnu',
+            mob.statut,
+            (mob.remarques || '').replace(/(\r\n|\n|\r|;)/gm, " ") // Nettoyage pour le format CSV
+        ];
+    });
+
+    // Construction du contenu (point-virgule pour Excel FR + BOM UTF-8 pour les accents)
+    let csvContent = "\ufeff" + headers.join(";") + "\n";
+    rows.forEach(row => {
+        csvContent += row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(";") + "\n";
+    });
+
+    // Déclenchement du téléchargement
+    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    const date = new Date().toISOString().split('T')[0];
+
+    link.setAttribute("href", url);
+    link.setAttribute("download", `TRACE_Export_${date}.csv`);
+    link.style.visibility = 'hidden';
+    document.body.appendChild(link);
+    link.click();
+    document.body.removeChild(link);
 }
 
 // ============================================================================
