@@ -967,6 +967,61 @@ async function deleteLieu() {
     }
 }
 
+/**
+ * Génère des étiquettes pour une plage de numéros MOB-XXXXXX
+ */
+async function generateRangeLabels() {
+    const start = parseInt(document.getElementById('print-start').value);
+    const end = parseInt(document.getElementById('print-end').value);
+    const format = document.getElementById('print-format').value;
+
+    if (isNaN(start) || isNaN(end) || start > end) {
+        showAlert("Erreur", "Veuillez saisir une plage de numéros valide.", "error");
+        return;
+    }
+
+    const containerId = format === 'individual' ? 'batch-print-area' : 'a4-print-area';
+    const container = document.getElementById(containerId);
+    container.innerHTML = ''; // Nettoyage
+
+    // Gestion des classes sur le body pour le CSS
+    document.body.classList.remove('mode-batch-print', 'mode-a4-print');
+    if (format === 'individual') {
+        document.body.classList.add('mode-batch-print');
+    } else {
+        document.body.classList.add('mode-a4-print');
+    }
+
+    // Génération de la plage
+    for (let i = start; i <= end; i++) {
+        const idMetier = `MOB-${String(i).padStart(6, '0')}`;
+        const uuid = "RANGE-PRINT"; // On ne lie pas à un UUID réel car c'est une édition par plage
+        
+        const labelDiv = document.createElement('div');
+        labelDiv.className = 'batch-label';
+        
+        const qrId = `qr-range-${i}`;
+        labelDiv.innerHTML = `
+            <div id="${qrId}" class="batch-qr"></div>
+            <p><strong>${idMetier}</strong></p>
+            <p>Inventaire TRACE</p>
+        `;
+        container.appendChild(labelDiv);
+
+        // Génération du QR (URL générique ou spécifique selon besoin)
+        new QRCode(document.getElementById(qrId), {
+            text: `${window.location.origin}${window.location.pathname}?id=${idMetier}`,
+            width: 128,
+            height: 128,
+            useSVG: true // Plus propre à l'impression
+        });
+    }
+
+    // Laisser un court délai pour le rendu des QR avant l'impression
+    setTimeout(() => {
+        window.print();
+    }, 500);
+}
 
 // Note : Une logique identique doit être appliquée pour renderLieux(), openEditLieu(), etc.
 

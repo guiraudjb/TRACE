@@ -86,85 +86,27 @@ main {
 }
 
 @media print {
-    @page { margin: 0; }
-    body * { visibility: hidden; }
-    
-    /* --------------------------------------------------- */
-    /* MODE 1 : IMPRESSION UNIQUE (Depuis la fiche détail) */
-    /* --------------------------------------------------- */
-    body:not(.mode-batch-print) #print-area { 
-        visibility: visible !important; 
-        position: fixed !important; 
-        left: 0 !important; top: 0 !important; 
-        width: 50mm !important; height: 30mm !important; 
-        padding: 2mm !important; margin: 0 !important;
-        box-sizing: border-box !important; 
-        border: 1px dashed black !important; 
-        background-color: white !important; 
-        box-shadow: none !important;
-        z-index: 9999 !important;
-        display: block !important; 
-        text-align: center !important; 
-    }
-    body:not(.mode-batch-print) #print-area * { visibility: visible !important; }
-    body.mode-batch-print #print-area { display: none !important; }
-
-    /* --------------------------------------------------- */
-    /* MODE 2 : IMPRESSION PAR LOT                         */
-    /* --------------------------------------------------- */
-    body.mode-batch-print #batch-print-area {
+    /* Cache tout sauf la zone A4 quand on est en mode A4 */
+    body.mode-a4-print #a4-print-area {
         display: block !important;
         visibility: visible !important;
-        position: absolute !important;
-        left: 0; top: 0;
-    }
-    body.mode-batch-print #batch-print-area * { visibility: visible !important; }
-
-    .batch-label {
-        position: relative !important;
-        width: 50mm !important; 
-        height: 30mm !important;
-        padding: 2mm !important; 
-        box-sizing: border-box !important; 
-        border: 1px dashed black !important; /* Retirer cette ligne en prod si papier déjà pré-découpé */
-        background-color: white !important; 
-        text-align: center !important; 
-        page-break-after: always !important; /* CRUCIAL : Force une nouvelle page/étiquette */
-        break-after: page !important;
-    }
-
-    /* --------------------------------------------------- */
-    /* STYLES COMMUNS (QR Code et Texte indestructibles)   */
-    /* --------------------------------------------------- */
-    .no-print { display: none !important; }
-    
-    #qrcode-container, .batch-qr {
-        display: block !important;
-        margin: 0 auto !important;
-        width: 15mm !important; height: 15mm !important;
-    }
-
-    #qrcode-container img, .batch-qr img { 
-        display: inline-block !important; 
-        width: 15mm !important; height: 15mm !important; 
-        min-width: 15mm !important; min-height: 15mm !important; 
-        max-width: 15mm !important; max-height: 15mm !important;
-        margin: 0 auto !important; padding: 0 !important;
-        object-fit: contain !important;
+        position: absolute;
+        left: 0; top: 0; width: 210mm;
     }
     
-    #qrcode-container canvas, .batch-qr canvas { display: none !important; }
-
-    #print-area p, .batch-label p {
-        display: block !important;
-        font-size: 7pt !important; 
-        line-height: 1.1 !important;
-        margin: 1.5mm 0 0 0 !important;
-        padding: 0 !important;
-        color: black !important;
-        white-space: nowrap !important; 
-        overflow: hidden !important;
+    body.mode-a4-print .batch-label {
+        page-break-after: auto !important; /* On ne saute pas de page à chaque étiquette */
+        display: inline-block !important;
+        width: 70mm !important; /* Exemple pour 3 colonnes sur A4 */
+        height: 37mm !important;
+        border: 1px solid #eee !important;
+        margin: 0 !important;
+        padding: 5mm !important;
+        box-sizing: border-box !important;
     }
+
+    /* Désactive le mode batch classique si on est en A4 */
+    body.mode-a4-print #batch-print-area { display: none !important; }
 }
 
 #qrcode-container { 

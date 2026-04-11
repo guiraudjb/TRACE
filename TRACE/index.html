@@ -291,6 +291,47 @@
             </div>
         </div>
     </div>
+
+<div id="view-print-center" class="sub-view">
+    <div class="fr-grid-row">
+        <div class="fr-col-12">
+            <h4>Centre d'édition d'étiquettes</h4>
+            <div class="trace-card">
+                <div class="fr-grid-row fr-grid-row--gutters">
+                    <div class="fr-col-12 fr-col-md-4">
+                        <div class="fr-input-group">
+                            <label class="fr-label" for="print-start">Premier numéro (ex: 1)</label>
+                            <input class="fr-input" type="number" id="print-start" placeholder="000001">
+                        </div>
+                    </div>
+                    <div class="fr-col-12 fr-col-md-4">
+                        <div class="fr-input-group">
+                            <label class="fr-label" for="print-end">Dernier numéro</label>
+                            <input class="fr-input" type="number" id="print-end" placeholder="000100">
+                        </div>
+                    </div>
+                    
+                    <div class="fr-col-12 fr-col-md-4">
+                        <div class="fr-select-group">
+                            <label class="fr-label" for="print-format">Format d'impression</label>
+                            <select class="fr-select" id="print-format">
+                                <option value="individual">Étiquettes individuelles (50x30mm)</option>
+                                <option value="a4-sheet">Planche A4 (24 étiquettes/page)</option>
+                            </select>
+                        </div>
+                    </div>
+                </div>
+
+                <div class="fr-mt-4w">
+                    <button class="fr-btn fr-icon-printer-line fr-btn--icon-left" onclick="generateRangeLabels()">Générer et Imprimer</button>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="a4-print-area" class="print-only"></div>
+
 </div>
 
 
