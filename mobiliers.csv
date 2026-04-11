@@ -1,0 +1,1001 @@
+id_metier,gabarit_id,lieu_id,code_sages,statut,remarques
+MOB-000001,13,48,SIE302,dispo_reemploi,Serrure cassée
+MOB-000002,5,33,CDI701,en_service,
+MOB-000003,2,43,SIP402,dispo_reemploi,
+MOB-000004,5,28,RHU801,en_service,Vérin fatigué
+MOB-000005,18,33,SIP402,en_service,Vérin fatigué
+MOB-000006,1,16,CFI020,dispo_reemploi,Tache d'encre
+MOB-000007,5,23,SGE456,au_rebut,Vérin fatigué
+MOB-000008,13,42,DIR001,en_service,
+MOB-000009,15,23,SIP402,en_service,Rayure sur le plateau
+MOB-000010,8,18,DIR001,en_service,Vérin fatigué
+MOB-000011,4,28,SIP401,dispo_reemploi,
+MOB-000012,9,41,SPF601,en_service,Bon état général
+MOB-000013,17,26,SAR010,en_service,
+MOB-000014,12,29,SGE123,en_service,
+MOB-000015,13,44,DIR201,en_service,
+MOB-000016,5,22,SIP402,en_service,À remplacer au prochain trimestre
+MOB-000017,17,23,SPF601,dispo_reemploi,Roulette grinçante
+MOB-000018,19,49,SGE456,dispo_reemploi,Rayure sur le plateau
+MOB-000019,8,51,SIE301,en_service,
+MOB-000020,18,33,SIE302,en_service,
+MOB-000021,1,44,DIR201,dispo_reemploi,À remplacer au prochain trimestre
+MOB-000022,1,29,TRE501,en_service,
+MOB-000023,16,41,CFI020,dispo_reemploi,
+MOB-000024,3,40,DIR001,en_service,Vérin fatigué
+MOB-000025,13,48,DIR001,dispo_reemploi,Serrure cassée
+MOB-000026,5,45,RHU801,en_service,
+MOB-000027,11,18,SGE123,dispo_reemploi,Bon état général
+MOB-000028,7,27,DIR001,en_service,Bon état général
+MOB-000029,11,26,SIE302,en_service,
+MOB-000030,11,15,CDI701,en_service,
+MOB-000031,5,47,SGE123,en_service,
+MOB-000032,17,25,SIP401,en_service,Bon état général
+MOB-000033,1,27,DIR001,en_maintenance,Vérin fatigué
+MOB-000034,3,49,SAR010,au_rebut,
+MOB-000035,11,31,SGE456,en_service,
+MOB-000036,5,24,DIR101,en_service,Rayure sur le plateau
+MOB-000037,17,44,SIE301,dispo_reemploi,Vérin fatigué
+MOB-000038,13,38,SIE301,au_rebut,Vérin fatigué
+MOB-000039,3,43,TRE501,en_service,
+MOB-000040,8,13,SGE123,au_rebut,
+MOB-000041,4,22,DIR101,en_service,Serrure cassée
+MOB-000042,12,12,SIP401,en_service,
+MOB-000043,4,31,DIR101,dispo_reemploi,
+MOB-000044,17,51,DIR101,en_service,
+MOB-000045,15,33,SIP402,en_service,
+MOB-000046,6,19,DIR201,dispo_reemploi,Tache d'encre
+MOB-000047,12,14,SGE123,au_rebut,
+MOB-000048,8,38,SIE301,dispo_reemploi,
+MOB-000049,8,14,SIE301,en_service,Vérin fatigué
+MOB-000050,2,27,SGE456,en_service,À remplacer au prochain trimestre
+MOB-000051,10,16,RHU801,au_rebut,
+MOB-000052,2,31,SGE456,en_service,
+MOB-000053,2,17,CDI701,en_service,À remplacer au prochain trimestre
+MOB-000054,6,39,SAR010,en_service,Roulette grinçante
+MOB-000055,8,36,SIE302,dispo_reemploi,Rayure sur le plateau
+MOB-000056,13,46,SAR010,en_service,Serrure cassée
+MOB-000057,16,50,SIE301,en_maintenance,Serrure cassée
+MOB-000058,8,34,TRE501,en_service,
+MOB-000059,14,39,TRE501,au_rebut,
+MOB-000060,19,24,CDI701,en_service,Tache d'encre
+MOB-000061,3,40,RHU801,en_maintenance,Rayure sur le plateau
+MOB-000062,16,23,RHU801,en_service,À remplacer au prochain trimestre
+MOB-000063,6,37,SIP401,en_service,Rayure sur le plateau
+MOB-000064,1,44,SPF601,en_service,Vérin fatigué
+MOB-000065,7,16,SAR010,en_service,Roulette grinçante
+MOB-000066,17,29,DIR001,en_service,Vérin fatigué
+MOB-000067,10,19,SIP402,en_service,
+MOB-000068,17,17,SIE301,en_service,Vérin fatigué
+MOB-000069,8,33,CFI020,dispo_reemploi,Roulette grinçante
+MOB-000070,10,32,CFI020,en_service,
+MOB-000071,12,36,DIR001,au_rebut,
+MOB-000072,9,19,RHU801,dispo_reemploi,
+MOB-000073,17,39,SIP402,en_service,Rayure sur le plateau
+MOB-000074,7,16,SGE456,au_rebut,
+MOB-000075,11,47,CDI701,en_service,À remplacer au prochain trimestre
+MOB-000076,9,37,DIR101,en_service,
+MOB-000077,5,21,SGE456,en_service,
+MOB-000078,18,16,SIE302,en_service,Bon état général
+MOB-000079,3,20,SAR010,en_service,
+MOB-000080,13,33,SAR010,en_service,Vérin fatigué
+MOB-000081,9,35,DIR101,en_service,Bon état général
+MOB-000082,4,24,SIP401,en_service,Roulette grinçante
+MOB-000083,3,28,DIR101,en_service,Tache d'encre
+MOB-000084,9,50,SIP401,en_maintenance,Bon état général
+MOB-000085,19,26,SIE301,en_service,Vérin fatigué
+MOB-000086,14,45,SIP401,en_service,
+MOB-000087,4,23,CDI701,en_service,
+MOB-000088,18,33,CFI020,en_service,Serrure cassée
+MOB-000089,4,38,TRE501,en_service,Rayure sur le plateau
+MOB-000090,19,35,RHU801,en_service,À remplacer au prochain trimestre
+MOB-000091,11,47,SGE123,en_maintenance,Bon état général
+MOB-000092,6,15,DIR001,au_rebut,
+MOB-000093,10,25,CFI020,en_service,
+MOB-000094,11,23,SGE123,en_service,Vérin fatigué
+MOB-000095,19,39,SAR010,dispo_reemploi,Roulette grinçante
+MOB-000096,12,29,RHU801,en_service,À remplacer au prochain trimestre
+MOB-000097,2,18,SIP401,en_service,
+MOB-000098,10,40,SIP401,en_service,
+MOB-000099,15,32,CDI701,en_service,
+MOB-000100,3,33,DIR201,en_service,À remplacer au prochain trimestre
+MOB-000101,4,19,DIR101,en_service,Serrure cassée
+MOB-000102,15,44,TRE501,en_service,Rayure sur le plateau
+MOB-000103,15,20,SPF601,en_maintenance,Rayure sur le plateau
+MOB-000104,15,17,SGE123,dispo_reemploi,Tache d'encre
+MOB-000105,13,47,SGE123,en_maintenance,
+MOB-000106,7,40,SPF601,en_service,Vérin fatigué
+MOB-000107,7,49,LOG901,en_service,Bon état général
+MOB-000108,11,51,RHU801,en_service,
+MOB-000109,13,12,DIR101,en_maintenance,Tache d'encre
+MOB-000110,18,13,SIP401,dispo_reemploi,
+MOB-000111,13,26,SIP401,en_maintenance,Bon état général
+MOB-000112,2,45,SIE301,en_service,
+MOB-000113,9,37,LOG901,au_rebut,Bon état général
+MOB-000114,19,21,RHU801,en_service,À remplacer au prochain trimestre
+MOB-000115,3,50,SIE301,dispo_reemploi,
+MOB-000116,15,28,SGE456,dispo_reemploi,Bon état général
+MOB-000117,15,16,SIE301,en_service,
+MOB-000118,8,13,DIR101,en_maintenance,Roulette grinçante
+MOB-000119,4,27,LOG901,en_service,
+MOB-000120,19,44,DIR201,dispo_reemploi,À remplacer au prochain trimestre
+MOB-000121,8,29,DIR001,en_maintenance,Vérin fatigué
+MOB-000122,11,35,RHU801,dispo_reemploi,Tache d'encre
+MOB-000123,2,23,SGE456,dispo_reemploi,Rayure sur le plateau
+MOB-000124,11,27,DIR201,en_service,Serrure cassée
+MOB-000125,7,26,LOG901,en_service,
+MOB-000126,3,17,SIP401,en_service,Roulette grinçante
+MOB-000127,3,46,DIR001,en_service,Bon état général
+MOB-000128,10,45,SGE456,dispo_reemploi,Vérin fatigué
+MOB-000129,12,14,SPF601,au_rebut,Tache d'encre
+MOB-000130,8,49,SIE301,en_service,
+MOB-000131,13,36,SGE123,au_rebut,
+MOB-000132,6,25,SIP401,dispo_reemploi,Vérin fatigué
+MOB-000133,1,46,SGE123,dispo_reemploi,Roulette grinçante
+MOB-000134,8,38,CFI020,en_service,
+MOB-000135,2,27,SGE123,dispo_reemploi,Roulette grinçante
+MOB-000136,3,21,DIR001,dispo_reemploi,Vérin fatigué
+MOB-000137,16,37,SIP402,en_service,Bon état général
+MOB-000138,16,51,DIR201,en_service,Rayure sur le plateau
+MOB-000139,11,27,DIR201,dispo_reemploi,Roulette grinçante
+MOB-000140,1,51,DIR201,en_service,
+MOB-000141,15,24,CFI020,en_service,
+MOB-000142,16,17,RHU801,au_rebut,À remplacer au prochain trimestre
+MOB-000143,19,40,LOG901,en_service,Tache d'encre
+MOB-000144,7,16,SPF601,en_service,Serrure cassée
+MOB-000145,10,25,DIR101,en_service,
+MOB-000146,10,33,SIE302,dispo_reemploi,Roulette grinçante
+MOB-000147,7,42,SIP401,en_service,Serrure cassée
+MOB-000148,5,12,SPF601,en_service,
+MOB-000149,1,44,SIP402,dispo_reemploi,
+MOB-000150,13,16,SIE302,en_service,
+MOB-000151,15,48,SPF601,en_service,
+MOB-000152,2,37,RHU801,dispo_reemploi,
+MOB-000153,19,18,LOG901,en_service,
+MOB-000154,17,13,SPF601,en_service,Roulette grinçante
+MOB-000155,14,26,SIE302,en_service,À remplacer au prochain trimestre
+MOB-000156,17,19,LOG901,en_service,
+MOB-000157,12,36,LOG901,dispo_reemploi,
+MOB-000158,11,31,LOG901,en_service,
+MOB-000159,6,29,SPF601,dispo_reemploi,
+MOB-000160,18,27,CFI020,en_maintenance,
+MOB-000161,1,44,SGE123,en_service,
+MOB-000162,3,40,DIR101,en_service,À remplacer au prochain trimestre
+MOB-000163,16,21,CDI701,en_service,
+MOB-000164,9,34,TRE501,en_service,
+MOB-000165,10,50,SAR010,en_service,Roulette grinçante
+MOB-000166,2,15,SGE123,en_service,Bon état général
+MOB-000167,11,45,SIE302,dispo_reemploi,
+MOB-000168,13,35,TRE501,en_service,Rayure sur le plateau
+MOB-000169,13,15,SIE302,dispo_reemploi,
+MOB-000170,8,46,DIR001,en_service,Serrure cassée
+MOB-000171,15,12,CDI701,dispo_reemploi,Tache d'encre
+MOB-000172,3,14,SIE302,au_rebut,
+MOB-000173,18,49,DIR201,dispo_reemploi,Tache d'encre
+MOB-000174,11,50,DIR001,en_service,Vérin fatigué
+MOB-000175,12,14,DIR101,en_service,
+MOB-000176,10,51,DIR001,dispo_reemploi,Bon état général
+MOB-000177,2,38,RHU801,en_service,
+MOB-000178,5,27,SIE301,dispo_reemploi,Bon état général
+MOB-000179,9,45,TRE501,dispo_reemploi,
+MOB-000180,5,43,DIR001,en_service,
+MOB-000181,7,16,SAR010,en_service,Tache d'encre
+MOB-000182,5,41,DIR101,en_service,À remplacer au prochain trimestre
+MOB-000183,10,39,RHU801,en_service,Serrure cassée
+MOB-000184,14,28,SPF601,en_service,
+MOB-000185,16,46,SIP401,en_service,Rayure sur le plateau
+MOB-000186,1,50,SIP402,dispo_reemploi,
+MOB-000187,19,14,SGE456,en_service,
+MOB-000188,7,30,SIE301,en_maintenance,Serrure cassée
+MOB-000189,18,13,DIR101,en_service,Serrure cassée
+MOB-000190,13,15,SIE302,en_service,Vérin fatigué
+MOB-000191,19,36,SGE456,en_service,
+MOB-000192,1,24,RHU801,en_service,Rayure sur le plateau
+MOB-000193,10,35,SGE456,au_rebut,Serrure cassée
+MOB-000194,18,20,SGE123,dispo_reemploi,Serrure cassée
+MOB-000195,3,26,SAR010,dispo_reemploi,À remplacer au prochain trimestre
+MOB-000196,17,22,SGE456,en_maintenance,Bon état général
+MOB-000197,9,48,DIR001,en_service,
+MOB-000198,3,49,DIR201,dispo_reemploi,Bon état général
+MOB-000199,1,15,SGE123,en_service,Vérin fatigué
+MOB-000200,9,44,DIR001,dispo_reemploi,Roulette grinçante
+MOB-000201,18,24,SAR010,au_rebut,
+MOB-000202,5,15,SPF601,en_service,
+MOB-000203,13,50,TRE501,en_service,
+MOB-000204,2,39,RHU801,dispo_reemploi,Bon état général
+MOB-000205,12,25,SIE301,en_maintenance,Serrure cassée
+MOB-000206,9,13,CFI020,en_service,Tache d'encre
+MOB-000207,19,51,DIR201,dispo_reemploi,
+MOB-000208,11,40,SIP401,en_service,
+MOB-000209,3,36,SAR010,en_maintenance,
+MOB-000210,8,13,DIR101,en_service,
+MOB-000211,4,36,CFI020,dispo_reemploi,
+MOB-000212,4,21,LOG901,en_service,Vérin fatigué
+MOB-000213,19,34,RHU801,en_service,
+MOB-000214,19,50,DIR001,en_service,Tache d'encre
+MOB-000215,16,27,CFI020,en_service,Tache d'encre
+MOB-000216,11,21,SGE456,en_service,
+MOB-000217,3,17,CDI701,en_service,Vérin fatigué
+MOB-000218,4,37,CFI020,en_service,
+MOB-000219,19,13,DIR001,dispo_reemploi,Vérin fatigué
+MOB-000220,11,17,DIR201,en_service,
+MOB-000221,2,20,SGE123,dispo_reemploi,Bon état général
+MOB-000222,3,20,SIP401,en_service,
+MOB-000223,4,40,CDI701,au_rebut,Roulette grinçante
+MOB-000224,1,35,SGE456,en_service,Vérin fatigué
+MOB-000225,17,45,SAR010,en_service,À remplacer au prochain trimestre
+MOB-000226,10,21,LOG901,en_service,Roulette grinçante
+MOB-000227,17,23,SIP401,en_service,Roulette grinçante
+MOB-000228,9,33,SAR010,en_service,Serrure cassée
+MOB-000229,8,51,SIE302,en_service,Bon état général
+MOB-000230,3,37,CFI020,en_service,Vérin fatigué
+MOB-000231,12,46,DIR201,en_service,À remplacer au prochain trimestre
+MOB-000232,14,38,SIE301,en_maintenance,À remplacer au prochain trimestre
+MOB-000233,13,50,SPF601,en_service,
+MOB-000234,5,46,DIR101,en_service,Roulette grinçante
+MOB-000235,1,25,DIR001,en_maintenance,
+MOB-000236,8,27,SIP401,en_service,
+MOB-000237,18,12,SIE302,au_rebut,
+MOB-000238,13,19,SPF601,en_service,Vérin fatigué
+MOB-000239,19,25,SGE123,en_service,Vérin fatigué
+MOB-000240,3,24,CDI701,en_service,À remplacer au prochain trimestre
+MOB-000241,14,45,TRE501,dispo_reemploi,
+MOB-000242,18,28,DIR201,en_service,Serrure cassée
+MOB-000243,6,33,SGE123,en_service,
+MOB-000244,8,14,SIP401,en_service,À remplacer au prochain trimestre
+MOB-000245,1,32,RHU801,en_maintenance,Bon état général
+MOB-000246,18,12,CDI701,dispo_reemploi,
+MOB-000247,18,42,CFI020,dispo_reemploi,
+MOB-000248,18,23,LOG901,en_service,Vérin fatigué
+MOB-000249,2,31,SIP402,en_service,
+MOB-000250,6,39,SPF601,en_service,Serrure cassée
+MOB-000251,11,24,LOG901,au_rebut,Vérin fatigué
+MOB-000252,10,12,SPF601,dispo_reemploi,Bon état général
+MOB-000253,19,13,TRE501,en_service,
+MOB-000254,19,23,RHU801,en_service,
+MOB-000255,1,43,SPF601,en_service,
+MOB-000256,6,23,SAR010,en_service,
+MOB-000257,5,19,LOG901,dispo_reemploi,
+MOB-000258,2,43,DIR101,au_rebut,
+MOB-000259,6,49,SGE123,en_service,
+MOB-000260,17,29,SIE301,dispo_reemploi,
+MOB-000261,5,15,DIR001,en_service,Bon état général
+MOB-000262,19,24,CDI701,dispo_reemploi,Bon état général
+MOB-000263,8,43,RHU801,en_service,Bon état général
+MOB-000264,14,21,SAR010,au_rebut,
+MOB-000265,17,20,DIR101,en_service,Tache d'encre
+MOB-000266,9,44,SGE456,dispo_reemploi,Bon état général
+MOB-000267,7,15,CDI701,en_service,À remplacer au prochain trimestre
+MOB-000268,6,12,DIR001,en_service,Bon état général
+MOB-000269,15,33,SIP402,en_service,
+MOB-000270,1,41,DIR101,en_service,
+MOB-000271,12,28,SIP401,en_service,
+MOB-000272,3,21,SIE302,en_service,
+MOB-000273,15,42,DIR201,en_service,
+MOB-000274,10,27,TRE501,en_service,
+MOB-000275,2,18,SIE302,en_service,Vérin fatigué
+MOB-000276,17,30,SAR010,en_service,À remplacer au prochain trimestre
+MOB-000277,17,50,SIE301,dispo_reemploi,Rayure sur le plateau
+MOB-000278,5,33,RHU801,dispo_reemploi,Tache d'encre
+MOB-000279,10,37,RHU801,en_service,Tache d'encre
+MOB-000280,12,23,DIR001,dispo_reemploi,
+MOB-000281,10,35,SGE456,en_service,
+MOB-000282,13,35,SAR010,en_service,Roulette grinçante
+MOB-000283,8,48,LOG901,en_service,
+MOB-000284,8,42,SIP402,en_service,
+MOB-000285,4,28,CDI701,dispo_reemploi,Vérin fatigué
+MOB-000286,19,41,TRE501,en_service,À remplacer au prochain trimestre
+MOB-000287,12,20,CDI701,en_service,
+MOB-000288,8,25,CFI020,en_service,Tache d'encre
+MOB-000289,17,50,DIR201,en_service,
+MOB-000290,15,25,LOG901,en_service,Roulette grinçante
+MOB-000291,1,23,SIP401,en_service,
+MOB-000292,11,28,DIR001,dispo_reemploi,
+MOB-000293,10,40,RHU801,en_service,
+MOB-000294,19,20,SIE301,en_service,Serrure cassée
+MOB-000295,1,25,SPF601,en_service,
+MOB-000296,9,25,RHU801,en_service,Serrure cassée
+MOB-000297,14,32,SIE302,en_maintenance,
+MOB-000298,9,22,DIR201,en_service,
+MOB-000299,6,50,SIE302,au_rebut,Bon état général
+MOB-000300,19,27,LOG901,en_service,
+MOB-000301,5,25,SAR010,dispo_reemploi,
+MOB-000302,7,44,CDI701,dispo_reemploi,
+MOB-000303,17,33,TRE501,dispo_reemploi,
+MOB-000304,9,42,SIP402,en_service,Bon état général
+MOB-000305,2,16,DIR101,en_service,Vérin fatigué
+MOB-000306,8,19,CFI020,en_service,
+MOB-000307,12,40,SIP401,au_rebut,
+MOB-000308,11,50,SGE456,en_service,À remplacer au prochain trimestre
+MOB-000309,1,16,LOG901,au_rebut,Tache d'encre
+MOB-000310,10,49,DIR101,dispo_reemploi,Bon état général
+MOB-000311,9,37,SIE302,au_rebut,À remplacer au prochain trimestre
+MOB-000312,19,16,DIR101,en_service,
+MOB-000313,13,47,CFI020,en_service,Vérin fatigué
+MOB-000314,12,19,TRE501,en_service,Tache d'encre
+MOB-000315,3,36,SGE456,en_service,Bon état général
+MOB-000316,15,50,SIP401,en_maintenance,
+MOB-000317,17,47,SIE301,en_maintenance,Tache d'encre
+MOB-000318,8,29,TRE501,en_maintenance,Vérin fatigué
+MOB-000319,9,46,CFI020,en_service,
+MOB-000320,19,25,SIP402,en_service,Roulette grinçante
+MOB-000321,1,17,DIR001,dispo_reemploi,
+MOB-000322,6,38,LOG901,en_service,Tache d'encre
+MOB-000323,17,30,TRE501,dispo_reemploi,Bon état général
+MOB-000324,17,42,RHU801,au_rebut,
+MOB-000325,15,42,SAR010,en_service,Bon état général
+MOB-000326,12,35,TRE501,dispo_reemploi,
+MOB-000327,15,37,CFI020,en_service,Serrure cassée
+MOB-000328,3,12,CDI701,en_service,Bon état général
+MOB-000329,18,16,DIR201,en_service,Vérin fatigué
+MOB-000330,3,12,DIR201,en_service,
+MOB-000331,6,14,SPF601,dispo_reemploi,Bon état général
+MOB-000332,16,14,DIR201,en_service,Tache d'encre
+MOB-000333,3,19,SGE456,au_rebut,Bon état général
+MOB-000334,4,33,SPF601,en_service,Bon état général
+MOB-000335,15,39,SAR010,en_service,
+MOB-000336,8,19,DIR101,en_service,À remplacer au prochain trimestre
+MOB-000337,18,47,SIP402,en_service,Vérin fatigué
+MOB-000338,5,44,SGE456,dispo_reemploi,
+MOB-000339,7,35,SIP401,en_service,Vérin fatigué
+MOB-000340,10,14,SAR010,en_service,Tache d'encre
+MOB-000341,16,20,SGE456,en_service,Rayure sur le plateau
+MOB-000342,4,21,SGE123,dispo_reemploi,
+MOB-000343,5,21,CDI701,en_service,
+MOB-000344,4,33,SPF601,dispo_reemploi,Tache d'encre
+MOB-000345,4,45,LOG901,en_service,Rayure sur le plateau
+MOB-000346,17,13,SAR010,dispo_reemploi,
+MOB-000347,15,34,DIR101,en_service,
+MOB-000348,9,19,SGE456,en_maintenance,
+MOB-000349,18,33,SIP402,en_service,
+MOB-000350,13,50,SGE123,en_maintenance,Vérin fatigué
+MOB-000351,13,22,TRE501,au_rebut,
+MOB-000352,10,40,DIR001,en_maintenance,
+MOB-000353,12,30,SIP402,dispo_reemploi,
+MOB-000354,17,26,SAR010,en_service,Rayure sur le plateau
+MOB-000355,6,46,SIP402,en_service,
+MOB-000356,14,32,SGE456,en_service,À remplacer au prochain trimestre
+MOB-000357,12,46,SIE301,au_rebut,Rayure sur le plateau
+MOB-000358,6,49,SIE302,au_rebut,
+MOB-000359,4,29,SPF601,en_service,Bon état général
+MOB-000360,18,24,SPF601,en_service,À remplacer au prochain trimestre
+MOB-000361,5,40,SIP402,en_service,Tache d'encre
+MOB-000362,15,22,TRE501,en_service,
+MOB-000363,18,43,RHU801,en_service,Vérin fatigué
+MOB-000364,1,50,SAR010,en_maintenance,
+MOB-000365,10,20,SIE302,en_service,Rayure sur le plateau
+MOB-000366,7,16,LOG901,en_service,Tache d'encre
+MOB-000367,7,42,SPF601,au_rebut,
+MOB-000368,15,15,SGE123,dispo_reemploi,À remplacer au prochain trimestre
+MOB-000369,12,34,SIE301,dispo_reemploi,Bon état général
+MOB-000370,6,15,SGE456,en_service,Bon état général
+MOB-000371,19,28,LOG901,en_service,
+MOB-000372,13,50,DIR201,en_service,
+MOB-000373,17,27,CFI020,en_maintenance,
+MOB-000374,6,47,RHU801,en_service,
+MOB-000375,4,32,SGE456,en_service,Bon état général
+MOB-000376,12,34,SGE123,en_service,Bon état général
+MOB-000377,7,33,DIR001,en_service,Vérin fatigué
+MOB-000378,19,22,CDI701,en_service,Rayure sur le plateau
+MOB-000379,10,15,SGE123,en_service,Vérin fatigué
+MOB-000380,16,49,RHU801,au_rebut,Roulette grinçante
+MOB-000381,11,14,TRE501,en_service,Tache d'encre
+MOB-000382,6,45,SIP401,au_rebut,
+MOB-000383,13,27,RHU801,au_rebut,
+MOB-000384,16,16,SAR010,en_service,
+MOB-000385,4,49,SGE456,en_service,
+MOB-000386,5,50,SIP402,en_service,Bon état général
+MOB-000387,15,36,SPF601,en_service,Bon état général
+MOB-000388,8,36,SPF601,au_rebut,
+MOB-000389,9,31,CFI020,en_service,
+MOB-000390,11,18,LOG901,en_service,Vérin fatigué
+MOB-000391,3,43,SPF601,en_service,Bon état général
+MOB-000392,16,12,TRE501,en_maintenance,
+MOB-000393,2,20,SIE301,en_service,
+MOB-000394,11,39,SIE301,dispo_reemploi,
+MOB-000395,14,36,DIR201,dispo_reemploi,À remplacer au prochain trimestre
+MOB-000396,19,22,SGE456,dispo_reemploi,Serrure cassée
+MOB-000397,19,35,DIR201,en_service,
+MOB-000398,2,41,DIR101,en_service,
+MOB-000399,9,13,DIR101,en_service,
+MOB-000400,4,32,SIE301,dispo_reemploi,
+MOB-000401,12,28,CDI701,en_service,Tache d'encre
+MOB-000402,9,30,DIR101,en_service,Tache d'encre
+MOB-000403,1,32,SIP401,en_service,Serrure cassée
+MOB-000404,17,46,SIE302,en_service,
+MOB-000405,10,35,DIR201,en_service,Roulette grinçante
+MOB-000406,7,36,DIR101,en_service,Rayure sur le plateau
+MOB-000407,11,39,RHU801,en_service,
+MOB-000408,8,39,SGE456,en_service,
+MOB-000409,1,21,RHU801,en_maintenance,Roulette grinçante
+MOB-000410,15,41,DIR001,en_maintenance,Bon état général
+MOB-000411,19,38,CFI020,au_rebut,Serrure cassée
+MOB-000412,10,21,SIE302,en_service,Serrure cassée
+MOB-000413,10,17,SAR010,en_service,
+MOB-000414,15,22,SIE302,en_service,Bon état général
+MOB-000415,12,26,CFI020,dispo_reemploi,Serrure cassée
+MOB-000416,15,37,CFI020,en_service,Serrure cassée
+MOB-000417,6,46,SPF601,en_service,Tache d'encre
+MOB-000418,19,31,SIE302,en_service,Serrure cassée
+MOB-000419,17,16,SAR010,en_service,Vérin fatigué
+MOB-000420,19,15,SIP402,en_service,Bon état général
+MOB-000421,9,43,CFI020,en_service,
+MOB-000422,5,22,LOG901,en_service,Rayure sur le plateau
+MOB-000423,8,32,CFI020,dispo_reemploi,À remplacer au prochain trimestre
+MOB-000424,6,14,TRE501,en_maintenance,
+MOB-000425,6,46,RHU801,en_service,
+MOB-000426,17,44,SIP402,en_service,
+MOB-000427,17,46,RHU801,en_service,Tache d'encre
+MOB-000428,17,39,DIR001,dispo_reemploi,À remplacer au prochain trimestre
+MOB-000429,4,30,CFI020,en_service,
+MOB-000430,8,33,SAR010,en_service,Serrure cassée
+MOB-000431,4,48,SGE123,dispo_reemploi,Vérin fatigué
+MOB-000432,11,38,SIE302,en_service,Roulette grinçante
+MOB-000433,2,24,SIP402,en_service,Tache d'encre
+MOB-000434,10,28,CFI020,dispo_reemploi,
+MOB-000435,3,39,DIR101,en_service,Vérin fatigué
+MOB-000436,10,35,TRE501,en_service,
+MOB-000437,17,44,TRE501,en_maintenance,
+MOB-000438,2,17,LOG901,en_maintenance,
+MOB-000439,13,25,LOG901,en_service,
+MOB-000440,17,36,TRE501,en_service,Roulette grinçante
+MOB-000441,13,41,TRE501,en_maintenance,Roulette grinçante
+MOB-000442,8,47,SGE123,au_rebut,
+MOB-000443,15,44,TRE501,en_maintenance,Bon état général
+MOB-000444,5,35,SIP402,dispo_reemploi,À remplacer au prochain trimestre
+MOB-000445,14,38,LOG901,dispo_reemploi,Rayure sur le plateau
+MOB-000446,16,49,SIE302,dispo_reemploi,Roulette grinçante
+MOB-000447,15,45,SGE123,en_service,
+MOB-000448,17,21,SAR010,au_rebut,
+MOB-000449,2,17,CDI701,en_service,À remplacer au prochain trimestre
+MOB-000450,9,14,SAR010,en_maintenance,
+MOB-000451,8,35,SAR010,en_service,
+MOB-000452,6,26,SIP401,en_service,
+MOB-000453,15,21,RHU801,en_service,Tache d'encre
+MOB-000454,12,28,SIP402,au_rebut,Serrure cassée
+MOB-000455,5,31,SPF601,au_rebut,
+MOB-000456,12,51,DIR001,en_service,
+MOB-000457,17,24,SGE456,en_service,Rayure sur le plateau
+MOB-000458,17,37,TRE501,en_service,
+MOB-000459,15,47,SIP401,en_service,
+MOB-000460,13,37,TRE501,en_service,Bon état général
+MOB-000461,8,51,CFI020,en_service,
+MOB-000462,16,16,LOG901,dispo_reemploi,
+MOB-000463,9,43,CDI701,en_service,À remplacer au prochain trimestre
+MOB-000464,1,21,SIE302,en_service,
+MOB-000465,12,20,SIP402,dispo_reemploi,Rayure sur le plateau
+MOB-000466,17,19,CDI701,en_maintenance,Rayure sur le plateau
+MOB-000467,19,45,SIE301,en_service,
+MOB-000468,17,29,DIR101,en_maintenance,Rayure sur le plateau
+MOB-000469,17,22,SGE456,en_service,Bon état général
+MOB-000470,10,14,DIR101,en_service,
+MOB-000471,17,27,SGE123,en_service,À remplacer au prochain trimestre
+MOB-000472,15,31,CDI701,en_service,
+MOB-000473,17,46,SGE123,en_service,
+MOB-000474,11,45,TRE501,en_service,
+MOB-000475,17,44,SPF601,en_service,
+MOB-000476,14,44,CFI020,en_service,Rayure sur le plateau
+MOB-000477,8,36,SIE302,dispo_reemploi,
+MOB-000478,9,16,SPF601,en_service,Vérin fatigué
+MOB-000479,4,22,DIR001,en_service,
+MOB-000480,9,37,DIR101,en_service,
+MOB-000481,10,27,SIP402,en_service,Rayure sur le plateau
+MOB-000482,2,17,RHU801,en_service,
+MOB-000483,7,18,DIR001,en_service,
+MOB-000484,9,19,RHU801,en_service,Vérin fatigué
+MOB-000485,7,48,CFI020,en_service,
+MOB-000486,7,27,SIE302,en_maintenance,
+MOB-000487,11,44,SIE302,en_service,Bon état général
+MOB-000488,14,37,DIR001,en_service,Bon état général
+MOB-000489,14,24,RHU801,en_service,
+MOB-000490,5,41,SGE123,dispo_reemploi,
+MOB-000491,8,35,SIE301,en_maintenance,
+MOB-000492,8,51,SIE301,en_maintenance,
+MOB-000493,12,23,LOG901,au_rebut,Tache d'encre
+MOB-000494,16,33,SIE301,en_service,
+MOB-000495,3,49,CFI020,en_service,
+MOB-000496,12,13,LOG901,en_service,À remplacer au prochain trimestre
+MOB-000497,7,38,DIR001,en_service,Roulette grinçante
+MOB-000498,8,32,CFI020,en_maintenance,
+MOB-000499,12,38,DIR001,en_service,Tache d'encre
+MOB-000500,6,47,SAR010,en_service,Roulette grinçante
+MOB-000501,3,33,SGE456,au_rebut,
+MOB-000502,8,34,CFI020,en_service,
+MOB-000503,18,43,SIE302,dispo_reemploi,Vérin fatigué
+MOB-000504,17,51,SIE302,en_service,
+MOB-000505,12,44,SIP402,dispo_reemploi,Serrure cassée
+MOB-000506,13,20,SIE301,dispo_reemploi,Vérin fatigué
+MOB-000507,1,45,SPF601,au_rebut,
+MOB-000508,18,24,SGE456,en_service,
+MOB-000509,16,44,DIR201,en_service,Serrure cassée
+MOB-000510,8,46,DIR001,en_service,Tache d'encre
+MOB-000511,4,12,LOG901,en_service,À remplacer au prochain trimestre
+MOB-000512,4,13,TRE501,en_service,
+MOB-000513,5,38,SGE123,en_service,Vérin fatigué
+MOB-000514,3,20,SIE302,au_rebut,
+MOB-000515,9,48,LOG901,dispo_reemploi,
+MOB-000516,5,13,SIP402,en_service,Tache d'encre
+MOB-000517,19,45,RHU801,en_maintenance,
+MOB-000518,13,31,DIR101,en_service,Roulette grinçante
+MOB-000519,17,31,SPF601,en_service,
+MOB-000520,17,51,CFI020,en_service,
+MOB-000521,5,40,SIP401,en_service,À remplacer au prochain trimestre
+MOB-000522,11,44,SGE456,en_service,Vérin fatigué
+MOB-000523,19,42,SIE302,en_service,Rayure sur le plateau
+MOB-000524,8,37,RHU801,en_service,
+MOB-000525,17,31,DIR201,en_service,Roulette grinçante
+MOB-000526,11,38,CDI701,en_service,Rayure sur le plateau
+MOB-000527,17,49,DIR201,en_service,À remplacer au prochain trimestre
+MOB-000528,15,28,SPF601,en_service,Vérin fatigué
+MOB-000529,17,48,DIR201,en_service,
+MOB-000530,7,29,DIR101,en_service,Serrure cassée
+MOB-000531,11,42,DIR001,en_service,Tache d'encre
+MOB-000532,15,27,SPF601,en_service,
+MOB-000533,9,26,LOG901,au_rebut,Vérin fatigué
+MOB-000534,8,26,DIR001,au_rebut,Serrure cassée
+MOB-000535,1,37,SIE301,en_service,
+MOB-000536,19,43,SIP402,en_service,
+MOB-000537,3,48,DIR201,en_maintenance,Roulette grinçante
+MOB-000538,3,14,SIE301,en_service,
+MOB-000539,14,30,DIR001,en_service,Bon état général
+MOB-000540,14,37,SIP402,au_rebut,
+MOB-000541,18,28,DIR101,en_service,
+MOB-000542,16,42,SGE123,en_maintenance,Bon état général
+MOB-000543,1,15,CDI701,dispo_reemploi,
+MOB-000544,8,51,TRE501,en_service,À remplacer au prochain trimestre
+MOB-000545,18,44,CDI701,en_maintenance,
+MOB-000546,14,49,SGE123,dispo_reemploi,
+MOB-000547,17,35,SPF601,dispo_reemploi,À remplacer au prochain trimestre
+MOB-000548,17,51,DIR001,en_service,Roulette grinçante
+MOB-000549,11,29,SIP401,en_service,Vérin fatigué
+MOB-000550,14,12,TRE501,en_service,
+MOB-000551,19,35,SIP401,au_rebut,
+MOB-000552,15,48,SIE302,en_service,
+MOB-000553,19,32,DIR101,en_service,
+MOB-000554,1,47,SIP402,en_service,Serrure cassée
+MOB-000555,10,12,SIP402,dispo_reemploi,
+MOB-000556,4,14,SIE302,en_service,Roulette grinçante
+MOB-000557,15,25,DIR101,en_service,Roulette grinçante
+MOB-000558,11,45,SAR010,en_service,
+MOB-000559,2,47,TRE501,en_service,
+MOB-000560,4,48,CFI020,en_maintenance,Serrure cassée
+MOB-000561,9,51,DIR001,en_service,Bon état général
+MOB-000562,8,33,SPF601,en_service,Vérin fatigué
+MOB-000563,1,33,SGE456,en_service,Rayure sur le plateau
+MOB-000564,18,43,SAR010,en_service,
+MOB-000565,15,40,SPF601,en_service,
+MOB-000566,19,14,TRE501,en_service,Vérin fatigué
+MOB-000567,17,46,SGE456,en_service,
+MOB-000568,3,45,SIE301,en_service,
+MOB-000569,15,51,RHU801,en_service,À remplacer au prochain trimestre
+MOB-000570,2,29,DIR001,en_service,Serrure cassée
+MOB-000571,7,32,SIP401,dispo_reemploi,
+MOB-000572,1,18,SIP401,en_service,
+MOB-000573,19,19,SGE456,en_service,Serrure cassée
+MOB-000574,13,20,SAR010,en_service,Serrure cassée
+MOB-000575,9,49,SIE302,en_maintenance,
+MOB-000576,4,46,SPF601,en_service,
+MOB-000577,15,37,RHU801,en_service,À remplacer au prochain trimestre
+MOB-000578,14,20,SIP401,en_service,Serrure cassée
+MOB-000579,18,33,SAR010,en_service,Vérin fatigué
+MOB-000580,4,40,DIR101,dispo_reemploi,À remplacer au prochain trimestre
+MOB-000581,18,15,SAR010,en_service,À remplacer au prochain trimestre
+MOB-000582,2,30,SIE301,dispo_reemploi,
+MOB-000583,7,24,DIR101,en_service,Tache d'encre
+MOB-000584,2,48,SIE302,en_service,
+MOB-000585,1,28,CFI020,dispo_reemploi,Rayure sur le plateau
+MOB-000586,1,13,SIE301,en_maintenance,À remplacer au prochain trimestre
+MOB-000587,9,14,LOG901,au_rebut,Bon état général
+MOB-000588,2,15,DIR101,en_service,Serrure cassée
+MOB-000589,12,31,DIR201,en_service,Vérin fatigué
+MOB-000590,3,12,CFI020,en_service,
+MOB-000591,4,43,SIP402,en_service,À remplacer au prochain trimestre
+MOB-000592,8,37,SIE302,en_service,
+MOB-000593,2,38,DIR201,en_service,Bon état général
+MOB-000594,15,23,SIP402,en_service,À remplacer au prochain trimestre
+MOB-000595,1,48,DIR101,en_service,
+MOB-000596,16,26,DIR201,dispo_reemploi,
+MOB-000597,3,35,LOG901,en_maintenance,Rayure sur le plateau
+MOB-000598,8,50,SIP401,au_rebut,À remplacer au prochain trimestre
+MOB-000599,6,38,RHU801,en_maintenance,Serrure cassée
+MOB-000600,13,40,SIP402,en_service,
+MOB-000601,13,15,SIE301,en_service,Tache d'encre
+MOB-000602,16,48,LOG901,dispo_reemploi,
+MOB-000603,10,45,SAR010,en_service,Rayure sur le plateau
+MOB-000604,15,30,SGE456,au_rebut,Tache d'encre
+MOB-000605,14,14,SIP401,en_service,Roulette grinçante
+MOB-000606,15,23,DIR201,en_service,
+MOB-000607,11,25,DIR101,en_service,Rayure sur le plateau
+MOB-000608,2,14,SIE302,en_service,Serrure cassée
+MOB-000609,5,42,SIP402,en_service,Roulette grinçante
+MOB-000610,14,28,TRE501,au_rebut,
+MOB-000611,17,26,SIP401,en_service,Bon état général
+MOB-000612,12,28,SIP401,dispo_reemploi,
+MOB-000613,5,31,RHU801,en_service,
+MOB-000614,6,22,CFI020,en_service,Tache d'encre
+MOB-000615,16,33,SIE302,en_service,Tache d'encre
+MOB-000616,3,23,SGE456,en_service,À remplacer au prochain trimestre
+MOB-000617,12,44,DIR101,en_service,Tache d'encre
+MOB-000618,4,12,SGE456,en_service,
+MOB-000619,12,38,CFI020,au_rebut,
+MOB-000620,10,27,SIP401,en_service,
+MOB-000621,2,28,DIR101,en_maintenance,
+MOB-000622,4,22,TRE501,dispo_reemploi,Vérin fatigué
+MOB-000623,5,40,SGE456,en_service,Vérin fatigué
+MOB-000624,11,44,SGE456,en_maintenance,
+MOB-000625,19,23,SPF601,dispo_reemploi,
+MOB-000626,10,29,SGE123,dispo_reemploi,Tache d'encre
+MOB-000627,11,46,TRE501,au_rebut,
+MOB-000628,11,48,CDI701,en_service,
+MOB-000629,14,19,DIR101,en_service,
+MOB-000630,19,12,CDI701,dispo_reemploi,Roulette grinçante
+MOB-000631,10,30,SAR010,au_rebut,
+MOB-000632,1,39,SIE301,dispo_reemploi,
+MOB-000633,5,16,SAR010,en_service,Roulette grinçante
+MOB-000634,11,41,TRE501,en_service,
+MOB-000635,12,13,TRE501,au_rebut,Bon état général
+MOB-000636,11,22,SIE301,en_service,
+MOB-000637,16,27,TRE501,dispo_reemploi,
+MOB-000638,7,49,LOG901,en_service,
+MOB-000639,13,16,DIR201,au_rebut,
+MOB-000640,5,16,RHU801,en_service,Rayure sur le plateau
+MOB-000641,19,26,SAR010,en_service,
+MOB-000642,10,43,LOG901,en_maintenance,
+MOB-000643,18,15,SIE302,en_service,
+MOB-000644,9,34,SGE456,en_service,Serrure cassée
+MOB-000645,15,43,SIE301,au_rebut,
+MOB-000646,3,18,DIR001,au_rebut,
+MOB-000647,19,39,CDI701,en_service,Vérin fatigué
+MOB-000648,13,13,SIP402,au_rebut,Serrure cassée
+MOB-000649,10,32,DIR201,en_service,Vérin fatigué
+MOB-000650,2,32,CFI020,en_service,
+MOB-000651,13,27,SGE456,en_service,
+MOB-000652,19,48,SGE456,dispo_reemploi,
+MOB-000653,5,44,SIP402,dispo_reemploi,Tache d'encre
+MOB-000654,11,22,CDI701,dispo_reemploi,Serrure cassée
+MOB-000655,15,50,SAR010,en_service,
+MOB-000656,2,29,RHU801,en_service,
+MOB-000657,7,49,SIE301,en_service,
+MOB-000658,4,19,SGE123,en_service,Serrure cassée
+MOB-000659,8,39,CDI701,en_service,Rayure sur le plateau
+MOB-000660,10,35,SGE456,dispo_reemploi,
+MOB-000661,17,12,SIP402,dispo_reemploi,Bon état général
+MOB-000662,1,17,CDI701,en_service,
+MOB-000663,17,50,DIR201,dispo_reemploi,
+MOB-000664,2,15,CDI701,en_service,
+MOB-000665,5,51,LOG901,dispo_reemploi,
+MOB-000666,9,14,LOG901,en_maintenance,
+MOB-000667,15,36,SIE301,au_rebut,Roulette grinçante
+MOB-000668,17,26,SIP402,en_service,Tache d'encre
+MOB-000669,13,38,RHU801,en_service,
+MOB-000670,14,50,DIR101,en_service,Tache d'encre
+MOB-000671,18,46,SIP402,en_service,Roulette grinçante
+MOB-000672,19,47,SGE123,en_service,Rayure sur le plateau
+MOB-000673,8,44,SIE301,en_service,
+MOB-000674,1,37,DIR101,en_service,
+MOB-000675,2,28,RHU801,en_maintenance,À remplacer au prochain trimestre
+MOB-000676,11,48,SPF601,en_service,
+MOB-000677,3,26,SPF601,en_service,À remplacer au prochain trimestre
+MOB-000678,10,23,SGE456,en_service,Roulette grinçante
+MOB-000679,11,48,RHU801,dispo_reemploi,Serrure cassée
+MOB-000680,6,49,RHU801,en_service,Bon état général
+MOB-000681,18,41,SGE456,en_service,Bon état général
+MOB-000682,15,27,SGE456,en_service,À remplacer au prochain trimestre
+MOB-000683,1,33,SGE456,en_service,
+MOB-000684,13,49,DIR001,en_service,À remplacer au prochain trimestre
+MOB-000685,3,40,SGE123,en_service,
+MOB-000686,4,48,SAR010,en_service,
+MOB-000687,12,45,SPF601,au_rebut,Rayure sur le plateau
+MOB-000688,1,16,SPF601,dispo_reemploi,Rayure sur le plateau
+MOB-000689,6,16,DIR001,au_rebut,
+MOB-000690,14,50,RHU801,en_service,Tache d'encre
+MOB-000691,4,24,SGE123,dispo_reemploi,Roulette grinçante
+MOB-000692,16,49,SIE301,en_service,
+MOB-000693,3,16,DIR001,en_service,À remplacer au prochain trimestre
+MOB-000694,13,14,SPF601,en_service,
+MOB-000695,8,22,CDI701,en_service,Bon état général
+MOB-000696,14,12,DIR201,en_service,Serrure cassée
+MOB-000697,6,44,DIR101,en_service,Serrure cassée
+MOB-000698,13,17,SPF601,en_service,Vérin fatigué
+MOB-000699,3,15,SGE456,en_service,Tache d'encre
+MOB-000700,17,29,SGE456,en_service,
+MOB-000701,17,44,CDI701,dispo_reemploi,
+MOB-000702,18,45,SIE302,en_service,
+MOB-000703,13,26,LOG901,dispo_reemploi,Tache d'encre
+MOB-000704,17,13,DIR101,en_service,
+MOB-000705,14,38,CFI020,dispo_reemploi,À remplacer au prochain trimestre
+MOB-000706,13,25,CDI701,au_rebut,À remplacer au prochain trimestre
+MOB-000707,19,23,SIP402,en_service,
+MOB-000708,3,30,DIR001,en_service,À remplacer au prochain trimestre
+MOB-000709,16,21,SGE456,en_service,
+MOB-000710,5,43,SIP401,en_service,Rayure sur le plateau
+MOB-000711,11,31,LOG901,en_maintenance,
+MOB-000712,16,45,DIR101,au_rebut,
+MOB-000713,12,45,DIR101,en_service,Tache d'encre
+MOB-000714,18,32,SIP402,en_service,Roulette grinçante
+MOB-000715,5,38,SAR010,en_service,Tache d'encre
+MOB-000716,8,15,SGE123,en_service,
+MOB-000717,6,48,LOG901,en_service,Vérin fatigué
+MOB-000718,6,42,DIR001,en_service,Rayure sur le plateau
+MOB-000719,5,38,SGE123,en_service,Tache d'encre
+MOB-000720,5,51,DIR101,en_service,
+MOB-000721,11,50,TRE501,en_service,
+MOB-000722,13,51,SAR010,en_service,
+MOB-000723,13,51,SGE456,en_service,
+MOB-000724,3,22,DIR001,en_service,Rayure sur le plateau
+MOB-000725,11,19,SGE456,en_service,Roulette grinçante
+MOB-000726,7,50,SGE456,en_service,
+MOB-000727,18,43,SGE456,en_service,À remplacer au prochain trimestre
+MOB-000728,13,39,CDI701,en_service,
+MOB-000729,9,34,SPF601,en_service,
+MOB-000730,19,28,SPF601,en_service,
+MOB-000731,16,26,LOG901,en_service,
+MOB-000732,16,18,SIP402,en_service,
+MOB-000733,11,48,DIR001,en_maintenance,
+MOB-000734,5,17,SIE301,en_service,
+MOB-000735,1,51,LOG901,en_service,
+MOB-000736,13,22,SIP401,dispo_reemploi,
+MOB-000737,13,20,DIR101,en_service,À remplacer au prochain trimestre
+MOB-000738,2,38,CDI701,en_service,Vérin fatigué
+MOB-000739,14,30,TRE501,en_service,
+MOB-000740,7,49,SPF601,en_service,
+MOB-000741,4,40,SIE301,en_service,
+MOB-000742,14,20,SIP401,dispo_reemploi,
+MOB-000743,14,20,DIR101,dispo_reemploi,
+MOB-000744,4,44,SPF601,en_service,Serrure cassée
+MOB-000745,1,50,SGE456,en_service,
+MOB-000746,15,24,DIR001,en_maintenance,Serrure cassée
+MOB-000747,4,43,LOG901,en_maintenance,
+MOB-000748,14,48,SIP401,en_service,Vérin fatigué
+MOB-000749,15,16,LOG901,dispo_reemploi,Serrure cassée
+MOB-000750,14,51,TRE501,en_service,
+MOB-000751,14,24,SPF601,en_maintenance,
+MOB-000752,6,21,DIR001,en_service,
+MOB-000753,16,24,SGE456,en_service,Bon état général
+MOB-000754,5,33,SAR010,en_service,Bon état général
+MOB-000755,18,17,SAR010,en_service,Vérin fatigué
+MOB-000756,17,50,SIE302,dispo_reemploi,Rayure sur le plateau
+MOB-000757,7,27,SGE456,en_service,Vérin fatigué
+MOB-000758,19,44,SIE301,en_maintenance,Rayure sur le plateau
+MOB-000759,19,44,SIP401,en_service,
+MOB-000760,15,18,SIE301,en_maintenance,
+MOB-000761,7,13,CDI701,en_service,À remplacer au prochain trimestre
+MOB-000762,9,35,SGE123,au_rebut,
+MOB-000763,9,51,RHU801,en_service,
+MOB-000764,8,35,DIR101,au_rebut,
+MOB-000765,6,39,SGE456,dispo_reemploi,Serrure cassée
+MOB-000766,8,19,SIE302,en_service,
+MOB-000767,18,39,SIE302,dispo_reemploi,
+MOB-000768,15,46,DIR101,au_rebut,Tache d'encre
+MOB-000769,13,50,CDI701,en_service,
+MOB-000770,18,41,SIE301,en_service,Bon état général
+MOB-000771,9,12,SIE302,au_rebut,Tache d'encre
+MOB-000772,3,32,CDI701,dispo_reemploi,
+MOB-000773,14,29,SIE302,en_service,Roulette grinçante
+MOB-000774,10,23,SGE123,en_service,Rayure sur le plateau
+MOB-000775,13,13,SGE123,en_service,
+MOB-000776,10,22,SPF601,en_service,Bon état général
+MOB-000777,17,16,DIR101,dispo_reemploi,
+MOB-000778,17,18,DIR201,en_service,
+MOB-000779,1,45,RHU801,en_service,À remplacer au prochain trimestre
+MOB-000780,17,24,CFI020,dispo_reemploi,Bon état général
+MOB-000781,3,15,SGE123,au_rebut,Vérin fatigué
+MOB-000782,14,25,SPF601,en_service,Bon état général
+MOB-000783,18,17,RHU801,en_service,
+MOB-000784,11,27,DIR001,en_service,Bon état général
+MOB-000785,18,33,SAR010,en_maintenance,Rayure sur le plateau
+MOB-000786,6,38,SPF601,en_maintenance,
+MOB-000787,15,15,SGE456,dispo_reemploi,Roulette grinçante
+MOB-000788,3,33,SGE123,en_service,Bon état général
+MOB-000789,3,51,CFI020,en_maintenance,À remplacer au prochain trimestre
+MOB-000790,12,40,LOG901,en_service,Tache d'encre
+MOB-000791,5,46,SGE123,en_service,
+MOB-000792,15,36,DIR201,en_service,Serrure cassée
+MOB-000793,19,45,SGE123,en_service,
+MOB-000794,17,43,TRE501,dispo_reemploi,Tache d'encre
+MOB-000795,11,37,DIR201,en_service,Serrure cassée
+MOB-000796,7,25,SGE456,dispo_reemploi,
+MOB-000797,11,21,SGE456,dispo_reemploi,Rayure sur le plateau
+MOB-000798,14,42,DIR101,en_service,Serrure cassée
+MOB-000799,9,47,DIR101,en_service,Vérin fatigué
+MOB-000800,19,38,CDI701,en_service,Tache d'encre
+MOB-000801,5,36,SIP402,dispo_reemploi,Roulette grinçante
+MOB-000802,18,41,SIP402,au_rebut,
+MOB-000803,18,13,DIR101,en_service,
+MOB-000804,4,36,RHU801,dispo_reemploi,À remplacer au prochain trimestre
+MOB-000805,18,44,RHU801,en_service,Bon état général
+MOB-000806,3,19,SIP401,en_service,
+MOB-000807,6,32,SIP402,en_service,Rayure sur le plateau
+MOB-000808,19,18,CFI020,dispo_reemploi,Tache d'encre
+MOB-000809,12,42,SIP402,en_service,
+MOB-000810,10,39,SIE301,en_service,Serrure cassée
+MOB-000811,4,26,CFI020,en_service,
+MOB-000812,7,30,SIE301,en_service,
+MOB-000813,2,23,SPF601,en_service,
+MOB-000814,4,17,TRE501,en_service,
+MOB-000815,13,23,LOG901,en_maintenance,
+MOB-000816,4,18,CDI701,en_service,Tache d'encre
+MOB-000817,13,49,SGE456,au_rebut,Rayure sur le plateau
+MOB-000818,12,37,DIR001,en_service,Tache d'encre
+MOB-000819,9,38,SIP402,en_service,
+MOB-000820,13,49,SAR010,en_service,
+MOB-000821,8,42,DIR101,en_service,Tache d'encre
+MOB-000822,1,40,CFI020,en_service,
+MOB-000823,17,34,DIR001,en_service,Vérin fatigué
+MOB-000824,9,44,SIP401,en_service,Roulette grinçante
+MOB-000825,6,22,SGE456,au_rebut,Vérin fatigué
+MOB-000826,9,24,SIE301,en_service,Rayure sur le plateau
+MOB-000827,15,51,SIE302,en_service,
+MOB-000828,4,12,SIP401,en_service,Tache d'encre
+MOB-000829,13,48,SIE302,en_service,À remplacer au prochain trimestre
+MOB-000830,11,41,SIE301,dispo_reemploi,Serrure cassée
+MOB-000831,2,50,SIE302,dispo_reemploi,
+MOB-000832,9,34,DIR001,au_rebut,
+MOB-000833,9,15,CDI701,en_service,Roulette grinçante
+MOB-000834,7,27,SIE301,en_service,
+MOB-000835,19,49,LOG901,dispo_reemploi,Rayure sur le plateau
+MOB-000836,9,34,SIP401,en_service,
+MOB-000837,17,16,SIP401,dispo_reemploi,
+MOB-000838,17,16,DIR101,en_service,Roulette grinçante
+MOB-000839,11,35,SIE301,en_service,Roulette grinçante
+MOB-000840,3,40,TRE501,en_service,
+MOB-000841,11,19,DIR101,au_rebut,Tache d'encre
+MOB-000842,14,42,SPF601,en_service,Vérin fatigué
+MOB-000843,16,34,RHU801,en_service,Vérin fatigué
+MOB-000844,16,25,TRE501,en_maintenance,
+MOB-000845,17,23,RHU801,en_service,Roulette grinçante
+MOB-000846,10,14,CDI701,en_maintenance,À remplacer au prochain trimestre
+MOB-000847,9,22,SGE456,en_service,À remplacer au prochain trimestre
+MOB-000848,18,47,CFI020,dispo_reemploi,
+MOB-000849,14,14,SIP402,en_service,À remplacer au prochain trimestre
+MOB-000850,12,33,DIR201,en_service,Serrure cassée
+MOB-000851,6,36,SIE301,en_service,Vérin fatigué
+MOB-000852,15,12,SIE301,dispo_reemploi,À remplacer au prochain trimestre
+MOB-000853,19,27,DIR101,en_service,
+MOB-000854,11,33,CDI701,en_service,Tache d'encre
+MOB-000855,1,49,SIP402,dispo_reemploi,
+MOB-000856,10,42,DIR101,en_maintenance,Vérin fatigué
+MOB-000857,10,30,SIE302,en_service,À remplacer au prochain trimestre
+MOB-000858,16,30,SGE456,en_service,Roulette grinçante
+MOB-000859,16,15,DIR001,en_service,Roulette grinçante
+MOB-000860,10,25,SIP401,en_service,
+MOB-000861,8,18,CFI020,en_service,Rayure sur le plateau
+MOB-000862,12,37,SIE302,dispo_reemploi,
+MOB-000863,8,46,DIR001,en_service,
+MOB-000864,5,26,SIP402,en_service,
+MOB-000865,6,26,SPF601,en_service,À remplacer au prochain trimestre
+MOB-000866,4,19,SIP402,en_service,
+MOB-000867,18,34,SIP401,dispo_reemploi,Tache d'encre
+MOB-000868,16,18,LOG901,en_service,
+MOB-000869,7,36,SGE456,dispo_reemploi,Bon état général
+MOB-000870,15,21,SIP401,en_service,Serrure cassée
+MOB-000871,18,35,SIE302,en_service,À remplacer au prochain trimestre
+MOB-000872,3,25,SPF601,en_service,À remplacer au prochain trimestre
+MOB-000873,18,46,TRE501,en_service,Serrure cassée
+MOB-000874,18,26,DIR101,en_service,
+MOB-000875,9,41,LOG901,au_rebut,Vérin fatigué
+MOB-000876,1,36,LOG901,en_service,Rayure sur le plateau
+MOB-000877,4,48,DIR101,dispo_reemploi,
+MOB-000878,19,33,SIP401,en_service,Vérin fatigué
+MOB-000879,11,14,RHU801,en_service,À remplacer au prochain trimestre
+MOB-000880,9,20,SIP402,en_service,
+MOB-000881,18,50,SGE123,en_maintenance,Tache d'encre
+MOB-000882,4,29,DIR001,en_service,
+MOB-000883,15,12,SAR010,au_rebut,
+MOB-000884,12,43,CDI701,en_service,Tache d'encre
+MOB-000885,11,19,DIR001,dispo_reemploi,
+MOB-000886,5,39,SIP401,dispo_reemploi,
+MOB-000887,6,51,TRE501,en_service,Bon état général
+MOB-000888,14,51,LOG901,en_service,Vérin fatigué
+MOB-000889,13,17,CDI701,en_service,Vérin fatigué
+MOB-000890,14,34,RHU801,dispo_reemploi,
+MOB-000891,4,29,CDI701,en_service,Vérin fatigué
+MOB-000892,12,47,SIE301,en_service,
+MOB-000893,17,33,SIP401,en_service,Bon état général
+MOB-000894,7,30,DIR101,en_service,
+MOB-000895,10,42,SAR010,en_service,À remplacer au prochain trimestre
+MOB-000896,14,36,SIP402,en_service,Tache d'encre
+MOB-000897,4,20,SIE302,en_service,
+MOB-000898,9,22,SIP402,au_rebut,Roulette grinçante
+MOB-000899,18,27,DIR101,au_rebut,Roulette grinçante
+MOB-000900,16,49,DIR101,en_service,
+MOB-000901,3,31,CFI020,dispo_reemploi,
+MOB-000902,15,39,SIP402,en_service,Bon état général
+MOB-000903,6,14,SGE123,au_rebut,Bon état général
+MOB-000904,12,13,SIP402,en_service,Vérin fatigué
+MOB-000905,14,40,SIE301,en_service,
+MOB-000906,10,14,SPF601,en_service,À remplacer au prochain trimestre
+MOB-000907,9,49,SGE456,en_service,À remplacer au prochain trimestre
+MOB-000908,3,28,SIE302,en_service,
+MOB-000909,11,43,DIR001,en_service,
+MOB-000910,11,33,DIR001,en_service,
+MOB-000911,4,13,SIE301,en_service,Serrure cassée
+MOB-000912,13,12,CFI020,au_rebut,Vérin fatigué
+MOB-000913,9,42,DIR201,en_service,Bon état général
+MOB-000914,13,50,TRE501,en_service,
+MOB-000915,19,36,CDI701,en_service,Serrure cassée
+MOB-000916,14,27,DIR101,en_service,
+MOB-000917,12,44,SIE302,dispo_reemploi,Roulette grinçante
+MOB-000918,16,35,SIP401,dispo_reemploi,Serrure cassée
+MOB-000919,16,37,SIP401,en_service,
+MOB-000920,17,43,RHU801,dispo_reemploi,À remplacer au prochain trimestre
+MOB-000921,14,28,LOG901,en_service,Bon état général
+MOB-000922,3,25,SAR010,dispo_reemploi,
+MOB-000923,16,20,DIR001,en_service,Tache d'encre
+MOB-000924,7,48,CFI020,en_service,Serrure cassée
+MOB-000925,15,44,DIR101,en_service,
+MOB-000926,15,28,SIE301,en_service,Roulette grinçante
+MOB-000927,7,35,SIE302,dispo_reemploi,
+MOB-000928,2,27,RHU801,en_service,
+MOB-000929,2,48,DIR101,au_rebut,
+MOB-000930,15,33,DIR001,au_rebut,
+MOB-000931,1,51,CDI701,en_service,Serrure cassée
+MOB-000932,12,35,TRE501,en_service,Roulette grinçante
+MOB-000933,5,43,SPF601,en_service,À remplacer au prochain trimestre
+MOB-000934,6,25,CDI701,en_service,
+MOB-000935,14,51,SPF601,en_service,Roulette grinçante
+MOB-000936,14,21,SAR010,en_service,À remplacer au prochain trimestre
+MOB-000937,13,20,SAR010,en_maintenance,
+MOB-000938,3,32,DIR101,dispo_reemploi,
+MOB-000939,6,21,SGE123,en_service,
+MOB-000940,1,25,LOG901,en_service,
+MOB-000941,19,47,SIE302,au_rebut,
+MOB-000942,15,32,DIR001,en_service,
+MOB-000943,12,46,DIR201,en_service,Roulette grinçante
+MOB-000944,13,16,SIP402,en_service,
+MOB-000945,9,19,RHU801,en_service,
+MOB-000946,19,24,CDI701,en_service,Roulette grinçante
+MOB-000947,2,18,RHU801,en_maintenance,
+MOB-000948,5,27,DIR101,dispo_reemploi,
+MOB-000949,14,23,SIP402,en_service,Tache d'encre
+MOB-000950,12,47,SIE302,au_rebut,
+MOB-000951,18,13,SIP402,dispo_reemploi,
+MOB-000952,19,27,SIE302,dispo_reemploi,Serrure cassée
+MOB-000953,11,16,SAR010,dispo_reemploi,Bon état général
+MOB-000954,14,26,SIE301,en_service,Serrure cassée
+MOB-000955,17,48,TRE501,dispo_reemploi,
+MOB-000956,17,26,LOG901,en_maintenance,
+MOB-000957,8,23,SGE123,en_service,
+MOB-000958,18,51,RHU801,en_service,
+MOB-000959,7,18,SGE456,en_service,Vérin fatigué
+MOB-000960,8,38,SAR010,en_service,
+MOB-000961,12,23,RHU801,au_rebut,
+MOB-000962,6,37,TRE501,en_service,Serrure cassée
+MOB-000963,16,28,SIE301,en_service,
+MOB-000964,3,14,RHU801,en_service,Rayure sur le plateau
+MOB-000965,7,33,CDI701,en_service,À remplacer au prochain trimestre
+MOB-000966,2,41,DIR201,en_service,
+MOB-000967,10,46,TRE501,en_service,
+MOB-000968,2,14,CDI701,dispo_reemploi,
+MOB-000969,6,50,SAR010,au_rebut,
+MOB-000970,19,27,DIR101,en_service,Roulette grinçante
+MOB-000971,6,50,RHU801,au_rebut,
+MOB-000972,4,47,DIR001,dispo_reemploi,
+MOB-000973,8,17,SIP401,dispo_reemploi,Rayure sur le plateau
+MOB-000974,6,51,TRE501,dispo_reemploi,
+MOB-000975,14,49,CDI701,en_service,À remplacer au prochain trimestre
+MOB-000976,14,46,DIR101,en_service,Tache d'encre
+MOB-000977,9,22,SIP402,en_service,Vérin fatigué
+MOB-000978,19,19,RHU801,en_service,
+MOB-000979,4,41,SPF601,en_service,Bon état général
+MOB-000980,6,39,SGE123,en_service,Tache d'encre
+MOB-000981,13,18,SIP401,en_service,Vérin fatigué
+MOB-000982,8,13,TRE501,en_service,Roulette grinçante
+MOB-000983,15,29,SAR010,en_service,
+MOB-000984,16,15,TRE501,en_service,Rayure sur le plateau
+MOB-000985,4,47,SIP402,au_rebut,
+MOB-000986,15,13,LOG901,en_service,
+MOB-000987,9,21,SIE302,en_maintenance,Roulette grinçante
+MOB-000988,8,29,SIE301,dispo_reemploi,Vérin fatigué
+MOB-000989,13,21,SIP401,en_service,À remplacer au prochain trimestre
+MOB-000990,4,25,SIE301,au_rebut,
+MOB-000991,15,43,SGE456,en_service,Serrure cassée
+MOB-000992,11,51,CDI701,en_maintenance,
+MOB-000993,13,37,SIP401,en_service,
+MOB-000994,3,20,CDI701,en_service,Rayure sur le plateau
+MOB-000995,6,32,SIE301,dispo_reemploi,
+MOB-000996,18,36,TRE501,en_service,À remplacer au prochain trimestre
+MOB-000997,17,45,SIE301,en_service,Rayure sur le plateau
+MOB-000998,7,47,SPF601,en_service,
+MOB-000999,1,21,SIP401,en_service,
+MOB-001000,11,37,SIE301,en_maintenance,
