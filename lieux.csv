@@ -1,52 +1,18 @@
 id,nom,parent_id,type_lieu
-1,Bâtiment Colbert,,batiment
-2,Étage 2 Colbert,1,etage
-3,Bureau 204,2,bureau
-4,Bâtiment Vauban,,batiment
-5,Bâtiment Necker,,batiment
-6,RDC Colbert,1,etage
-7,Étage 1 Colbert,1,etage
-8,Étage 3 Colbert,1,etage
-9,RDC Vauban,4,etage
-10,Étage 1 Vauban,4,etage
-11,RDC Necker,5,etage
-12,Bureau 201,2,bureau
-13,Bureau 202,2,bureau
-14,Bureau 203,2,bureau
-15,Bureau 205,2,bureau
-16,Bureau 206 - Open Space,2,bureau
-17,Salle d'Entretien 2A,2,local
-18,Salle d'Entretien 2B,2,local
-19,Local Reprographie 2,2,local
-20,Accueil Principal,6,local
-21,Salle d'Attente A,6,local
-22,Bureau Sécurité,6,bureau
-23,Local Courrier,6,local
-24,Salle de Réunion RDC,6,local
-25,Local Technique Électricité,6,local
-26,Bureau 101 - Direction,7,bureau
-27,Bureau 102 - Secrétariat,7,bureau
-28,Bureau 103 - RH,7,bureau
-29,Bureau 104 - RH,7,bureau
-30,Salle de Réunion 1A,7,local
-31,Local Archives 1,7,local
-32,Espace Détente 1,7,local
-33,Bureau 301 - IT Support,8,bureau
-34,Bureau 302 - IT Dev,8,bureau
-35,Salle Serveurs Principale,8,local
-36,Bureau 303 - Éco-responsabilité,8,bureau
-37,Bureau 304 - Éco-responsabilité,8,bureau
-38,Salle de Réunion 3A,8,local
-39,Local Stockage IT,8,local
-40,Guichet Trésorerie 1,9,bureau
-41,Guichet Trésorerie 2,9,bureau
-42,Bureau 001 - Chef de poste,9,bureau
-43,Local Caisse Fort,9,local
-44,Bureau 101 - Cadastre,10,bureau
-45,Bureau 102 - Foncier,10,bureau
-46,Salle des Plans,10,local
-47,Local Archives Foncier,10,local
-48,Bureau Logistique,11,bureau
-49,Entrepôt Principal,11,local
-50,Quai de Livraison,11,local
-51,Salle de Tri Mobilier,11,local
+1,BD DE REIMS,,
+2,CITE PARADIS,,
+3,PLACE DE L ARGONNE,,
+4,PLACE SAINT SULPICE,,
+5,RUE D UZES,,
+6,RUE DE LONDRES,,
+7,RUE DE TOLBIAC,,
+8,RUE DES MEUNIERS,,
+9,RUE DU GENERAL BEURET,,
+10,RUE DU MOULIN VERT,,
+11,RUE EUGENE CARRIERE,,
+12,RUE GEORGE SAND,,
+13,RUE MARYSE HILSZ,,
+14,RUE NOTRE-DAME DES VICTOIRES,,
+15,RUE PAGANINI,,
+16,RUE REAUMUR,,
+17,RUE TRONCHET,,
