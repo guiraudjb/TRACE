@@ -16,6 +16,18 @@ function getHeaders() {
     }; 
 }
 
+
+/**
+ * Neutralise les caractères spéciaux pour prévenir les injections XSS.
+ * Transforme par exemple "<script>" en "&lt;script&gt;"
+ */
+function escapeHTML(str) {
+    if (!str) return "";
+    const div = document.createElement('div');
+    div.textContent = str;
+    return div.innerHTML;
+}
+
 // ============================================================================
 // AUTHENTIFICATION & SÉCURITÉ
 // ============================================================================
@@ -88,8 +100,8 @@ async function loadData() {
         state.maps.s.clear(); state.structures.forEach(s => state.maps.s.set(s.code_sages, s));
         state.maps.l.clear(); state.lieux.forEach(l => state.maps.l.set(l.id, l));
 
-        populateSelectWithData('filter-gabarit', state.gabarits, 'id', 'nom_descriptif', 'Tous les modèles');
-        populateSelectWithData('filter-ua', state.structures, 'code_sages', 'libelle', 'Toutes les affectations');
+        fillSelect('filter-gabarit', state.gabarits, 'id', 'nom_descriptif', { placeholder: 'Tous les modèles', disablePlaceholder: false });
+		fillSelect('filter-ua', state.structures, 'code_sages', 'libelle', { placeholder: 'Toutes les affectations', disablePlaceholder: false });
 
         renderGabarits();
         renderStructures();
@@ -101,11 +113,7 @@ async function loadData() {
     }
 }
 
-function populateSelectWithData(selectId, dataArray, valueKey, labelKey, firstOptionText) {
-    const select = document.getElementById(selectId);
-    select.innerHTML = `<option value="" selected>${firstOptionText}</option>`;
-    dataArray.forEach(item => { select.innerHTML += `<option value="${item[valueKey]}">${item[labelKey]}</option>`; });
-}
+
 
 function showSubView(viewId, parentId) { 
     document.querySelectorAll(`#${parentId} .sub-view`).forEach(v => v.classList.remove('active')); 
@@ -119,6 +127,30 @@ function showAlert(titre, message, type) {
     const c = document.getElementById('alert-container'); 
     c.innerHTML = `<div class="fr-alert fr-alert--${type} fr-mb-2w"><h3 class="fr-alert__title">${titre}</h3><p>${message}</p></div>`; 
     setTimeout(() => c.innerHTML = '', 5000); 
+}
+
+/**
+ * Remplit un <select> de manière optimisée (1 seule insertion DOM).
+ */
+function fillSelect(selectId, dataArray, valueKey, labelKey, options = {}) {
+    const select = document.getElementById(selectId);
+    if (!select) return;
+
+    // Valeurs par défaut
+    const selected = options.selected || null;
+    const placeholder = options.placeholder || "Sélectionnez...";
+    const disablePlaceholder = options.disablePlaceholder !== undefined ? options.disablePlaceholder : true;
+
+    // Construction du HTML en mémoire (très rapide)
+    let html = `<option value="" ${!selected ? 'selected' : ''} ${disablePlaceholder ? 'disabled hidden' : ''}>${placeholder}</option>`;
+    
+    html += dataArray.map(item => {
+        const isSelected = item[valueKey] == selected ? 'selected' : '';
+        return `<option value="${item[valueKey]}" ${isSelected}>${item[labelKey]}</option>`;
+    }).join('');
+
+    // Une seule modification du DOM
+    select.innerHTML = html;
 }
 
 // ============================================================================
@@ -188,7 +220,9 @@ function applyFiltersAndSort() {
 
 function formatJsonToText(obj) {
     if(!obj || Object.keys(obj).length === 0) return '';
-    return Object.entries(obj).map(([k,v]) => `${k}: ${v}`).join(' • ');
+    return Object.entries(obj)
+        .map(([k, v]) => `${escapeHTML(k)}: ${escapeHTML(v)}`) // Échappement des clés et des valeurs
+        .join(' • ');
 }
 
 function renderMobilierPage() {
@@ -198,10 +232,17 @@ function renderMobilierPage() {
     const startIndex = (state.currentPage - 1) * state.itemsPerPage;
     const paginatedItems = state.filteredData.slice(startIndex, startIndex + state.itemsPerPage);
 
-    paginatedItems.forEach(mob => {
+	paginatedItems.forEach(mob => {
         const gab = state.maps.g.get(mob.gabarit_id) || { nom_descriptif: 'Inconnu' };
         const lieu = state.maps.l.get(mob.lieu_id) || { nom: 'Inconnu' };
         const ua = state.maps.s.get(mob.code_sages) || { libelle: 'Inconnu' };
+
+        // --- ÉTAPE 2 : SÉCURISATION XSS ---
+        const safeNom = escapeHTML(gab.nom_descriptif);
+        const safeUa = escapeHTML(ua.libelle);
+        const safeLieu = escapeHTML(lieu.nom);
+        const safeId = escapeHTML(mob.id_metier);
+        // ----------------------------------
 
         let badge = `<p class="fr-badge fr-badge--new fr-badge--sm fr-mb-0">En service</p>`;
         if(mob.statut === 'dispo_reemploi') badge = `<p class="fr-badge fr-badge--success fr-badge--sm fr-mb-0">Réemploi</p>`;
@@ -215,9 +256,9 @@ function renderMobilierPage() {
                     <label class="fr-label" for="check-${mob.uuid}"></label>
                 </div>
             </td>
-            <td><span class="uuid-badge" title="Copier ID" onclick="navigator.clipboard.writeText('${mob.id_metier}')">${mob.id_metier}</span></td>
-            <td><span class="fr-text--bold">${gab.nom_descriptif}</span><br><span class="fr-text--xs" style="color:var(--text-mention-grey);">${formatJsonToText(gab.caracteristiques)}</span></td>
-            <td class="fr-text--sm">${ua.libelle}<br><span class="fr-text--light">${lieu.nom}</span></td>
+            <td><span class="uuid-badge" title="Copier ID" onclick="navigator.clipboard.writeText('${safeId}')">${safeId}</span></td>
+            <td><span class="fr-text--bold">${safeNom}</span><br><span class="fr-text--xs" style="color:var(--text-mention-grey);">${formatJsonToText(gab.caracteristiques)}</span></td>
+            <td class="fr-text--sm">${safeUa}<br><span class="fr-text--light">${safeLieu}</span></td>
             <td>${badge}</td>
             <td><button onclick="editMobilier('${mob.uuid}')" class="fr-btn fr-btn--secondary fr-btn--sm">Fiche</button></td>
         </tr>`;
@@ -261,21 +302,12 @@ function calculateNextMobId() {
     return 'MOB-' + String(max + 1).padStart(6, '0');
 }
 
-function fillSelectOptions(selectId, dataArray, valueKey, labelKey, selectedValue = null) {
-    const select = document.getElementById(selectId); 
-    select.innerHTML = '<option value="" disabled selected hidden>Sélectionnez...</option>';
-    dataArray.forEach(item => { 
-        const isSelected = item[valueKey] == selectedValue ? 'selected' : ''; 
-        select.innerHTML += `<option value="${item[valueKey]}" ${isSelected}>${item[labelKey]}</option>`; 
-    });
-}
-
 function openCreateMobilier() {
     document.getElementById('new-mob-id').value = calculateNextMobId();
     document.getElementById('new-mob-quantite').value = 1; // Réinitialise la quantité
-    fillSelectOptions('new-mob-gabarit', state.gabarits, 'id', 'nom_descriptif');
-    fillSelectOptions('new-mob-ua', state.structures, 'code_sages', 'libelle');
-    fillSelectOptions('new-mob-lieu', state.lieux, 'id', 'nom');
+	fillSelect('new-mob-gabarit', state.gabarits, 'id', 'nom_descriptif');
+	fillSelect('new-mob-ua', state.structures, 'code_sages', 'libelle');
+	fillSelect('new-mob-lieu', state.lieux, 'id', 'nom');
     document.getElementById('new-mob-statut').value = 'en_service'; 
     document.getElementById('new-mob-remarques').value = '';
     showSubView('view-mobilier-create', 'panel-mobilier');
@@ -288,9 +320,9 @@ function editMobilier(uuid) {
     // Remplissage des champs du formulaire
     document.getElementById('edit-mob-uuid').value = mob.uuid;
     document.getElementById('edit-mob-id').value = mob.id_metier;
-    fillSelectOptions('edit-mob-gabarit', state.gabarits, 'id', 'nom_descriptif', mob.gabarit_id);
-    fillSelectOptions('edit-mob-ua', state.structures, 'code_sages', 'libelle', mob.code_sages);
-    fillSelectOptions('edit-mob-lieu', state.lieux, 'id', 'nom', mob.lieu_id);
+    fillSelect('edit-mob-gabarit', state.gabarits, 'id', 'nom_descriptif', { selected: mob.gabarit_id });
+	fillSelect('edit-mob-ua', state.structures, 'code_sages', 'libelle', { selected: mob.code_sages });
+	fillSelect('edit-mob-lieu', state.lieux, 'id', 'nom', { selected: mob.lieu_id });
     document.getElementById('edit-mob-statut').value = mob.statut;
     document.getElementById('edit-mob-remarques').value = mob.remarques || '';
     
@@ -395,8 +427,8 @@ function toggleSelectAll() {
 // RÉAFFECTATION PAR SCAN (DOUCHETTE)
 // ============================================================================
 function openScanner() {
-    fillSelectOptions('scan-target-ua', state.structures, 'code_sages', 'libelle');
-    fillSelectOptions('scan-target-lieu', state.lieux, 'id', 'nom');
+    fillSelect('scan-target-ua', state.structures, 'code_sages', 'libelle');
+	fillSelect('scan-target-lieu', state.lieux, 'id', 'nom');
     document.getElementById('scan-target-statut').value = 'en_service';
     document.getElementById('scanner-input').value = '';
     document.getElementById('scan-log').innerHTML = '';
@@ -407,13 +439,12 @@ function openScanner() {
 }
 
 async function processScan(event) {
-    // Une douchette classique simule la touche "Entrée" après avoir lu le code
     if (event.key !== 'Enter') return;
     event.preventDefault();
 
     const input = document.getElementById('scanner-input');
     const idMetier = input.value.trim().toUpperCase();
-    input.value = ''; // Réinitialise l'input pour être prêt pour le prochain scan
+    input.value = ''; 
     input.focus();
 
     if (!idMetier) return;
@@ -423,16 +454,19 @@ async function processScan(event) {
     const lieu = parseInt(document.getElementById('scan-target-lieu').value);
     const statut = document.getElementById('scan-target-statut').value;
 
+    // --- SÉCURISATION XSS ---
+    const safeId = escapeHTML(idMetier);
+    // -------------------------
+
     if (!ua || !lieu || !statut) {
         logArea.insertAdjacentHTML('afterbegin', `<li class="fr-mb-1v"><span class="fr-badge fr-badge--error">Erreur</span> Cible incomplète.</li>`);
         return;
     }
 
-    // On cherche l'équipement dans le state local
     const mob = state.mobiliers.find(m => m.id_metier === idMetier);
     
     if (!mob) {
-        logArea.insertAdjacentHTML('afterbegin', `<li class="fr-mb-1v"><span class="fr-badge fr-badge--error">${idMetier}</span> Introuvable.</li>`);
+        logArea.insertAdjacentHTML('afterbegin', `<li class="fr-mb-1v"><span class="fr-badge fr-badge--error">${safeId}</span> Introuvable.</li>`);
         return;
     }
 
@@ -446,28 +480,32 @@ async function processScan(event) {
 
         if (!res.ok) throw new Error("Erreur serveur");
 
-        // Mise à jour de l'état local pour ne pas avoir à tout recharger
         mob.code_sages = ua;
         mob.lieu_id = lieu;
         mob.statut = statut;
 
+        // --- SÉCURISATION XSS DU LIBELLÉ ---
         const uaLabel = state.maps.s.get(ua)?.libelle || ua;
-        logArea.insertAdjacentHTML('afterbegin', `<li class="fr-mb-1v"><span class="fr-badge fr-badge--success">${idMetier}</span> → ${uaLabel}</li>`);
+        const safeUaLabel = escapeHTML(uaLabel);
         
-        // On rafraîchit la vue tabulaire en arrière-plan
+        logArea.insertAdjacentHTML('afterbegin', `<li class="fr-mb-1v"><span class="fr-badge fr-badge--success">${safeId}</span> → ${safeUaLabel}</li>`);
+        // ------------------------------------
+        
         applyFiltersAndSort();
 
     } catch (err) {
-        logArea.insertAdjacentHTML('afterbegin', `<li class="fr-mb-1v"><span class="fr-badge fr-badge--error">${idMetier}</span> Échec MAJ.</li>`);
+        logArea.insertAdjacentHTML('afterbegin', `<li class="fr-mb-1v"><span class="fr-badge fr-badge--error">${safeId}</span> Échec MAJ.</li>`);
     }
 }
+
+
 // ============================================================================
 // RÉAFFECTATION PAR SCAN (FICHIER PLAT)
 // ============================================================================
 // Ouvre l'interface d'import et pré-remplit les sélecteurs
 function openImportFile() {
-    fillSelectOptions('import-target-ua', state.structures, 'code_sages', 'libelle');
-    fillSelectOptions('import-target-lieu', state.lieux, 'id', 'nom');
+    fillSelect('import-target-ua', state.structures, 'code_sages', 'libelle');
+	fillSelect('import-target-lieu', state.lieux, 'id', 'nom');
     document.getElementById('file-upload').value = '';
     document.getElementById('import-log').innerHTML = '';
     document.querySelector('#import-progress p').innerText = "Progression...";
@@ -512,40 +550,43 @@ async function processFileImport() {
         progressDiv.style.display = 'block';
         let successCount = 0;
 
-        for (let i = 0; i < ids.length; i++) {
-            const idMetier = ids[i];
-            const mob = state.mobiliers.find(m => m.id_metier === idMetier);
-            
-            // Mise à jour de la barre de progression
-            progressBar.value = ((i + 1) / ids.length) * 100;
+// À l'intérieur du reader.onload, dans la boucle for :
+for (let i = 0; i < ids.length; i++) {
+    const idMetier = ids[i];
+    
+    // --- SÉCURISATION XSS ---
+    const safeId = escapeHTML(idMetier);
+    // -------------------------
 
-            if (!mob) {
-                logArea.insertAdjacentHTML('afterbegin', `<li class="fr-mb-1v"><span class="fr-badge fr-badge--error">${idMetier}</span> Inconnu</li>`);
-                continue;
-            }
+    const mob = state.mobiliers.find(m => m.id_metier === idMetier);
+    progressBar.value = ((i + 1) / ids.length) * 100;
 
-            try {
-                const payload = { code_sages: ua, lieu_id: lieu, statut: statut };
-                const res = await fetch(`${API_URL}/mobiliers?uuid=eq.${mob.uuid}`, { 
-                    method: 'PATCH', 
-                    headers: getHeaders(), 
-                    body: JSON.stringify(payload) 
-                });
+    if (!mob) {
+        logArea.insertAdjacentHTML('afterbegin', `<li class="fr-mb-1v"><span class="fr-badge fr-badge--error">${safeId}</span> Inconnu</li>`);
+        continue;
+    }
 
-                if (!res.ok) throw new Error();
+    try {
+        const payload = { code_sages: ua, lieu_id: lieu, statut: statut };
+        const res = await fetch(`${API_URL}/mobiliers?uuid=eq.${mob.uuid}`, { 
+            method: 'PATCH', 
+            headers: getHeaders(), 
+            body: JSON.stringify(payload) 
+        });
 
-                // MAJ locale [cite: 27]
-                mob.code_sages = ua;
-                mob.lieu_id = lieu;
-                mob.statut = statut;
-                successCount++;
+        if (!res.ok) throw new Error();
 
-                logArea.insertAdjacentHTML('afterbegin', `<li class="fr-mb-1v"><span class="fr-badge fr-badge--success">${idMetier}</span> Mis à jour</li>`);
-            } catch (err) {
-                logArea.insertAdjacentHTML('afterbegin', `<li class="fr-mb-1v"><span class="fr-badge fr-badge--error">${idMetier}</span> Échec API</li>`);
-            }
-        }
-        
+        mob.code_sages = ua;
+        mob.lieu_id = lieu;
+        mob.statut = statut;
+        successCount++;
+
+        logArea.insertAdjacentHTML('afterbegin', `<li class="fr-mb-1v"><span class="fr-badge fr-badge--success">${safeId}</span> Mis à jour</li>`);
+    } catch (err) {
+        logArea.insertAdjacentHTML('afterbegin', `<li class="fr-mb-1v"><span class="fr-badge fr-badge--error">${safeId}</span> Échec API</li>`);
+    }
+}
+
         document.querySelector('#import-progress p').innerText = "Import terminé";
         showAlert("Terminé", `${successCount} équipement(s) réaffecté(s) sur ${ids.length}.`, "success");
         applyFiltersAndSort(); // Rafraîchit l'inventaire principal
@@ -560,13 +601,25 @@ async function processFileImport() {
 // CRUD GABARITS (CATALOGUE)
 // ============================================================================
 function renderGabarits() {
-    const tbody = document.getElementById('table-gabarits-body'); tbody.innerHTML = '';
+    const tbody = document.getElementById('table-gabarits-body'); 
+    tbody.innerHTML = '';
+    
     [...state.gabarits].reverse().forEach(gab => {
-        const formattedJson = Object.entries(gab.caracteristiques || {}).map(([k, v]) => `<span style="color:var(--text-action-high-blue-france)">"${k}"</span>: "${v}"`).join(',<br>');
+        // --- SÉCURISATION XSS ---
+        const safeRef = escapeHTML(gab.reference_catalogue);
+        const safeCat = escapeHTML(gab.categorie);
+        const safeNom = escapeHTML(gab.nom_descriptif);
+
+        // Échappement spécifique pour le bloc JSON stylisé
+        const formattedJson = Object.entries(gab.caracteristiques || {})
+            .map(([k, v]) => `<span style="color:var(--text-action-high-blue-france)">"${escapeHTML(k)}"</span>: "${escapeHTML(v)}"`)
+            .join(',<br>');
+        // -------------------------
+
         tbody.innerHTML += `<tr>
-            <td class="fr-text--bold">${gab.reference_catalogue}</td>
-            <td><p class="fr-badge fr-badge--info fr-badge--sm fr-mb-0">${gab.categorie}</p></td>
-            <td>${gab.nom_descriptif}</td>
+            <td class="fr-text--bold">${safeRef}</td>
+            <td><p class="fr-badge fr-badge--info fr-badge--sm fr-mb-0">${safeCat}</p></td>
+            <td>${safeNom}</td>
             <td class="fr-text--xs" style="font-family: monospace; padding: 0.5rem; background: var(--background-alt-grey); border-radius: 4px;">{<br>${formattedJson}<br>}</td>
             <td><button onclick="editGabarit(${gab.id})" class="fr-btn fr-btn--secondary fr-btn--sm">Éditer</button></td>
         </tr>`;
