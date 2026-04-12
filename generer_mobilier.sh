@@ -2,9 +2,9 @@
 
 # --- CONFIGURATION ---
 # Nombre de lignes à générer
-COUNT=2000
+COUNT=1000
 # Fichier de sortie
-OUTPUT="mobiliers_import.csv"
+OUTPUT="mobiliers.csv"
 # Liste des statuts autorisés (extraits de la logique métier)
 STATUS=("en_service" "dispo_reemploi" "en_maintenance" "au_rebut")
 

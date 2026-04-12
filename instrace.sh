@@ -106,6 +106,8 @@ sudo -u postgres psql -d $DB_NAME << EOF
 
 -- Extensions
 CREATE EXTENSION IF NOT EXISTS pgcrypto;
+CREATE EXTENSION IF NOT EXISTS pg_trgm; -- Requis pour la recherche textuelle rapide
+
 CREATE SCHEMA IF NOT EXISTS auth;
 CREATE TYPE public.statut_mobilier AS ENUM ('en_service', 'en_maintenance', 'dispo_reemploi', 'au_rebut');
 CREATE TYPE public.jwt_token AS (token text);
@@ -116,6 +118,24 @@ CREATE TABLE public.lieux (id SERIAL PRIMARY KEY, nom TEXT NOT NULL, parent_id I
 CREATE TABLE public.utilisateurs (id SERIAL PRIMARY KEY, email TEXT UNIQUE NOT NULL, mot_de_passe_hash TEXT NOT NULL, nom_complet TEXT NOT NULL, role TEXT NOT NULL CHECK (role IN ('agent', 'administrateur')) DEFAULT 'agent');
 CREATE TABLE public.gabarits (id SERIAL PRIMARY KEY, reference_catalogue VARCHAR(50) UNIQUE NOT NULL, categorie TEXT, nom_descriptif TEXT NOT NULL, caracteristiques JSONB DEFAULT '{}'::jsonb);
 CREATE TABLE public.mobiliers (uuid UUID PRIMARY KEY DEFAULT gen_random_uuid(), id_metier VARCHAR(20) UNIQUE, gabarit_id INTEGER REFERENCES public.gabarits(id), lieu_id INTEGER REFERENCES public.lieux(id), code_sages VARCHAR(10) REFERENCES public.structures(code_sages), statut statut_mobilier DEFAULT 'en_service', remarques TEXT, date_saisie TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP);
+
+-- =============================================================================
+-- INDEX DE PERFORMANCE (Optimisation 1M lignes)
+-- =============================================================================
+-- Index B-Tree pour les filtres et jointures (complexité O(log n))
+CREATE INDEX idx_mobiliers_gabarit ON public.mobiliers(gabarit_id);
+CREATE INDEX idx_mobiliers_ua ON public.mobiliers(code_sages);
+CREATE INDEX idx_mobiliers_statut ON public.mobiliers(statut);
+CREATE INDEX idx_mobiliers_lieu ON public.mobiliers(lieu_id);
+
+-- Index GIN pour les recherches dans le JSON (caractéristiques techniques)
+CREATE INDEX idx_gabarits_caract ON public.gabarits USING GIN (caracteristiques);
+
+-- Index GIN Trigram pour la recherche globale (ID métier + Remarques)
+-- Remplace les ILIKE '%...%' lents par une recherche vectorielle
+CREATE INDEX idx_mobiliers_search_trgm ON public.mobiliers 
+USING gin ((id_metier || ' ' || COALESCE(remarques, '')) gin_trgm_ops);
+
 
 -- Fonctions Authentification (Attention aux \$\$ pour échapper le shell)
 CREATE OR REPLACE FUNCTION auth.url_encode(data bytea) RETURNS text AS \$\$SELECT translate(encode(data, 'base64'), E'+/=\\n', '-_');\$\$ LANGUAGE sql;
@@ -182,6 +202,8 @@ VALUES ('$ADMIN_EMAIL', crypt('$ADMIN_PASS', gen_salt('bf')), 'Administrateur', 
 SELECT setval('public.lieux_id_seq', (SELECT MAX(id) FROM public.lieux));
 \copy public.gabarits(reference_catalogue, categorie, nom_descriptif, caracteristiques) FROM '/tmp/trace_csv/gabarits.csv' DELIMITER ',' CSV HEADER;
 \copy public.mobiliers(id_metier, gabarit_id, lieu_id, code_sages, statut, remarques) FROM '/tmp/trace_csv/mobiliers.csv' DELIMITER ',' CSV HEADER;
+ANALYZE public.mobiliers;
+ANALYZE public.gabarits;
 EOF
 
 # ------------------------------------------------------------------------------
