@@ -15,8 +15,8 @@ DB_PASS=$(tr -dc 'A-Za-z0-9_-' < /dev/urandom | head -c 24)
 # Le JWT_SECRET doit être très long (min 32 caractères) pour l'algorithme HS256
 JWT_SECRET=$(tr -dc 'A-Za-z0-9_-' < /dev/urandom | head -c 48)
 # Mot de passe administrateur (16 caractères)
-ADMIN_PASS=$(tr -dc 'A-Za-z0-9!_-' < /dev/urandom | head -c 16)
-
+#ADMIN_PASS=$(tr -dc 'A-Za-z0-9!_-' < /dev/urandom | head -c 16)
+ADMIN_PASS="admin"
 
 # Chemins
 WEB_ROOT="/var/www/html/TRACE"

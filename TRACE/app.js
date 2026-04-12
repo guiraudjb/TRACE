@@ -92,8 +92,8 @@ async function loadData() {
         populateSelectWithData('filter-ua', state.structures, 'code_sages', 'libelle', 'Toutes les affectations');
 
         renderGabarits();
-        renderStructures(); // À ajouter
-		renderLieux();      // À ajouter (si implémenté)
+        renderStructures();
+		renderLieux();
         applyFiltersAndSort();
     } catch (e) { 
         showAlert("Sécurité", e.message, "error"); 
@@ -384,55 +384,11 @@ async function deleteMobilier() {
 }
 
 // ============================================================================
-// IMPRESSION PAR LOT
+// ACTION PAR LOT
 // ============================================================================
 function toggleSelectAll() {
     const isChecked = document.getElementById('select-all').checked;
     document.querySelectorAll('.row-checkbox').forEach(cb => cb.checked = isChecked);
-}
-
-function printSelected() {
-    const checkedBoxes = document.querySelectorAll('.row-checkbox:checked');
-    if (checkedBoxes.length === 0) {
-        showAlert("Attention", "Veuillez sélectionner au moins un équipement à imprimer.", "warning");
-        return;
-    }
-
-    const batchArea = document.getElementById('batch-print-area');
-    batchArea.innerHTML = ''; 
-
-    checkedBoxes.forEach(box => {
-        const mob = state.mobiliers.find(m => m.uuid === box.value);
-        if (!mob) return;
-        
-        const gab = state.maps.g.get(mob.gabarit_id);
-
-        const labelDiv = document.createElement('div');
-        labelDiv.className = 'batch-label';
-        
-        labelDiv.innerHTML = `
-            <div class="batch-qr" id="qr-batch-${mob.id_metier}"></div>
-            <p>${mob.id_metier}</p>
-            <p>${gab ? gab.nom_descriptif : 'Mobilier'}</p>
-            <p>DGFIP - TRACE</p>
-        `;
-        
-        batchArea.appendChild(labelDiv);
-
-        new QRCode(document.getElementById(`qr-batch-${mob.id_metier}`), { 
-            text: mob.id_metier, 
-            width: 90, 
-            height: 90, 
-            correctLevel : QRCode.CorrectLevel.H 
-        });
-    });
-
-    document.body.classList.add('mode-batch-print');
-    
-    setTimeout(() => {
-        window.print();
-        document.body.classList.remove('mode-batch-print');
-    }, 500);
 }
 
 // ============================================================================
@@ -776,10 +732,11 @@ async function resetUserPassword(email) {
     } catch (err) { showAlert("Erreur", err.message, "error"); }
 }
 
-/**
- * EXPORTATION CSV
- * Génère un fichier compatible Excel (FR) avec les équipements visibles.
- */
+// ============================================================================
+// EXPORTATION CSV
+// Génère un fichier compatible Excel (FR) avec les équipements visibles.
+// ============================================================================
+
 function exportToCSV() {
     if (state.filteredData.length === 0) {
         showAlert("Export impossible", "Aucune donnée à exporter.", "warning");
@@ -886,7 +843,7 @@ async function deleteUA() {
 
 // --- LIEUX PHYSIQUES ---
 
-/** Affiche la liste des lieux dans le tableau d'administration */
+// Affiche la liste des lieux dans le tableau d'administration 
 function renderLieux() {
     const tbody = document.getElementById('table-lieux-body');
     tbody.innerHTML = '';
@@ -901,7 +858,7 @@ function renderLieux() {
     });
 }
 
-/** Ouvre le formulaire en mode création (id=null) ou édition */
+// Ouvre le formulaire en mode création (id=null) ou édition 
 function openEditLieu(id) {
     const lieu = id ? state.lieux.find(l => l.id === id) : { id: '', nom: '' };
     
@@ -914,7 +871,7 @@ function openEditLieu(id) {
     showSubView('view-lieu-form', 'panel-admin');
 }
 
-/** Enregistre les modifications en base de données */
+// Enregistre les modifications en base de données
 async function saveLieu(e) {
     e.preventDefault();
     const id = document.getElementById('lieu-id').value;
@@ -941,7 +898,7 @@ async function saveLieu(e) {
     }
 }
 
-/** Supprime un lieu si aucun mobilier n'y est rattaché */
+// Supprime un lieu si aucun mobilier n'y est rattaché
 async function deleteLieu() {
     const id = document.getElementById('lieu-id').value;
     if(!confirm("Supprimer ce lieu ? Cette action est impossible si des équipements y sont localisés.")) return;
@@ -963,84 +920,6 @@ async function deleteLieu() {
     }
 }
 
-/**
- * Génère des étiquettes pour une plage de numéros MOB-XXXXXX
- */
-/**
- * Génère des étiquettes pour une plage de numéros MOB-XXXXXX
- * (Version robuste et asynchrone pour éviter les pages blanches)
- */
-/**
- * Génère des étiquettes pour une plage de numéros MOB-XXXXXX
- * (Version "Aperçu avant impression" pour forcer le rendu des QR Codes)
- */
-/**
- * Génère des étiquettes pour une plage de numéros MOB-XXXXXX
- * (Version "Aperçu" sécurisée contre les erreurs DOM)
- */
-/**
- * Génère des étiquettes (Méthode propre via CSS @media print)
- */
-async function generateRangeLabels() {
-    const start = parseInt(document.getElementById('print-start').value);
-    const end = parseInt(document.getElementById('print-end').value);
-    const format = document.getElementById('print-format').value;
-
-    if (isNaN(start) || isNaN(end) || start > end) {
-        showAlert("Erreur", "Veuillez saisir une plage valide.", "error");
-        return;
-    }
-
-    const containerId = format === 'individual' ? 'batch-print-area' : 'a4-print-area';
-    const container = document.getElementById(containerId);
-    
-    // 1. Nettoyage
-    container.innerHTML = ''; 
-    document.body.classList.remove('mode-batch-print', 'mode-a4-print');
-    
-    // 2. Application du mode d'impression pour le CSS
-    document.body.classList.add(format === 'individual' ? 'mode-batch-print' : 'mode-a4-print');
-
-    const qrPromises = [];
-
-    // 3. Génération des étiquettes
-    for (let i = start; i <= end; i++) {
-        const idMetier = `MOB-${String(i).padStart(6, '0')}`;
-        const qrId = `qr-range-${i}`;
-        
-        const labelDiv = document.createElement('div');
-        labelDiv.className = 'batch-label';
-        labelDiv.innerHTML = `
-            <div id="${qrId}" class="batch-qr"></div>
-            <p class="lbl-id">${idMetier}</p>
-            <p class="lbl-desc">Inventaire TRACE</p>
-        `;
-        container.appendChild(labelDiv);
-
-        // Rendu asynchrone du SVG
-        const qrPromise = new Promise((resolve) => {
-            setTimeout(() => {
-                new QRCode(document.getElementById(qrId), {
-                    text: `${window.location.origin}${window.location.pathname}?id=${idMetier}`,
-                    width: 70, height: 70, useSVG: true 
-                });
-                resolve();
-            }, 0);
-        });
-        qrPromises.push(qrPromise);
-    }
-
-    // 4. On attend la fin de la génération, puis on imprime
-    await Promise.all(qrPromises);
-    
-    setTimeout(() => {
-        window.print();
-        // Optionnel : nettoyage après impression
-        // document.body.classList.remove('mode-batch-print', 'mode-a4-print');
-    }, 500);
-}
-
-// Note : Une logique identique doit être appliquée pour renderLieux(), openEditLieu(), etc.
 
 // ============================================================================
 // INIT
