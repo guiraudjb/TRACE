@@ -26,6 +26,21 @@ main {
     table-layout: fixed; 
 }
 
+.trace-header-tools {
+    display: flex;
+    flex-direction: row;
+    /* Aligne horizontalement à droite */
+    justify-content: flex-end; 
+    /* Aligne verticalement en haut */
+    align-items: flex-start;   
+}
+
+/* On ajoute souvent une petite marge pour ne pas toucher le bord */
+#logout-btn-container {
+    margin-top: 0.5rem;
+    margin-right: 0.5rem;
+}
+
 .sortable-header { 
     cursor: pointer; 
     user-select: none; 

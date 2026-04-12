@@ -32,16 +32,17 @@
                             <p class="fr-header__service-tagline">Traçabilité, Réemploi et Affectation Circulaire des Équipements</p>
                         </div>
                     </div>
+                       
                     <div class="fr-header__tools">
-                        <div class="fr-header__tools-links">
-                            <ul class="fr-btns-group">
-                                <li id="logout-btn-container" style="display: none;">
-                                    <button class="fr-btn fr-btn--secondary fr-icon-logout-box-r-line" onclick="deconnecter()">Déconnexion</button>
-                                </li>
-                            </ul>
-                        </div>
-                    </div>
-                </div>
+					<div class="trace-header-tools"> 
+							<ul class="fr-btns-group">
+								<li id="logout-btn-container" style="display: none;">
+									<button class="fr-btn fr-btn--secondary fr-icon-logout-box-r-line" onclick="deconnecter()">Déconnexion</button>
+								</li>
+							</ul>
+						</div>
+					</div>
+                    
             </div>
         </div>
     </header>
@@ -119,12 +120,6 @@
                                 <table>
                                     <thead>
                                         <tr>
-                                            <th style="width: 5%">
-                                                <div class="fr-checkbox-group fr-checkbox-group--sm">
-                                                    <input type="checkbox" id="select-all" onclick="toggleSelectAll()">
-                                                    <label class="fr-label" for="select-all"></label>
-                                                </div>
-                                            </th>
                                             <th class="sortable-header" onclick="toggleSort('id_metier')" style="width: 20%">ID Métier <span id="icon-sort-id_metier" class="fr-icon-arrow-down-s-line sort-icon" style="opacity: 0;"></span></th>
                                             <th class="sortable-header" onclick="toggleSort('gabarit')" style="width: 25%">Modèle <span id="icon-sort-gabarit" class="fr-icon-arrow-down-s-line sort-icon" style="opacity: 0;"></span></th>
                                             <th class="sortable-header" onclick="toggleSort('code_sages')" style="width: 25%">Affectation <span id="icon-sort-code_sages" class="fr-icon-arrow-down-s-line sort-icon" style="opacity: 0;"></span></th>

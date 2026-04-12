@@ -9,13 +9,34 @@ let state = {
 };
 
 function getHeaders() { 
+    const token = sessionStorage.getItem('trace_jwt');
+    if (!token) return null;
+
+    // Décodage et vérification de l'expiration
+    const payload = parseJwt(token);
+    const now = Math.floor(Date.now() / 1000);
+    
+    if (payload && payload.exp && payload.exp < now) {
+        showAlert("Session expirée", "Votre session a expiré. Redirection...", "error");
+        deconnecter();
+        return null;
+    }
+
     return { 
         'Content-Type': 'application/json', 
-        'Authorization': `Bearer ${sessionStorage.getItem('trace_jwt')}`, 
+        'Authorization': `Bearer ${token}`, 
         'Prefer': 'return=representation' 
     }; 
 }
 
+async function apiFetch(url, options = {}) {
+    const res = await fetch(url, options);
+    if (res.status === 401) {
+        deconnecter(); // Force le retour au login si le serveur rejette le JWT
+        throw new Error("Accès non autorisé.");
+    }
+    return res;
+}
 
 /**
  * Neutralise les caractères spéciaux pour prévenir les injections XSS.
@@ -34,7 +55,7 @@ function escapeHTML(str) {
 async function authentifier(e) {
     e.preventDefault();
     try {
-        const res = await fetch(`${API_URL}/rpc/login`, {
+        const res = await apiFetch(`${API_URL}/rpc/login`, {
             method: 'POST', headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify({ email: document.getElementById('login-email').value, password: document.getElementById('login-password').value })
         });
@@ -85,10 +106,10 @@ async function verifierDroitsAdmin() {
 async function loadData() {
     try {
         const [gRes, sRes, lRes, mRes] = await Promise.all([
-            fetch(`${API_URL}/gabarits`, { headers: getHeaders() }),
-            fetch(`${API_URL}/structures`, { headers: getHeaders() }),
-            fetch(`${API_URL}/lieux`, { headers: getHeaders() }),
-            fetch(`${API_URL}/mobiliers`, { headers: getHeaders() })
+            apiFetch(`${API_URL}/gabarits`, { headers: getHeaders() }),
+            apiFetch(`${API_URL}/structures`, { headers: getHeaders() }),
+            apiFetch(`${API_URL}/lieux`, { headers: getHeaders() }),
+            apiFetch(`${API_URL}/mobiliers`, { headers: getHeaders() })
         ]);
         
         if (!mRes.ok) throw new Error("Session expirée.");
@@ -250,12 +271,6 @@ function renderMobilierPage() {
         if(mob.statut === 'au_rebut') badge = `<p class="fr-badge fr-badge--error fr-badge--sm fr-mb-0">Au Rebut</p>`;
 
         tbody.innerHTML += `<tr>
-            <td>
-                <div class="fr-checkbox-group fr-checkbox-group--sm">
-                    <input type="checkbox" class="row-checkbox" value="${mob.uuid}" id="check-${mob.uuid}">
-                    <label class="fr-label" for="check-${mob.uuid}"></label>
-                </div>
-            </td>
             <td><span class="uuid-badge" title="Copier ID" onclick="navigator.clipboard.writeText('${safeId}')">${safeId}</span></td>
             <td><span class="fr-text--bold">${safeNom}</span><br><span class="fr-text--xs" style="color:var(--text-mention-grey);">${formatJsonToText(gab.caracteristiques)}</span></td>
             <td class="fr-text--sm">${safeUa}<br><span class="fr-text--light">${safeLieu}</span></td>
@@ -264,7 +279,6 @@ function renderMobilierPage() {
         </tr>`;
     });
     
-    document.getElementById('select-all').checked = false;
     document.getElementById('results-count').innerText = `${totalItems} équipement(s) trouvé(s)`;
     document.getElementById('page-info').innerText = `Page ${state.currentPage} sur ${totalPages}`;
     document.getElementById('btn-prev').disabled = (state.currentPage === 1); 
@@ -291,7 +305,11 @@ function changePage(direction) {
 // ============================================================================
 // CRUD MOBILIER (AVEC BULK INSERT)
 // ============================================================================
-function calculateNextMobId() {
+/**
+ * Calcule le prochain identifiant métier disponible.
+ * @param {number} offset - Le décalage à appliquer (1 pour le suivant, 2 pour celui d'après, etc.)
+ */
+function calculateNextMobId(offset = 1) {
     let max = 0;
     state.mobiliers.forEach(m => {
         if(m.id_metier && m.id_metier.startsWith('MOB-')) {
@@ -299,7 +317,7 @@ function calculateNextMobId() {
             if(!isNaN(num) && num > max) max = num;
         }
     });
-    return 'MOB-' + String(max + 1).padStart(6, '0');
+    return 'MOB-' + String(max + offset).padStart(6, '0');
 }
 
 function openCreateMobilier() {
@@ -335,6 +353,18 @@ async function saveMobilier(e, mode) {
     const prefix = mode === 'CREATE' ? 'new' : 'edit';
     const uuid = mode === 'EDIT' ? document.getElementById('edit-mob-uuid').value : null;
     
+    // Récupération de l'ID métier
+    const idMetier = document.getElementById(`${prefix}-mob-id`).value.trim().toUpperCase();
+    
+    // --- VALIDATION SÉCURITÉ : REGEX ID MÉTIER ---
+    const idRegex = /^MOB-\d{6}$/;
+    if (!idRegex.test(idMetier)) {
+        showAlert("Erreur d'identifiant", "L'ID métier est mal formé.", "error");
+        return;
+    }
+    // ---------------------------------------------
+    
+    
     // On récupère les valeurs communes
     const gabarit_id = parseInt(document.getElementById(`${prefix}-mob-gabarit`).value);
     const code_sages = document.getElementById(`${prefix}-mob-ua`).value;
@@ -347,18 +377,10 @@ async function saveMobilier(e, mode) {
             const quantite = parseInt(document.getElementById('new-mob-quantite').value) || 1;
             const payloads = [];
 
-            let maxId = 0;
-            state.mobiliers.forEach(m => {
-                if(m.id_metier && m.id_metier.startsWith('MOB-')) {
-                    const num = parseInt(m.id_metier.replace('MOB-', ''), 10);
-                    if(!isNaN(num) && num > maxId) maxId = num;
-                }
-            });
-
+            // On utilise la fonction centralisée avec l'offset i+1
             for (let i = 0; i < quantite; i++) {
-                maxId++;
                 payloads.push({
-                    id_metier: 'MOB-' + String(maxId).padStart(6, '0'),
+                    id_metier: calculateNextMobId(i + 1),
                     gabarit_id: gabarit_id,
                     code_sages: code_sages,
                     lieu_id: lieu_id,
@@ -367,7 +389,7 @@ async function saveMobilier(e, mode) {
                 });
             }
 
-            const res = await fetch(`${API_URL}/mobiliers`, { 
+            const res = await apiFetch(`${API_URL}/mobiliers`, { 
                 method: 'POST', 
                 headers: getHeaders(), 
                 body: JSON.stringify(payloads) 
@@ -385,7 +407,7 @@ async function saveMobilier(e, mode) {
                 statut: statut,
                 remarques: remarques
             };
-            const res = await fetch(`${API_URL}/mobiliers?uuid=eq.${uuid}`, { 
+            const res = await apiFetch(`${API_URL}/mobiliers?uuid=eq.${uuid}`, { 
                 method: 'PATCH', 
                 headers: getHeaders(), 
                 body: JSON.stringify(payload) 
@@ -407,7 +429,7 @@ async function deleteMobilier() {
     if(!confirm("Êtes-vous sûr de vouloir supprimer définitivement cet équipement du parc ?")) return;
     
     try {
-        const res = await fetch(`${API_URL}/mobiliers?uuid=eq.${uuid}`, { method: 'DELETE', headers: getHeaders() });
+        const res = await apiFetch(`${API_URL}/mobiliers?uuid=eq.${uuid}`, { method: 'DELETE', headers: getHeaders() });
         if(!res.ok) throw new Error("Échec de la suppression");
         showAlert("Succès", "Équipement supprimé du registre", "success");
         await loadData();
@@ -415,13 +437,6 @@ async function deleteMobilier() {
     } catch (err) { showAlert("Erreur", err.message, "error"); }
 }
 
-// ============================================================================
-// ACTION PAR LOT
-// ============================================================================
-function toggleSelectAll() {
-    const isChecked = document.getElementById('select-all').checked;
-    document.querySelectorAll('.row-checkbox').forEach(cb => cb.checked = isChecked);
-}
 
 // ============================================================================
 // RÉAFFECTATION PAR SCAN (DOUCHETTE)
@@ -444,6 +459,16 @@ async function processScan(event) {
 
     const input = document.getElementById('scanner-input');
     const idMetier = input.value.trim().toUpperCase();
+    
+    // --- VALIDATION SÉCURITÉ : REGEX ID MÉTIER ---
+    const idRegex = /^MOB-\d{6}$/;
+    if (!idRegex.test(idMetier)) {
+        showAlert("Format invalide", "L'identifiant doit être au format MOB-000000", "warning");
+        input.value = '';
+        return;
+    }
+    // ---------------------------------------------
+
     input.value = ''; 
     input.focus();
 
@@ -472,7 +497,7 @@ async function processScan(event) {
 
     try {
         const payload = { code_sages: ua, lieu_id: lieu, statut: statut };
-        const res = await fetch(`${API_URL}/mobiliers?uuid=eq.${mob.uuid}`, { 
+        const res = await apiFetch(`${API_URL}/mobiliers?uuid=eq.${mob.uuid}`, { 
             method: 'PATCH', 
             headers: getHeaders(), 
             body: JSON.stringify(payload) 
@@ -568,7 +593,7 @@ for (let i = 0; i < ids.length; i++) {
 
     try {
         const payload = { code_sages: ua, lieu_id: lieu, statut: statut };
-        const res = await fetch(`${API_URL}/mobiliers?uuid=eq.${mob.uuid}`, { 
+        const res = await apiFetch(`${API_URL}/mobiliers?uuid=eq.${mob.uuid}`, { 
             method: 'PATCH', 
             headers: getHeaders(), 
             body: JSON.stringify(payload) 
@@ -679,7 +704,7 @@ async function saveGabarit(e) {
     try {
         const url = id ? `${API_URL}/gabarits?id=eq.${id}` : `${API_URL}/gabarits`;
         const method = id ? 'PATCH' : 'POST';
-        await fetch(url, { method, headers: getHeaders(), body: JSON.stringify(payload) });
+        await apiFetch(url, { method, headers: getHeaders(), body: JSON.stringify(payload) });
         showAlert("Succès", "Modèle sauvegardé dans le catalogue", "success");
         await loadData();
         showSubView('view-gabarits-list', 'panel-gabarits');
@@ -691,7 +716,7 @@ async function deleteGabarit() {
     if(!confirm("Êtes-vous sûr de vouloir supprimer ce modèle ?")) return;
     
     try {
-        const res = await fetch(`${API_URL}/gabarits?id=eq.${id}`, { method: 'DELETE', headers: getHeaders() });
+        const res = await apiFetch(`${API_URL}/gabarits?id=eq.${id}`, { method: 'DELETE', headers: getHeaders() });
         if(!res.ok) {
             const err = await res.json().catch(()=>({}));
             if(err.code === '23503') throw new Error("Impossible : Des équipements de l'inventaire utilisent actuellement ce modèle.");
@@ -708,7 +733,7 @@ async function deleteGabarit() {
 // ============================================================================
 async function loadUsers() {
     try {
-        const res = await fetch(`${API_URL}/utilisateurs`, { headers: getHeaders() });
+        const res = await apiFetch(`${API_URL}/utilisateurs`, { headers: getHeaders() });
         if (!res.ok) throw new Error("Accès refusé ou table introuvable.");
         state.utilisateurs = await res.json();
         renderUsers();
@@ -750,7 +775,7 @@ async function saveUser(e) {
     };
 
     try {
-        const res = await fetch(`${API_URL}/rpc/creer_utilisateur`, { 
+        const res = await apiFetch(`${API_URL}/rpc/creer_utilisateur`, { 
             method: 'POST', headers: getHeaders(), body: JSON.stringify(payload) 
         });
         if (!res.ok) throw new Error("Impossible de créer l'utilisateur (l'email existe peut-être déjà).");
@@ -765,7 +790,7 @@ async function saveUser(e) {
 async function deleteUser(email) {
     if(!confirm(`Êtes-vous sûr de vouloir révoquer l'accès pour ${email} ?`)) return;
     try {
-        const res = await fetch(`${API_URL}/utilisateurs?email=eq.${email}`, { method: 'DELETE', headers: getHeaders() });
+        const res = await apiFetch(`${API_URL}/utilisateurs?email=eq.${email}`, { method: 'DELETE', headers: getHeaders() });
         if(!res.ok) throw new Error("Échec de la suppression.");
         showAlert("Succès", "Le compte a été supprimé.", "success");
         await loadUsers();
@@ -777,7 +802,7 @@ async function resetUserPassword(email) {
     if (!nouveauMdp) return; 
 
     try {
-        const res = await fetch(`${API_URL}/rpc/reinitialiser_mdp`, { 
+        const res = await apiFetch(`${API_URL}/rpc/reinitialiser_mdp`, { 
             method: 'POST', headers: getHeaders(), body: JSON.stringify({ _email: email, _new_password: nouveauMdp }) 
         });
         if(!res.ok) throw new Error("Échec de la réinitialisation.");
@@ -873,7 +898,7 @@ async function saveUA(e) {
     try {
         const url = isNew ? `${API_URL}/structures` : `${API_URL}/structures?code_sages=eq.${code}`;
         const method = isNew ? 'POST' : 'PATCH';
-        const res = await fetch(url, { method, headers: getHeaders(), body: JSON.stringify(payload) });
+        const res = await apiFetch(url, { method, headers: getHeaders(), body: JSON.stringify(payload) });
         if(!res.ok) throw new Error("Erreur de sauvegarde");
         showAlert("Succès", "Référentiel UA mis à jour", "success");
         await loadData(); // Recharge tout et rafraîchit les selects
@@ -886,7 +911,7 @@ async function deleteUA() {
     const code = document.getElementById('ua-code').value;
     if(!confirm("Supprimer ce service ? Cela échouera si des équipements y sont rattachés.")) return;
     try {
-        const res = await fetch(`${API_URL}/structures?code_sages=eq.${code}`, { method: 'DELETE', headers: getHeaders() });
+        const res = await apiFetch(`${API_URL}/structures?code_sages=eq.${code}`, { method: 'DELETE', headers: getHeaders() });
         if(!res.ok) throw new Error("Impossible de supprimer (UA utilisée)");
         await loadData();
         renderStructures();
@@ -934,7 +959,7 @@ async function saveLieu(e) {
         const url = id ? `${API_URL}/lieux?id=eq.${id}` : `${API_URL}/lieux`;
         const method = id ? 'PATCH' : 'POST';
         
-        const res = await fetch(url, { 
+        const res = await apiFetch(url, { 
             method, 
             headers: getHeaders(), 
             body: JSON.stringify(payload) 
@@ -957,7 +982,7 @@ async function deleteLieu() {
     if(!confirm("Supprimer ce lieu ? Cette action est impossible si des équipements y sont localisés.")) return;
     
     try {
-        const res = await fetch(`${API_URL}/lieux?id=eq.${id}`, { 
+        const res = await apiFetch(`${API_URL}/lieux?id=eq.${id}`, { 
             method: 'DELETE', 
             headers: getHeaders() 
         });
