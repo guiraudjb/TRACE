@@ -2,7 +2,9 @@
 const API_URL = '/api';
 
 let state = {
-    mobiliers: [], gabarits: [], structures: [], lieux: [], utilisateurs: [],
+    mobiliers: [],
+    totalItems: 0,
+    gabarits: [], structures: [], lieux: [], utilisateurs: [],
     maps: { g: new Map(), s: new Map(), l: new Map() },
     query: '', filterGabarit: '', filterUa: '', filterStatut: '',
     sortBy: 'id_metier', sortAsc: true, currentPage: 1, itemsPerPage: 50, filteredData: []
@@ -177,10 +179,14 @@ function fillSelect(selectId, dataArray, valueKey, labelKey, options = {}) {
 // ============================================================================
 // MOTEUR DE RECHERCHE, TRI ET FILTRES (MOBILIER)
 // ============================================================================
+let searchTimeout;
 function updateFilters(filterName, value) { 
     state[filterName] = value.toLowerCase().trim(); 
     state.currentPage = 1; 
-    applyFiltersAndSort(); 
+    clearTimeout(searchTimeout);
+    searchTimeout = setTimeout(() => {
+        applyFiltersAndSort();
+    }, 300); // Attend 300ms de silence avant d'interroger le serveur
 }
 
 function resetFilters() { 
@@ -198,45 +204,53 @@ function toggleSort(columnName) {
     applyFiltersAndSort(); 
 }
 
-function applyFiltersAndSort() {
-    const queryTerms = state.query ? state.query.replace(/\s*:\s*/g, ':').split(/\s+/) : [];
+async function applyFiltersAndSort() {
+    const startIndex = (state.currentPage - 1) * state.itemsPerPage;
+    const endIndex = startIndex + state.itemsPerPage - 1;
 
-    state.filteredData = state.mobiliers.filter(mob => {
-        if (state.filterGabarit && mob.gabarit_id.toString() !== state.filterGabarit) return false;
-        if (state.filterUa && mob.code_sages.toLowerCase() !== state.filterUa) return false;
-        if (state.filterStatut && mob.statut.toLowerCase() !== state.filterStatut) return false;
+    // 1. Construction de la Query String pour PostgREST
+    let params = new URLSearchParams();
+    
+    // Filtres exacts
+    if (state.filterGabarit) params.append('gabarit_id', `eq.${state.filterGabarit}`);
+    if (state.filterUa) params.append('code_sages', `eq.${state.filterUa}`);
+    if (state.filterStatut) params.append('statut', `eq.${state.filterStatut}`);
 
-        if (queryTerms.length > 0) {
-            const gab = state.maps.g.get(mob.gabarit_id);
-            const lieu = state.maps.l.get(mob.lieu_id);
-            const ua = state.maps.s.get(mob.code_sages);
+    // Recherche globale optimisée (utilise l'index Trigram de la Semaine 1)
+    if (state.query) {
+        // On cherche dans l'ID métier OU les remarques
+        params.append('or', `(id_metier.ilike.*${state.query}*,remarques.ilike.*${state.query}*)`);
+    }
 
-            let jsonSearchStr = '';
-            if (gab && gab.caracteristiques) {
-                jsonSearchStr = Object.entries(gab.caracteristiques).map(([k, v]) => `${k}:${v} ${k} ${v}`).join(' ');
+    // Tri côté serveur
+    const orderDir = state.sortAsc ? 'asc' : 'desc';
+    params.append('order', `${state.sortBy}.${orderDir}`);
+
+    try {
+        // 2. Appel API avec Range Header pour la pagination
+        const res = await apiFetch(`${API_URL}/mobiliers?${params.toString()}`, {
+            headers: {
+                ...getHeaders(),
+                'Range': `${startIndex}-${endIndex}`,
+                'Prefer': 'count=exact' // Demande au serveur de compter le total
             }
+        });
 
-            const searchStr = `${mob.id_metier} ${gab?.nom_descriptif} ${gab?.reference_catalogue} ${lieu?.nom} ${ua?.libelle} ${mob.remarques || ''} ${jsonSearchStr}`.toLowerCase();
-            for (const term of queryTerms) { if (!searchStr.includes(term)) return false; }
+        if (!res.ok) throw new Error("Erreur de récupération des données");
+
+        // 3. Mise à jour du state avec les résultats partiels
+        state.filteredData = await res.json();
+
+        // 4. Récupération du total pour la pagination UI
+        const contentRange = res.headers.get('Content-Range'); // Format: "0-49/1000000"
+        if (contentRange) {
+            state.totalItems = parseInt(contentRange.split('/')[1]);
         }
-        return true;
-    });
 
-    state.filteredData.sort((a, b) => {
-        let valA, valB;
-        switch(state.sortBy) {
-            case 'id_metier': valA = a.id_metier; valB = b.id_metier; break;
-            case 'statut': valA = a.statut; valB = b.statut; break;
-            case 'gabarit': valA = (state.maps.g.get(a.gabarit_id)?.nom_descriptif || '').toLowerCase(); valB = (state.maps.g.get(b.gabarit_id)?.nom_descriptif || '').toLowerCase(); break;
-            case 'code_sages': valA = (state.maps.s.get(a.code_sages)?.libelle || '').toLowerCase(); valB = (state.maps.s.get(b.code_sages)?.libelle || '').toLowerCase(); break;
-        }
-        if (valA < valB) return state.sortAsc ? -1 : 1; 
-        if (valA > valB) return state.sortAsc ? 1 : -1; 
-        return 0;
-    });
-
-    renderMobilierPage(); 
-    updateSortUI();
+        renderMobilierPage();
+    } catch (e) {
+        showAlert("Erreur", e.message, "error");
+    }
 }
 
 function formatJsonToText(obj) {
@@ -249,11 +263,9 @@ function formatJsonToText(obj) {
 function renderMobilierPage() {
     const tbody = document.getElementById('table-mobilier-body'); tbody.innerHTML = '';
     const totalItems = state.filteredData.length; 
-    const totalPages = Math.ceil(totalItems / state.itemsPerPage) || 1;
-    const startIndex = (state.currentPage - 1) * state.itemsPerPage;
-    const paginatedItems = state.filteredData.slice(startIndex, startIndex + state.itemsPerPage);
+	const totalPages = Math.ceil(state.totalItems / state.itemsPerPage) || 1;    const startIndex = (state.currentPage - 1) * state.itemsPerPage;
 
-	paginatedItems.forEach(mob => {
+	state.filteredData.forEach(mob => {
         const gab = state.maps.g.get(mob.gabarit_id) || { nom_descriptif: 'Inconnu' };
         const lieu = state.maps.l.get(mob.lieu_id) || { nom: 'Inconnu' };
         const ua = state.maps.s.get(mob.code_sages) || { libelle: 'Inconnu' };
@@ -271,18 +283,18 @@ function renderMobilierPage() {
         if(mob.statut === 'au_rebut') badge = `<p class="fr-badge fr-badge--error fr-badge--sm fr-mb-0">Au Rebut</p>`;
 
         tbody.innerHTML += `<tr>
-            <td><span class="uuid-badge" title="Copier ID" onclick="navigator.clipboard.writeText('${safeId}')">${safeId}</span></td>
-            <td><span class="fr-text--bold">${safeNom}</span><br><span class="fr-text--xs" style="color:var(--text-mention-grey);">${formatJsonToText(gab.caracteristiques)}</span></td>
-            <td class="fr-text--sm">${safeUa}<br><span class="fr-text--light">${safeLieu}</span></td>
+            <td><span class="uuid-badge" title="Copier ID" onclick="navigator.clipboard.writeText('${escapeHTML(mob.id_metier)}')">${escapeHTML(mob.id_metier)}</span></td>
+            <td><span class="fr-text--bold">${escapeHTML(gab.nom_descriptif)}</span></td>
+            <td class="fr-text--sm">${escapeHTML(ua.libelle)}<br><span class="fr-text--light">${escapeHTML(lieu.nom)}</span></td>
             <td>${badge}</td>
-            <td><button onclick="editMobilier('${mob.uuid}')" class="fr-btn fr-btn--secondary fr-btn--sm">Fiche</button></td>
+            <td><button onclick="editMobilierByUuid('${mob.uuid}')" class="fr-btn fr-btn--secondary fr-btn--sm">Fiche</button></td>
         </tr>`;
     });
     
-    document.getElementById('results-count').innerText = `${totalItems} équipement(s) trouvé(s)`;
+    document.getElementById('results-count').innerText = `${state.totalItems} équipement(s) au total`;
     document.getElementById('page-info').innerText = `Page ${state.currentPage} sur ${totalPages}`;
     document.getElementById('btn-prev').disabled = (state.currentPage === 1); 
-    document.getElementById('btn-next').disabled = (state.currentPage === totalPages);
+    document.getElementById('btn-next').disabled = (state.currentPage >= totalPages);
 }
 
 function updateSortUI() { 
@@ -295,11 +307,13 @@ function updateSortUI() {
 }
 
 function changePage(direction) { 
-    const totalPages = Math.ceil(state.filteredData.length / state.itemsPerPage); 
-    state.currentPage += direction; 
-    if(state.currentPage < 1) state.currentPage = 1; 
-    if(state.currentPage > totalPages) state.currentPage = totalPages; 
-    renderMobilierPage(); 
+    const totalPages = Math.ceil(state.totalItems / state.itemsPerPage); 
+    const newPage = state.currentPage + direction;
+    
+    if (newPage >= 1 && newPage <= totalPages) {
+        state.currentPage = newPage;
+        applyFiltersAndSort(); // On appelle le serveur pour la nouvelle page
+    }
 }
 
 // ============================================================================
@@ -454,75 +468,95 @@ function openScanner() {
 }
 
 async function processScan(event) {
+    // 1. Interception de la touche Entrée (douchette)
     if (event.key !== 'Enter') return;
     event.preventDefault();
 
     const input = document.getElementById('scanner-input');
+    const logArea = document.getElementById('scan-log');
     const idMetier = input.value.trim().toUpperCase();
     
-    // --- VALIDATION SÉCURITÉ : REGEX ID MÉTIER ---
+    // 2. Validation de sécurité (Regex)
     const idRegex = /^MOB-\d{6}$/;
     if (!idRegex.test(idMetier)) {
         showAlert("Format invalide", "L'identifiant doit être au format MOB-000000", "warning");
         input.value = '';
         return;
     }
-    // ---------------------------------------------
 
-    input.value = ''; 
+    // Préparation des données cibles depuis l'interface
+    const targetUa = document.getElementById('scan-target-ua').value;
+    const targetLieu = parseInt(document.getElementById('scan-target-lieu').value);
+    const targetStatut = document.getElementById('scan-target-statut').value;
+
+    if (!targetUa || !targetLieu || !targetStatut) {
+        showAlert("Configuration incomplète", "Veuillez définir le service, le lieu et le statut cible avant de scanner.", "error");
+        input.value = '';
+        return;
+    }
+
+    // Nettoyage immédiat de l'input pour le prochain scan
+    input.value = '';
     input.focus();
 
-    if (!idMetier) return;
-
-    const logArea = document.getElementById('scan-log');
-    const ua = document.getElementById('scan-target-ua').value;
-    const lieu = parseInt(document.getElementById('scan-target-lieu').value);
-    const statut = document.getElementById('scan-target-statut').value;
-
-    // --- SÉCURISATION XSS ---
-    const safeId = escapeHTML(idMetier);
-    // -------------------------
-
-    if (!ua || !lieu || !statut) {
-        logArea.insertAdjacentHTML('afterbegin', `<li class="fr-mb-1v"><span class="fr-badge fr-badge--error">Erreur</span> Cible incomplète.</li>`);
-        return;
-    }
-
-    const mob = state.mobiliers.find(m => m.id_metier === idMetier);
-    
-    if (!mob) {
-        logArea.insertAdjacentHTML('afterbegin', `<li class="fr-mb-1v"><span class="fr-badge fr-badge--error">${safeId}</span> Introuvable.</li>`);
-        return;
-    }
-
+    // 3. Recherche de l'équipement sur le serveur (indispensable pour 1M de lignes)
     try {
-        const payload = { code_sages: ua, lieu_id: lieu, statut: statut };
-        const res = await apiFetch(`${API_URL}/mobiliers?uuid=eq.${mob.uuid}`, { 
+        const safeId = escapeHTML(idMetier); // Sécurisation pour l'affichage des logs
+        
+        // On interroge l'API pour trouver le meuble précis par son ID métier
+        const searchRes = await apiFetch(`${API_URL}/mobiliers?id_metier=eq.${idMetier}`, {
+            headers: getHeaders()
+        });
+        
+        const results = await searchRes.json();
+
+        if (results.length === 0) {
+            logArea.insertAdjacentHTML('afterbegin', `
+                <li class="fr-mb-1v">
+                    <span class="fr-badge fr-badge--error">${safeId}</span> 
+                    <span class="fr-text--xs">Introuvable dans la base</span>
+                </li>`);
+            return;
+        }
+
+        const mob = results[0]; // On récupère l'équipement trouvé
+
+        // 4. Mise à jour de l'affectation (PATCH)
+        const payload = { 
+            code_sages: targetUa, 
+            lieu_id: targetLieu, 
+            statut: targetStatut 
+        };
+
+        const updateRes = await apiFetch(`${API_URL}/mobiliers?uuid=eq.${mob.uuid}`, { 
             method: 'PATCH', 
             headers: getHeaders(), 
             body: JSON.stringify(payload) 
         });
 
-        if (!res.ok) throw new Error("Erreur serveur");
+        if (!updateRes.ok) throw new Error("Erreur lors de la mise à jour serveur");
 
-        mob.code_sages = ua;
-        mob.lieu_id = lieu;
-        mob.statut = statut;
+        // 5. Feedback visuel et rafraîchissement
+        const safeUaLabel = escapeHTML(state.maps.s.get(targetUa)?.libelle || targetUa);
+        
+        logArea.insertAdjacentHTML('afterbegin', `
+            <li class="fr-mb-1v">
+                <span class="fr-badge fr-badge--success">${safeId}</span> 
+                <span class="fr-text--xs">Réaffecté vers ${safeUaLabel}</span>
+            </li>`);
 
-        // --- SÉCURISATION XSS DU LIBELLÉ ---
-        const uaLabel = state.maps.s.get(ua)?.libelle || ua;
-        const safeUaLabel = escapeHTML(uaLabel);
-        
-        logArea.insertAdjacentHTML('afterbegin', `<li class="fr-mb-1v"><span class="fr-badge fr-badge--success">${safeId}</span> → ${safeUaLabel}</li>`);
-        // ------------------------------------
-        
+        // Optionnel : On rafraîchit la liste principale si le meuble y était visible
         applyFiltersAndSort();
 
     } catch (err) {
-        logArea.insertAdjacentHTML('afterbegin', `<li class="fr-mb-1v"><span class="fr-badge fr-badge--error">${safeId}</span> Échec MAJ.</li>`);
+        console.error("Erreur Scan:", err);
+        logArea.insertAdjacentHTML('afterbegin', `
+            <li class="fr-mb-1v">
+                <span class="fr-badge fr-badge--error">${escapeHTML(idMetier)}</span> 
+                <span class="fr-text--xs">Échec réseau ou serveur</span>
+            </li>`);
     }
 }
-
 
 // ============================================================================
 // RÉAFFECTATION PAR SCAN (FICHIER PLAT)

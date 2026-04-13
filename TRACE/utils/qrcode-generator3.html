@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Générateur - Planche Avery 37x37-S (Logo + QR)</title>
+    <script src="./qrcode.min.js"></script>
+    <style>
+        :root {
+            --blue-france: #000091;
+            --bg-color: #f0f0f0;
+        }
+
+        body {
+            font-family: Arial, sans-serif;
+            background-color: var(--bg-color);
+            margin: 0;
+            padding: 20px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+        }
+
+        /* --- PANNEAU DE CONTRÔLE --- */
+        .controls {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 10px;
+            width: 100%;
+            max-width: 600px;
+            display: flex;
+            flex-wrap: wrap;
+            gap: 15px;
+            align-items: center;
+            justify-content: center;
+        }
+
+        .instructions {
+            background: #fff3cd;
+            color: #856404;
+            padding: 10px 20px;
+            border-radius: 8px;
+            border: 1px solid #ffeeba;
+            margin-bottom: 20px;
+            max-width: 600px;
+            font-size: 0.9em;
+            text-align: center;
+        }
+
+        .input-group {
+            display: flex;
+            flex-direction: column;
+            gap: 5px;
+        }
+
+        input {
+            padding: 8px;
+            border: 1px solid #ccc;
+            border-radius: 4px;
+            width: 120px;
+        }
+
+        button {
+            padding: 10px 20px;
+            background-color: var(--blue-france);
+            color: white;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 18px;
+        }
+
+        button.btn-print { background-color: #4CAF50; }
+        button:hover { opacity: 0.9; }
+
+        /* --- ZONE DE RENDU : FORMAT AVERY 37x37-S --- */
+        #printArea {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+        }
+
+        .page-a4 {
+            background: white;
+            width: 210mm;
+            height: 297mm;
+            padding-top: 19mm;
+            padding-bottom: 19mm;
+            padding-left: 12.5mm;
+            padding-right: 12.5mm;
+            box-shadow: 0 0 10px rgba(0,0,0,0.2);
+            box-sizing: border-box;
+            display: grid;
+            grid-template-columns: repeat(5, 37mm);
+            grid-template-rows: repeat(7, 37mm);
+            gap: 0;
+            page-break-after: always;
+        }
+
+        .label {
+            width: 37mm;
+            height: 37mm;
+            display: flex;
+            flex-direction: column; /* Alignement vertical */
+            align-items: center;
+            justify-content: center;
+            box-sizing: border-box;
+            outline: 1px dashed #e0e0e0; 
+            outline-offset: -1px;
+            padding: 2mm;
+            overflow: hidden;
+            gap: 2px;
+        }
+
+        /* Conteneur relatif pour permettre la superposition */
+        .qr-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+
+        /* Le logo superposé au centre */
+        .qr-logo-overlay {
+            position: absolute;
+            width: 30%; /* Ne doit pas dépasser 30% de la taille du QR */
+            height: 30%;
+            object-fit: contain;
+            background-color: white; /* Fond blanc pour détacher le logo du QR code */
+            padding: 2px;
+            border-radius: 4px;
+        }
+
+        .label-text {
+            font-family: "Courier New", monospace;
+            font-size: 7pt;
+            font-weight: bold;
+            color: #000;
+            text-align: center;
+            white-space: nowrap;
+        }
+
+        /* --- RÈGLES D'IMPRESSION --- */
+        @media print {
+            body { background-color: white; margin: 0; padding: 0; }
+            .controls, .instructions { display: none !important; }
+            #printArea { gap: 0; }
+            .page-a4 { box-shadow: none; margin: 0; }
+            .label { outline: none; }
+            @page { size: A4; margin: 0; }
+        }
+    </style>
+</head>
+<body>
+
+    <div class="controls">
+        <div class="input-group">
+            <label for="startNum">Premier numéro :</label>
+            <input type="number" id="startNum" value="1" min="0">
+        </div>
+        <div class="input-group">
+            <label for="qty">Quantité d'étiquettes :</label>
+            <input type="number" id="qty" value="35" min="1">
+        </div>
+        <button onclick="genererPlanche()">Générer</button>
+        <button class="btn-print" onclick="window.print()">Imprimer</button>
+    </div>
+
+    <div class="instructions">
+        <strong>Conseil :</strong> Paramètres d'impression : <strong>Échelle 100%</strong> et <strong>Marges : Aucune</strong>.
+    </div>
+
+    <div id="printArea"></div>
+
+    <script>
+        function genererPlanche() {
+            const startNum = parseInt(document.getElementById('startNum').value, 10);
+            const qty = parseInt(document.getElementById('qty').value, 10);
+            const printArea = document.getElementById('printArea');
+            
+            printArea.innerHTML = ''; 
+
+            const labelsPerPage = 35; 
+            const totalPages = Math.ceil(qty / labelsPerPage);
+            
+            let currentLabelCount = 0;
+
+            for (let p = 0; p < totalPages; p++) {
+                const pageDiv = document.createElement('div');
+                pageDiv.className = 'page-a4';
+                
+                for (let i = 0; i < labelsPerPage; i++) {
+                    if (currentLabelCount >= qty) break;
+                    
+                    const currentNum = startNum + currentLabelCount;
+                    const formattedText = `MOB-${String(currentNum).padStart(6, '0')}`;
+
+                    const labelDiv = document.createElement('div');
+                    labelDiv.className = 'label';
+
+                    // --- CONTENEUR PRINCIPAL DU QR CODE ---
+                    const qrWrapper = document.createElement('div');
+                    qrWrapper.className = 'qr-wrapper';
+                    
+                    const qrContainer = document.createElement('div');
+
+                    // --- LOGO SUPERPOSÉ ---
+                    const overlayLogo = document.createElement('img');
+                    overlayLogo.src = 'TRACE.png'; 
+                    overlayLogo.className = 'qr-logo-overlay';
+
+                    qrWrapper.appendChild(qrContainer);
+                    qrWrapper.appendChild(overlayLogo);
+
+                    // --- TEXTE EN DESSOUS ---
+                    const textDiv = document.createElement('div');
+                    textDiv.className = 'label-text';
+                    textDiv.innerText = formattedText;
+
+                    // Assemblage
+                    labelDiv.appendChild(qrWrapper);
+                    labelDiv.appendChild(textDiv);
+                    pageDiv.appendChild(labelDiv);
+
+                    // Génération du QR Code (Plus grand car il a toute la place maintenant)
+                    new QRCode(qrContainer, {
+                        text: formattedText,
+                        width: 95,  // Taille augmentée
+                        height: 95, 
+                        colorDark : "#000000",
+                        colorLight : "#ffffff",
+                        correctLevel : QRCode.CorrectLevel.H // Niveau H obligatoire pour incruster le logo
+                    });
+
+                    currentLabelCount++;
+                }
+                printArea.appendChild(pageDiv);
+            }
+        }
+
+        window.onload = genererPlanche;
+    </script>
+
+</body>
+</html>
