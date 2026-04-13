@@ -96,7 +96,7 @@
         </div>
 
         <div class="section">
-            <h3>2. Design & Dégradé</h3>
+            <h3>2. Corps & Fond</h3>
             <div class="field">
                 <label>Forme des points</label>
                 <select id="dotType">
@@ -106,61 +106,79 @@
                 </select>
             </div>
             <div class="field">
-                <label>Début Dégradé (Hex)</label>
-                <div class="color-group"><input type="color" id="c1p" value="#000000"><input type="text" id="c1h" value="#000000"></div>
+                <label>Dégradé (Début / Fin)</label>
+                <div class="color-group">
+<input type="color" id="c1p" value="#004225">
+<input type="text" id="c1h" value="#004225">
+
+<input type="color" id="c2p" value="#007638">
+<input type="text" id="c2h" value="#007638">
+                </div>
             </div>
             <div class="field">
-                <label>Fin Dégradé (Hex)</label>
-                <div class="color-group"><input type="color" id="c2p" value="#000091"><input type="text" id="c2h" value="#000091"></div>
-            </div>
-            <div class="field">
-                <label>Type & Rotation (rad)</label>
+                <label>Type & Rotation Dégradé (rad)</label>
                 <div style="display:flex; gap:5px">
                     <select id="gradType" style="width:60%"><option value="linear">Linéaire</option><option value="radial">Radial</option></select>
                     <input type="number" id="gradRot" value="0.78" step="0.1" style="width:40%">
                 </div>
             </div>
+            <div class="field" style="margin-top: 10px; padding-top: 10px; border-top: 1px dashed #eee;">
+                <label>Couleur de Fond</label>
+                <div class="color-group"><input type="color" id="bgP" value="#ffffff"><input type="text" id="bgH" value="#ffffff"></div>
+                <div class="field-row" style="margin-top:5px;"><input type="checkbox" id="bgTrans"><label for="bgTrans">Fond Transparent</label></div>
+            </div>
         </div>
 
         <div class="section">
-            <h3>3. Coins & Logo</h3>
+            <h3>3. Yeux & Logo</h3>
             <div class="field">
-                <label>Forme des Repères (Contour / Centre)</label>
+                <label>Forme Yeux (Contour / Centre)</label>
                 <div style="display:flex; gap:5px">
                     <select id="corSq" style="width:50%"><option value="square">Carré</option><option value="extra-rounded" selected>Arrondi</option><option value="dot">Cercle</option></select>
                     <select id="corDt" style="width:50%"><option value="square">Carré</option><option value="dot" selected>Cercle</option></select>
                 </div>
             </div>
             <div class="field">
-                <label>Source Image</label>
+                <label>Couleur Yeux (Contour / Centre)</label>
+                <div class="color-group">
+                    <input type="color" id="cEqP" value="#004225">
+<input type="text" id="cEqH" value="#004225">
+
+<input type="color" id="cDtP" value="#007638">
+<input type="text" id="cDtH" value="#007638">
+                </div>
+            </div>
+            <div class="field" style="margin-top: 10px; padding-top: 10px; border-top: 1px dashed #eee;">
+                <label>Logo (Fichier .png/.jpg)</label>
                 <input type="file" id="logoFile" accept="image/*">
             </div>
             <div class="field">
-                <label>Positionnement</label>
-                <select id="logoPos">
+                <label>Options d'incrustation</label>
+                <select id="logoPos" style="margin-bottom: 5px;">
                     <option value="embedded">Incrusté au centre</option>
                     <option value="left">À gauche du QR</option>
                 </select>
-            </div>
-            <div class="field">
-                <label>Échelle / Marge (Si incrusté)</label>
-                <div style="display:flex; gap:5px">
-                    <input type="number" id="logoSize" value="0.3" step="0.05" style="width:50%" title="Echelle">
-                    <input type="number" id="logoMargin" value="2" style="width:50%" title="Marge">
+                <div class="field-row">
+                    <input type="checkbox" id="hideDots" checked>
+                    <label for="hideDots">Masquer les points sous le logo</label>
+                </div>
+                <div style="display:flex; gap:5px; margin-top: 5px;">
+                    <input type="number" id="logoSize" value="0.3" step="0.05" style="width:50%" title="Echelle (Ex: 0.3)">
+                    <input type="number" id="logoMargin" value="2" style="width:50%" title="Marge (Ex: 2)">
                 </div>
             </div>
         </div>
 
         <div class="section">
-            <h3>4. Marges Page (mm)</h3>
+            <h3>4. Gabarit d'Impression (mm)</h3>
             <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 10px;">
-                <div class="field"><label>Haut ↑</label><input type="number" id="mTop" value="19"></div>
-                <div class="field"><label>Bas ↓</label><input type="number" id="mBottom" value="19"></div>
-                <div class="field"><label>Gauche ←</label><input type="number" id="mLeft" value="12.5"></div>
-                <div class="field"><label>Droite →</label><input type="number" id="mRight" value="12.5"></div>
+                <div class="field"><label>Marge Haut ↑</label><input type="number" id="mTop" value="19"></div>
+                <div class="field"><label>Marge Bas ↓</label><input type="number" id="mBottom" value="19"></div>
+                <div class="field"><label>Marge Gauche ←</label><input type="number" id="mLeft" value="12.5"></div>
+                <div class="field"><label>Marge Droite →</label><input type="number" id="mRight" value="12.5"></div>
             </div>
             <div class="field">
-                <label>Colonnes / Lignes</label>
+                <label>Colonnes / Lignes par page</label>
                 <div style="display:flex; gap:5px">
                     <input type="number" id="nbCols" value="5">
                     <input type="number" id="nbRows" value="7">
@@ -168,12 +186,12 @@
             </div>
             <div class="field-row">
                 <input type="checkbox" id="cutLines">
-                <label for="cutLines">Imprimer les pointillés de découpe</label>
+                <label for="cutLines">Imprimer les traits de découpe</label>
             </div>
         </div>
 
         <div class="full-width">
-            <button class="btn-gen" onclick="genererPlanche()">Appliquer les réglages</button>
+            <button class="btn-gen" onclick="genererPlanche()">Générer la planche</button>
             <button class="btn-print" onclick="window.print()">Imprimer</button>
         </div>
     </div>
@@ -181,16 +199,24 @@
     <div id="printArea"></div>
 
     <script>
-        let logoData = "TRACE.png";
+        let logoData = "../dsfr-v1.14.3/dist/favicon/apple-touch-icon.png"; // Logo Marianne par défaut si dispo
 
+        // Fonction utilitaire pour synchroniser le ColorPicker et le champ Texte (Hex)
         function setupColor(pId, hId) {
             const p = document.getElementById(pId); const h = document.getElementById(hId);
             p.addEventListener('input', () => h.value = p.value.toUpperCase());
             h.addEventListener('input', () => { if(/^#[0-9A-F]{6}$/i.test(h.value)) p.value = h.value; });
         }
-        setupColor('c1p', 'c1h'); setupColor('c2p', 'c2h');
+        
+        setupColor('c1p', 'c1h'); 
+        setupColor('c2p', 'c2h');
+        setupColor('bgP', 'bgH');
+        setupColor('cEqP', 'cEqH');
+        setupColor('cDtP', 'cDtH');
 
+        // Chargement du fichier Logo personnalisé
         document.getElementById('logoFile').addEventListener('change', function(e) {
+            if (!e.target.files[0]) return;
             const reader = new FileReader();
             reader.onload = (ev) => { logoData = ev.target.result; };
             reader.readAsDataURL(e.target.files[0]);
@@ -209,18 +235,27 @@
                 qty: parseInt(document.getElementById('qty').value),
                 start: parseInt(document.getElementById('start').value),
                 prefix: document.getElementById('prefix').value,
+                
                 logoPos: document.getElementById('logoPos').value,
                 lSize: parseFloat(document.getElementById('logoSize').value),
                 lMarg: parseInt(document.getElementById('logoMargin').value),
+                hideDots: document.getElementById('hideDots').checked,
+                
                 c1: document.getElementById('c1h').value,
                 c2: document.getElementById('c2h').value,
+                corSqCol: document.getElementById('cEqH').value,
+                corDtCol: document.getElementById('cDtH').value,
+                bgColor: document.getElementById('bgH').value,
+                bgTrans: document.getElementById('bgTrans').checked,
+                
                 dotT: document.getElementById('dotType').value,
                 gradT: document.getElementById('gradType').value,
                 gradR: parseFloat(document.getElementById('gradRot').value),
-                corS: document.getElementById('corSq').value,   // <-- RÉTABLI
-                corD: document.getElementById('corDt').value,   // <-- RÉTABLI
+                corS: document.getElementById('corSq').value,
+                corD: document.getElementById('corDt').value,
+                
                 ecc: document.getElementById('ecc').value,
-                showCutLines: document.getElementById('cutLines').checked // <-- NOUVEAU
+                showCutLines: document.getElementById('cutLines').checked
             };
 
             const availW = 210 - (cfg.mLeft + cfg.mRight);
@@ -234,6 +269,8 @@
             for (let p = 0; p < pagesNeeded; p++) {
                 const page = document.createElement('div');
                 page.className = 'page-a4';
+                // Si fond transparent, on force le blanc sur la page A4 (le QR lui sera transparent)
+                page.style.backgroundColor = 'white'; 
                 page.style.padding = `${cfg.mTop}mm ${cfg.mRight}mm ${cfg.mBottom}mm ${cfg.mLeft}mm`;
                 page.style.gridTemplateColumns = `repeat(${cfg.cols}, ${cellW}mm)`;
                 page.style.gridTemplateRows = `repeat(${cfg.rows}, ${cellH}mm)`;
@@ -243,16 +280,14 @@
                     const label = document.createElement('div');
                     label.className = 'label';
                     
-                    // Applique la classe des pointillés si la case est cochée
-                    if (cfg.showCutLines) {
-                        label.classList.add('show-cut-lines');
-                    }
+                    if (cfg.showCutLines) { label.classList.add('show-cut-lines'); }
 
                     label.style.width = `${cellW}mm`; label.style.height = `${cellH}mm`;
                     
                     let qrCont = document.createElement('div');
                     let qrSizePx;
 
+                    // Choix de la disposition selon la position du logo
                     if (cfg.logoPos === 'left') {
                         const row = document.createElement('div');
                         row.className = 'label-row';
@@ -264,7 +299,7 @@
                         qb.appendChild(qrCont);
                         row.appendChild(lb); row.appendChild(qb);
                         label.appendChild(row);
-                        qrSizePx = Math.round((cellW * 0.55) * 3.78);
+                        qrSizePx = Math.round((cellW * 0.55) * 3.78); // Convertir mm en pixels approximatifs
                     } else {
                         label.appendChild(qrCont);
                         qrSizePx = Math.round(Math.min(cellW, cellH) * 0.75 * 3.78);
@@ -277,23 +312,39 @@
                     label.appendChild(txt);
                     page.appendChild(label);
 
-                    // --- CONFIGURATION CORRIGÉE ---
+                    // Configuration exhaustive de QRCodeStyling
                     const qrParams = {
                         width: qrSizePx, height: qrSizePx, data: val,
                         qrOptions: { errorCorrectionLevel: cfg.ecc },
+                        backgroundOptions: { 
+                            // Utilise transparent si coché, sinon la couleur choisie
+                            color: cfg.bgTrans ? "transparent" : cfg.bgColor 
+                        },
                         dotsOptions: {
                             type: cfg.dotT,
-                            gradient: { type: cfg.gradT, rotation: cfg.gradR, colorStops: [{ offset: 0, color: cfg.c1 }, { offset: 1, color: cfg.c2 }] }
+                            gradient: { 
+                                type: cfg.gradT, 
+                                rotation: cfg.gradR, 
+                                colorStops: [{ offset: 0, color: cfg.c1 }, { offset: 1, color: cfg.c2 }] 
+                            }
                         },
-                        backgroundOptions: { color: "#ffffff" },
-                        // Ici les variables cfg.corS et cfg.corD sont bien réutilisées :
-                        cornersSquareOptions: { type: cfg.corS, color: cfg.c1 },
-                        cornersDotOptions: { type: cfg.corD, color: cfg.c2 }
+                        cornersSquareOptions: { 
+                            type: cfg.corS, 
+                            color: cfg.corSqCol // Couleur spécifique pour le contour de l'œil
+                        },
+                        cornersDotOptions: { 
+                            type: cfg.corD, 
+                            color: cfg.corDtCol // Couleur spécifique pour le centre de l'œil
+                        }
                     };
 
                     if (cfg.logoPos === 'embedded') {
                         qrParams.image = logoData;
-                        qrParams.imageOptions = { imageSize: cfg.lSize, margin: cfg.lMarg, hideBackgroundDots: true };
+                        qrParams.imageOptions = { 
+                            imageSize: cfg.lSize, 
+                            margin: cfg.lMarg, 
+                            hideBackgroundDots: cfg.hideDots // Contrôle de l'évidement central
+                        };
                     }
 
                     new QRCodeStyling(qrParams).append(qrCont);
@@ -302,6 +353,7 @@
                 area.appendChild(page);
             }
         }
+        
         window.onload = genererPlanche;
     </script>
 </body>
