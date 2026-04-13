@@ -819,7 +819,16 @@ function openCreateGabarit() {
     document.getElementById('new-gab-ref').value = "";
     document.getElementById('new-gab-cat').value = "";
     document.getElementById('new-gab-nom').value = "";
+    
+    // Nettoyage du constructeur JSON
     document.getElementById('json-builder').innerHTML = "";
+    
+    // --- CONFORMITÉ CHARTE : Pré-remplissage des champs obligatoires ---
+    addJsonRow("reference_marche", "null");
+    addJsonRow("reference_ugap", "null");
+    addJsonRow("annee_acquisition", new Date().getFullYear().toString());
+    // -------------------------------------------------------------------
+
     document.getElementById('gab-form-title').innerText = "Créer un nouveau Modèle";
     document.getElementById('btn-delete-gab').style.display = 'none';
     showSubView('view-gabarits-form', 'panel-gabarits');
@@ -827,6 +836,7 @@ function openCreateGabarit() {
 
 function editGabarit(id) {
     const gab = state.maps.g.get(id); if(!gab) return;
+    
     document.getElementById('edit-gab-id').value = gab.id;
     document.getElementById('new-gab-ref').value = gab.reference_catalogue;
     document.getElementById('new-gab-cat').value = gab.categorie;
@@ -834,7 +844,32 @@ function editGabarit(id) {
     
     const builder = document.getElementById('json-builder');
     builder.innerHTML = '';
-    if(gab.caracteristiques) { Object.entries(gab.caracteristiques).forEach(([k, v]) => addJsonRow(k, v)); }
+    
+    // --- CONFORMITÉ CHARTE : Rétrocompatibilité et formatage ---
+    let caracs = gab.caracteristiques || {};
+
+    // 1. On extrait ou on initialise les 3 clés obligatoires (pour les anciens modèles)
+    const refMarche = caracs.hasOwnProperty('reference_marche') ? caracs.reference_marche : "null";
+    const refUgap = caracs.hasOwnProperty('reference_ugap') ? caracs.reference_ugap : "null";
+    const anneeAcq = caracs.hasOwnProperty('annee_acquisition') ? caracs.annee_acquisition : new Date().getFullYear().toString();
+
+    // 2. On les ajoute TOUJOURS en premier dans l'interface
+    addJsonRow('reference_marche', refMarche === null ? "null" : refMarche);
+    addJsonRow('reference_ugap', refUgap === null ? "null" : refUgap);
+    addJsonRow('annee_acquisition', anneeAcq === null ? "null" : anneeAcq);
+
+    // 3. On ajoute ensuite les autres caractéristiques existantes
+    const clesObligatoires = ['reference_marche', 'reference_ugap', 'annee_acquisition'];
+    
+    Object.entries(caracs).forEach(([k, v]) => {
+        // On évite de dupliquer les 3 clés qu'on vient juste d'ajouter
+        if (!clesObligatoires.includes(k)) {
+            // Si la valeur en base est un vrai objet nul, on affiche le texte "null" à l'écran
+            const displayVal = (v === null) ? "null" : v;
+            addJsonRow(k, displayVal);
+        }
+    });
+    // -----------------------------------------------------------
     
     document.getElementById('gab-form-title').innerText = "Modifier le Modèle";
     document.getElementById('btn-delete-gab').style.display = 'inline-flex';
@@ -843,18 +878,48 @@ function editGabarit(id) {
 
 async function saveGabarit(e) {
     e.preventDefault();
+    
+    // --- CONFORMITÉ CHARTE : Validation de la Référence Catalogue ---
+    const ref = document.getElementById('new-gab-ref').value.trim().toUpperCase();
+    const refRegex = /^[A-Z]{3}-\d{3}$/;
+    
+    if (!refRegex.test(ref)) {
+        showAlert("Format invalide", "La référence doit respecter le format AAA-123 (ex: BUR-001).", "error");
+        return;
+    }
+    // ----------------------------------------------------------------
+
     const id = document.getElementById('edit-gab-id').value;
     const caracteristiques = {};
+    
     document.querySelectorAll('.json-builder-row').forEach(row => { 
         const key = row.querySelector('.json-key').value.trim(); 
         const val = row.querySelector('.json-val').value.trim(); 
-        if(key && val) caracteristiques[key.replace(/\s+/g, '_').toLowerCase()] = val; 
+        
+        if (key && val !== "") { 
+            // Sécurisation de la clé : minuscules, pas d'espaces, pas d'accents (si possible)
+            const safeKey = key.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '_').toLowerCase();
+            
+            // CONFORMITÉ CHARTE : Gestion de la vraie valeur null
+            let finalVal = val;
+            if (val.toLowerCase() === 'null') {
+                finalVal = null; // Vrai null, sans guillemets
+            } else if (val.toLowerCase() === 'true' || val.toLowerCase() === 'false') {
+                finalVal = val.toLowerCase(); // Standardisation stricte des booléens texte
+            }
+            
+            caracteristiques[safeKey] = finalVal; 
+        } 
     });
 
+    // Optionnel: Formatage du nom descriptif (Majuscule sur la première lettre uniquement)
+    let rawNom = document.getElementById('new-gab-nom').value.trim();
+    const nomFormate = rawNom.charAt(0).toUpperCase() + rawNom.slice(1);
+
     const payload = {
-        reference_catalogue: document.getElementById('new-gab-ref').value.trim(),
+        reference_catalogue: ref,
         categorie: document.getElementById('new-gab-cat').value,
-        nom_descriptif: document.getElementById('new-gab-nom').value.trim(),
+        nom_descriptif: nomFormate,
         caracteristiques: caracteristiques
     };
 
@@ -862,10 +927,14 @@ async function saveGabarit(e) {
         const url = id ? `${API_URL}/gabarits?id=eq.${id}` : `${API_URL}/gabarits`;
         const method = id ? 'PATCH' : 'POST';
         await apiFetch(url, { method, headers: getHeaders(), body: JSON.stringify(payload) });
+        
         showAlert("Succès", "Modèle sauvegardé dans le catalogue", "success");
         await loadData();
         showSubView('view-gabarits-list', 'panel-gabarits');
-    } catch (err) { showAlert("Erreur", "Impossible de sauvegarder", "error"); }
+    } catch (err) { 
+        // Interception spécifique si la référence existe déjà
+        showAlert("Erreur", "Impossible de sauvegarder. Vérifiez que cette référence (CAT-NNN) n'existe pas déjà.", "error"); 
+    }
 }
 
 async function deleteGabarit() {
