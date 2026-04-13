@@ -17,6 +17,9 @@
     <!-- Styles de l'application -->
     <link rel="stylesheet" href="styles.css">
     
+    <script src="./utils/jspdf.umd.min.js"></script>
+	<script src="./utils/jspdf.plugin.autotable.min.js"></script>
+    
 </head>
 <body>
 
@@ -122,8 +125,11 @@
                                     <thead>
                                         <tr>
                                             <th class="sortable-header" onclick="toggleSort('id_metier')" style="width: 20%">ID Métier <span id="icon-sort-id_metier" class="fr-icon-arrow-down-s-line sort-icon" style="opacity: 0;"></span></th>
-                                            <th class="sortable-header" onclick="toggleSort('gabarit')" style="width: 25%">Modèle <span id="icon-sort-gabarit" class="fr-icon-arrow-down-s-line sort-icon" style="opacity: 0;"></span></th>
-                                            <th class="sortable-header" onclick="toggleSort('code_sages')" style="width: 25%">Affectation <span id="icon-sort-code_sages" class="fr-icon-arrow-down-s-line sort-icon" style="opacity: 0;"></span></th>
+                                            
+                                            <th class="sortable-header" onclick="toggleSort('gabarit_nom')" style="width: 25%">Modèle <span id="icon-sort-gabarit_nom" class="fr-icon-arrow-down-s-line sort-icon" style="opacity: 0;"></span></th>
+                                            
+                                            <th class="sortable-header" onclick="toggleSort('structure_libelle')" style="width: 25%">Affectation <span id="icon-sort-structure_libelle" class="fr-icon-arrow-down-s-line sort-icon" style="opacity: 0;"></span></th>
+                                            
                                             <th class="sortable-header" onclick="toggleSort('statut')" style="width: 10%">Statut <span id="icon-sort-statut" class="fr-icon-arrow-down-s-line sort-icon" style="opacity: 0;"></span></th>
                                             <th style="width: 15%">Actions</th>
                                         </tr>
@@ -361,6 +367,8 @@
                 <li><button class="fr-btn fr-btn--secondary" onclick="showSubView('view-ua-list', 'panel-admin')">Services (UA)</button></li>
                 <li><button class="fr-btn fr-btn--secondary" onclick="showSubView('view-lieux-list', 'panel-admin')">Lieux physiques</button></li>
                 <li><button class="fr-btn fr-btn--secondary" onclick="window.open('./utils/qrcode-generator.html', '_blank')">Édition étiquettes</button></li>
+                <li><button class="fr-btn fr-btn--secondary fr-icon-delete-bin-line fr-btn--icon-left" onclick="showSubView('view-admin-rebut', 'panel-admin')">Mise au rebut (Massive)</button></li>
+                <li><button class="fr-btn fr-btn--secondary fr-icon-history-line fr-btn--icon-left" onclick="loadAuditLogs().then(() => showSubView('view-audit-list', 'panel-admin'))">Journal d'audit</button></li>
             </ul>
         </div>
     </div>
@@ -381,8 +389,13 @@
                         </tr>
                     </thead>
                     <tbody id="table-users-body">
-                        </tbody>
+                    </tbody>
                 </table>
+                <div class="pagination-controls">
+            <div><button id="btn-prev-user" class="fr-btn fr-btn--secondary fr-btn--sm fr-icon-arrow-left-s-line fr-btn--icon-left" onclick="changeAdminPage('user', -1)">Précédent</button></div>
+            <div class="fr-text--sm fr-text--bold" id="page-info-user"></div>
+            <div><button id="btn-next-user" class="fr-btn fr-btn--secondary fr-btn--sm fr-icon-arrow-right-s-line fr-btn--icon-right" onclick="changeAdminPage('user', 1)">Suivant</button></div>
+			</div>
             </div>
         </div>
     </div>
@@ -440,6 +453,11 @@
                     <tbody id="table-ua-body">
                         </tbody>
                 </table>
+                <div class="pagination-controls">
+            <div><button id="btn-prev-ua" class="fr-btn fr-btn--secondary fr-btn--sm fr-icon-arrow-left-s-line fr-btn--icon-left" onclick="changeAdminPage('ua', -1)">Précédent</button></div>
+            <div class="fr-text--sm fr-text--bold" id="page-info-ua"></div>
+            <div><button id="btn-next-ua" class="fr-btn fr-btn--secondary fr-btn--sm fr-icon-arrow-right-s-line fr-btn--icon-right" onclick="changeAdminPage('ua', 1)">Suivant</button></div>
+        </div>
             </div>
         </div>
     </div>
@@ -461,6 +479,11 @@
                     <tbody id="table-lieux-body">
                         </tbody>
                 </table>
+                <div class="pagination-controls">
+            <div><button id="btn-prev-lieu" class="fr-btn fr-btn--secondary fr-btn--sm fr-icon-arrow-left-s-line fr-btn--icon-left" onclick="changeAdminPage('lieu', -1)">Précédent</button></div>
+            <div class="fr-text--sm fr-text--bold" id="page-info-lieu"></div>
+            <div><button id="btn-next-lieu" class="fr-btn fr-btn--secondary fr-btn--sm fr-icon-arrow-right-s-line fr-btn--icon-right" onclick="changeAdminPage('lieu', 1)">Suivant</button></div>
+        </div>
             </div>
         </div>
     </div>
@@ -494,6 +517,64 @@
                     <button type="button" id="btn-del-lieu" class="fr-btn fr-btn--secondary fr-icon-delete-line fr-btn--icon-left" style="color: var(--text-default-error); box-shadow: inset 0 0 0 1px var(--text-default-error);" onclick="deleteLieu()">Supprimer</button>
                 </div>
             </form>
+        </div>
+    </div>
+
+	<div id="view-admin-rebut" class="sub-view">
+    <button class="fr-btn fr-btn--secondary fr-icon-arrow-left-line fr-btn--icon-left fr-mb-4w" onclick="showSubView('view-users-list', 'panel-admin')">Retour</button>
+    <div class="fr-grid-row fr-grid-row--gutters">
+        <div class="fr-col-12 fr-col-md-8">
+            <div class="trace-card">
+                <h3 class="fr-text--default-error">Sortie définitive du parc (Mise au rebut)</h3>
+                <p class="fr-text--sm">Cette opération supprimera définitivement les équipements de la base de données. <strong>Un Procès-verbal de mise au rebut sera automatiquement généré.</strong></p>
+                
+                <div class="fr-upload-group fr-my-3w">
+                    <label class="fr-label" for="rebut-file-upload">Sélectionner le fichier des identifiants (.txt)</label>
+                    <input class="fr-upload" type="file" id="rebut-file-upload" accept=".txt">
+                </div>
+                
+                <button class="fr-btn fr-btn--error fr-icon-delete-line fr-btn--icon-left" onclick="processMassDelete()">Confirmer la suppression et générer le PV</button>
+            </div>
+        </div>
+        <div class="fr-col-12 fr-col-md-4">
+            <div class="trace-card">
+                <h4 class="fr-h6">Instructions</h4>
+                <ul class="fr-text--xs">
+                    <li>Le fichier doit être au format .txt</li>
+                    <li>Un identifiant (ex: MOB-000001) par ligne.</li>
+                    <li>Seuls les équipements existants seront supprimés.</li>
+                </ul>
+            </div>
+        </div>
+    </div>
+</div>
+
+<div id="view-audit-list" class="sub-view">
+        <div class="fr-grid-row fr-grid-row--middle fr-mb-2w">
+            <div class="fr-col-12"><h3 class="fr-m-0">Journal des actions (Audit Trail)</h3></div>
+        </div>
+        <div class="trace-card">
+            <p class="fr-text--sm fr-mb-2w text-[#000091]">Historique des 500 dernières opérations (Lecture seule).</p>
+            <div class="fr-table fr-table--bordered">
+                <table>
+                    <thead>
+                        <tr>
+                            <th style="width: 15%">Date</th>
+                            <th style="width: 25%">Agent (Mél)</th>
+                            <th style="width: 15%">Action</th>
+                            <th style="width: 15%">Équipement</th>
+                            <th style="width: 30%">Détails</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-audit-body">
+                        </tbody>
+                </table>
+            </div>
+            <div class="pagination-controls">
+                <div><button id="btn-prev-audit" class="fr-btn fr-btn--secondary fr-btn--sm fr-icon-arrow-left-s-line fr-btn--icon-left" onclick="changeAdminPage('audit', -1)">Précédent</button></div>
+                <div class="fr-text--sm fr-text--bold" id="page-info-audit"></div>
+                <div><button id="btn-next-audit" class="fr-btn fr-btn--secondary fr-btn--sm fr-icon-arrow-right-s-line fr-btn--icon-right" onclick="changeAdminPage('audit', 1)">Suivant</button></div>
+            </div>
         </div>
     </div>
 

@@ -169,7 +169,7 @@ CREATE OR REPLACE FUNCTION public.login(email text, password text) RETURNS publi
 BEGIN
   SELECT u.role, u.id INTO _role, _id FROM public.utilisateurs u WHERE u.email = login.email AND u.mot_de_passe_hash = crypt(login.password, u.mot_de_passe_hash);
   IF _role IS NULL THEN RAISE EXCEPTION 'Identifiants incorrects'; END IF;
-  result.token := auth.sign_jwt(json_build_object('role', _role, 'user_id', _id, 'exp', extract(epoch from now())::integer + 28800), '$JWT_SECRET');
+  result.token := auth.sign_jwt(json_build_object('role', _role, 'user_id', _id, 'email', login.email, 'exp', extract(epoch from now())::integer + 28800), '$JWT_SECRET');
   RETURN result;
 END;\$\$ LANGUAGE plpgsql SECURITY DEFINER;
 
@@ -248,6 +248,89 @@ BEFORE INSERT ON public.mobiliers
 FOR EACH ROW
 EXECUTE FUNCTION public.set_mob_id();
 
+-- =============================================================================
+-- AJOUT : TABLE ET TRIGGER POUR LE JOURNAL D'AUDIT (TRAÇABILITÉ)
+-- =============================================================================
+CREATE TABLE public.audit_logs (
+    id SERIAL PRIMARY KEY,
+    date_action TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP,
+    utilisateur VARCHAR(255),
+    action VARCHAR(50),
+    id_metier VARCHAR(50),
+    details TEXT
+);
+
+-- Seul l'administrateur a le droit de lire ce journal, personne ne peut le modifier
+GRANT SELECT ON public.audit_logs TO divagil, administrateur;
+CREATE OR REPLACE FUNCTION public.log_mobilier_action()
+RETURNS TRIGGER AS \$\$
+DECLARE
+    v_user VARCHAR(255);
+    v_details TEXT := '';
+BEGIN
+    -- Extraction de l'email de l'agent
+    BEGIN
+        v_user := current_setting('request.jwt.claims', true)::json->>'email';
+    EXCEPTION WHEN OTHERS THEN
+        v_user := 'Système';
+    END;
+
+    IF TG_OP = 'INSERT' THEN
+        INSERT INTO public.audit_logs (utilisateur, action, id_metier, details)
+        VALUES (v_user, 'CRÉATION', NEW.id_metier, 'Nouvel équipement intégré au parc.');
+        RETURN NEW;
+        
+    ELSIF TG_OP = 'UPDATE' THEN
+        -- 1. Changement de Service (UA)
+        IF OLD.code_sages IS DISTINCT FROM NEW.code_sages THEN
+            v_details := v_details || 'Affectation : ' || COALESCE(OLD.code_sages, 'Aucune') || ' -> ' || COALESCE(NEW.code_sages, 'Aucune') || '. ';
+        END IF;
+        
+        -- 2. Changement de Lieu (La correction est ici)
+        IF OLD.lieu_id IS DISTINCT FROM NEW.lieu_id THEN
+            v_details := v_details || 'Lieu physique modifié (Nouvel ID Lieu : ' || COALESCE(NEW.lieu_id::text, 'Aucun') || '). ';
+        END IF;
+        
+        -- 3. Changement de Statut
+        IF OLD.statut IS DISTINCT FROM NEW.statut THEN
+            v_details := v_details || 'Statut : ' || COALESCE(OLD.statut::text, 'N/A') || ' -> ' || COALESCE(NEW.statut::text, 'N/A') || '. ';
+        END IF;
+        
+        -- 4. Changement de Modèle (Gabarit)
+        IF OLD.gabarit_id IS DISTINCT FROM NEW.gabarit_id THEN
+            v_details := v_details || 'Modèle (Gabarit) remplacé. ';
+        END IF;
+
+        -- 5. Changement des Remarques
+        IF OLD.remarques IS DISTINCT FROM NEW.remarques THEN
+            v_details := v_details || 'Remarques mises à jour. ';
+        END IF;
+
+        -- Si au moins un champ a été modifié, on écrit dans le journal !
+        IF v_details <> '' THEN
+            INSERT INTO public.audit_logs (utilisateur, action, id_metier, details)
+            VALUES (v_user, 'MODIFICATION', NEW.id_metier, v_details);
+        END IF;
+        
+        RETURN NEW;
+        
+    ELSIF TG_OP = 'DELETE' THEN
+        INSERT INTO public.audit_logs (utilisateur, action, id_metier, details)
+        VALUES (v_user, 'SUPPRESSION', OLD.id_metier, 'Équipement supprimé définitivement.');
+        RETURN OLD;
+    END IF;
+    
+    RETURN NULL;
+END;
+\$\$ LANGUAGE plpgsql SECURITY DEFINER;
+
+
+-- On attache ce radar à la table mobiliers
+CREATE TRIGGER trig_audit_mobiliers
+AFTER INSERT OR UPDATE OR DELETE ON public.mobiliers
+FOR EACH ROW EXECUTE FUNCTION public.log_mobilier_action();
+
+
 
 ANALYZE public.mobiliers;
 ANALYZE public.gabarits;
@@ -289,6 +372,11 @@ systemctl enable --now trace-api
 # 6. CONFIGURATION NGINX
 # ------------------------------------------------------------------------------
 echo -e "\n--- 6. Configuration Nginx ---"
+
+# =============================================================================
+# AJOUT : Génération du fichier de configuration mutualisable (config.ini)
+# =============================================================================
+
 cat << 'EOF' > /etc/nginx/sites-available/trace
 server {
     listen 80;

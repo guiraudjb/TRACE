@@ -9,10 +9,14 @@ let state = {
     sortBy: 'id_metier', sortAsc: true, currentPage: 1, itemsPerPage: 50, filteredData: [],
     gabQuery: '', gabFilterCat: '',
     gabSortBy: 'reference_catalogue', gabSortAsc: true, filteredGabarits: [],
-    userSortBy: 'email', userSortAsc: true,
-    uaSortBy: 'code_sages', uaSortAsc: true,
-    lieuSortBy: 'nom', lieuSortAsc: true
-    
+    userSortBy: 'email', userSortAsc: true, userPage: 1,
+    uaSortBy: 'code_sages', uaSortAsc: true, uaPage: 1,
+    lieuSortBy: 'nom', lieuSortAsc: true, lieuPage: 1,
+    auditLogs: [], auditPage: 1,
+    config: {
+        administration: "ADMINISTRATION NON DÉFINIE",
+        direction: "DIRECTION NON DÉFINIE"
+    }
 };
 
 function getHeaders() { 
@@ -104,6 +108,7 @@ async function verifierDroitsAdmin() {
     
     document.getElementById('tab-admin').style.display = 'block';
     await loadUsers();
+    await loadAuditLogs();
     return true;
 }
 
@@ -302,7 +307,7 @@ state.filteredData.forEach(mob => {
             <td><span class="fr-text--bold">${safeNom}</span>${jsonHtml}</td>
             <td class="fr-text--sm">${safeUa}<br><span class="fr-text--light">${safeLieu}</span></td>
             <td>${badge}</td>
-            <td><button onclick="editMobilierByUuid('${mob.uuid}')" class="fr-btn fr-btn--secondary fr-btn--sm">Fiche</button></td>
+            <td><button onclick="editMobilier('${mob.uuid}')" class="fr-btn fr-btn--secondary fr-btn--sm">Fiche</button></td>
         </tr>`;
     });
     
@@ -328,6 +333,27 @@ function changePage(direction) {
     if (newPage >= 1 && newPage <= totalPages) {
         state.currentPage = newPage;
         applyFiltersAndSort(); // On appelle le serveur pour la nouvelle page
+    }
+}
+
+
+function changeAdminPage(entity, direction) {
+    if (entity === 'user') {
+        const totalPages = Math.ceil(state.utilisateurs.length / 50) || 1;
+        const newPage = state.userPage + direction;
+        if (newPage >= 1 && newPage <= totalPages) { state.userPage = newPage; renderUsers(); }
+    } else if (entity === 'ua') {
+        const totalPages = Math.ceil(state.structures.length / 50) || 1;
+        const newPage = state.uaPage + direction;
+        if (newPage >= 1 && newPage <= totalPages) { state.uaPage = newPage; renderStructures(); }
+    } else if (entity === 'lieu') {
+        const totalPages = Math.ceil(state.lieux.length / 50) || 1;
+        const newPage = state.lieuPage + direction;
+        if (newPage >= 1 && newPage <= totalPages) { state.lieuPage = newPage; renderLieux(); }
+    } else if (entity === 'audit') {
+        const totalPages = Math.ceil(state.auditLogs.length / 50) || 1;
+        const newPage = state.auditPage + direction;
+        if (newPage >= 1 && newPage <= totalPages) { state.auditPage = newPage; renderAuditLogs(); }
     }
 }
 
@@ -874,6 +900,7 @@ async function loadUsers() {
 function toggleUserSort(columnName) {
     if (state.userSortBy === columnName) { state.userSortAsc = !state.userSortAsc; }
     else { state.userSortBy = columnName; state.userSortAsc = true; }
+    state.userPage = 1; // Retour à la page 1 lors d'un tri
     renderUsers();
 }
 
@@ -881,14 +908,18 @@ function renderUsers() {
     const tbody = document.getElementById('table-users-body');
     tbody.innerHTML = '';
 
-    // Tri en mémoire
     const sortedUsers = [...state.utilisateurs].sort((a, b) => {
         let valA = (a[state.userSortBy] || '').toLowerCase();
         let valB = (b[state.userSortBy] || '').toLowerCase();
         return state.userSortAsc ? valA.localeCompare(valB) : valB.localeCompare(valA);
     });
 
-    sortedUsers.forEach(user => {
+    // --- LOGIQUE DE PAGINATION ---
+    const totalPages = Math.ceil(sortedUsers.length / 50) || 1;
+    const startIndex = (state.userPage - 1) * 50;
+    const paginatedUsers = sortedUsers.slice(startIndex, startIndex + 50);
+
+    paginatedUsers.forEach(user => {
         const badgeRole = user.role === 'administrateur' 
             ? `<span class="fr-badge fr-badge--error">Administrateur</span>` 
             : `<span class="fr-badge fr-badge--info">Agent</span>`;
@@ -902,8 +933,15 @@ function renderUsers() {
             </td>
         </tr>`;
     });
+    
     updateAdminSortUI('user', state.userSortBy, state.userSortAsc);
+    
+    // --- MISE À JOUR DES BOUTONS ---
+    document.getElementById('page-info-user').innerText = `Page ${state.userPage} sur ${totalPages}`;
+    document.getElementById('btn-prev-user').disabled = (state.userPage === 1);
+    document.getElementById('btn-next-user').disabled = (state.userPage >= totalPages);
 }
+
 
 function openCreateUser() {
     document.getElementById('new-user-email').value = '';
@@ -1053,6 +1091,7 @@ async function exportToCSV() {
 function toggleUASort(columnName) {
     if (state.uaSortBy === columnName) { state.uaSortAsc = !state.uaSortAsc; }
     else { state.uaSortBy = columnName; state.uaSortAsc = true; }
+    state.uaPage = 1; 
     renderStructures();
 }
 
@@ -1066,15 +1105,24 @@ function renderStructures() {
         return state.uaSortAsc ? valA.localeCompare(valB) : valB.localeCompare(valA);
     });
 
-    sortedUA.forEach(ua => {
+    const totalPages = Math.ceil(sortedUA.length / 50) || 1;
+    const startIndex = (state.uaPage - 1) * 50;
+    const paginatedUA = sortedUA.slice(startIndex, startIndex + 50);
+
+    paginatedUA.forEach(ua => {
         tbody.innerHTML += `<tr>
             <td class="fr-text--bold">${escapeHTML(ua.code_sages)}</td>
             <td>${escapeHTML(ua.libelle)}</td>
             <td><button onclick="openEditUA('${ua.code_sages}')" class="fr-btn fr-btn--secondary fr-btn--sm fr-icon-edit-line"></button></td>
         </tr>`;
     });
+    
     updateAdminSortUI('ua', state.uaSortBy, state.uaSortAsc);
+    document.getElementById('page-info-ua').innerText = `Page ${state.uaPage} sur ${totalPages}`;
+    document.getElementById('btn-prev-ua').disabled = (state.uaPage === 1);
+    document.getElementById('btn-next-ua').disabled = (state.uaPage >= totalPages);
 }
+
 
 function openEditUA(code) {
     const ua = code ? state.structures.find(s => s.code_sages === code) : { code_sages: '', libelle: '' };
@@ -1123,6 +1171,7 @@ async function deleteUA() {
 function toggleLieuSort(columnName) {
     if (state.lieuSortBy === columnName) { state.lieuSortAsc = !state.lieuSortAsc; }
     else { state.lieuSortBy = columnName; state.lieuSortAsc = true; }
+    state.lieuPage = 1;
     renderLieux();
 }
 
@@ -1136,13 +1185,21 @@ function renderLieux() {
         return state.lieuSortAsc ? valA.localeCompare(valB) : valB.localeCompare(valA);
     });
 
-    sortedLieux.forEach(l => {
+    const totalPages = Math.ceil(sortedLieux.length / 50) || 1;
+    const startIndex = (state.lieuPage - 1) * 50;
+    const paginatedLieux = sortedLieux.slice(startIndex, startIndex + 50);
+
+    paginatedLieux.forEach(l => {
         tbody.innerHTML += `<tr>
             <td class="fr-text--bold">${escapeHTML(l.nom)}</td>
             <td><button onclick="openEditLieu(${l.id})" class="fr-btn fr-btn--secondary fr-btn--sm fr-icon-edit-line"></button></td>
         </tr>`;
     });
+    
     updateAdminSortUI('lieu', state.lieuSortBy, state.lieuSortAsc);
+    document.getElementById('page-info-lieu').innerText = `Page ${state.lieuPage} sur ${totalPages}`;
+    document.getElementById('btn-prev-lieu').disabled = (state.lieuPage === 1);
+    document.getElementById('btn-next-lieu').disabled = (state.lieuPage >= totalPages);
 }
 
 function updateAdminSortUI(prefix, sortBy, isAsc) {
@@ -1219,11 +1276,280 @@ async function deleteLieu() {
     }
 }
 
+// ============================================================================
+// MISE AU REBUS
+// ============================================================================
+
+async function loadAppConfig() {
+    try {
+        // MODIFICATION : Utilisation de './' et d'un paramètre nocache
+        const res = await fetch('./config.ini?nocache=' + new Date().getTime());
+        if (res.ok) {
+            const text = await res.text();
+            const lines = text.split(/\r?\n/);
+            lines.forEach(line => {
+                if (line.includes('=') && !line.startsWith(';') && !line.startsWith('[')) {
+                    const parts = line.split('=');
+                    const key = parts[0].trim();
+                    const value = parts.slice(1).join('=').trim().replace(/(^"|"$)/g, '');
+                    
+                    if (key === 'nom_administration') state.config.administration = value;
+                    if (key === 'nom_direction') state.config.direction = value;
+                }
+            });
+        }
+    } catch (e) {
+        console.warn("Fichier config.ini introuvable, utilisation des valeurs par défaut.");
+    }
+}
+
+
+async function processMassDelete() {
+    const fileInput = document.getElementById('rebut-file-upload');
+    if (!fileInput.files[0]) {
+        showAlert("Attention", "Veuillez sélectionner un fichier .txt", "warning");
+        return;
+    }
+
+    if (!confirm("ATTENTION : Cette action est irréversible. Les équipements listés seront supprimés et le PV sera généré. Continuer ?")) return;
+
+    const file = fileInput.files[0];
+    const reader = new FileReader();
+
+    reader.onload = async (e) => {
+        const content = e.target.result;
+        // Extraction et nettoyage des IDs
+        const ids = content.split(/\r?\n/).map(id => id.trim().toUpperCase()).filter(id => /^MOB-\d{6}$/.test(id));
+
+        if (ids.length === 0) {
+            showAlert("Erreur", "Aucun identifiant valide trouvé dans le fichier.", "error");
+            return;
+        }
+
+        showAlert("Traitement en cours", `Analyse et suppression de ${ids.length} identifiants...`, "info");
+
+        try {
+            // --- LA SOLUTION EST ICI : PARAMÈTRE DE DÉCOUPAGE ---
+            const CHUNK_SIZE = 100; 
+            let itemsToRebut = [];
+
+            // 1. Récupération des données par lots (Chunks)
+            for (let i = 0; i < ids.length; i += CHUNK_SIZE) {
+                const chunk = ids.slice(i, i + CHUNK_SIZE);
+                const idList = `(${chunk.join(',')})`;
+                
+                const searchRes = await apiFetch(`${API_URL}/vue_mobiliers_recherche?id_metier=in.${idList}`, {
+                    headers: getHeaders()
+                });
+                
+                if (searchRes.ok) {
+                    const data = await searchRes.json();
+                    itemsToRebut = itemsToRebut.concat(data); // On assemble les résultats au fur et à mesure
+                }
+            }
+
+            if (itemsToRebut.length === 0) {
+                showAlert("Erreur", "Aucun des équipements listés n'a été trouvé en base.", "error");
+                return;
+            }
+
+            // On extrait uniquement les IDs qui existent VRAIMENT en base
+            const validIds = itemsToRebut.map(item => item.id_metier);
+
+            // 2. Suppression physique par lots (Chunks)
+            for (let i = 0; i < validIds.length; i += CHUNK_SIZE) {
+                const chunk = validIds.slice(i, i + CHUNK_SIZE);
+                const idList = `(${chunk.join(',')})`;
+                
+                const deleteRes = await apiFetch(`${API_URL}/mobiliers?id_metier=in.${idList}`, {
+                    method: 'DELETE',
+                    headers: getHeaders()
+                });
+
+                if (!deleteRes.ok) throw new Error("Erreur serveur lors de la suppression d'un lot.");
+            }
+
+            // 3. Génération du Procès-verbal PDF avec les données complètes
+            if (typeof generateRebutPDF === "function") {
+                generateRebutPDF(itemsToRebut);
+            }
+
+            showAlert("Succès", `${validIds.length} équipements supprimés définitivement. Le PV a été généré.`, "success");
+            await loadData();
+            showSubView('view-users-list', 'panel-admin');
+
+        } catch (err) {
+            showAlert("Erreur critique", err.message, "error");
+        }
+    };
+    
+    reader.readAsText(file);
+}
+
+// MODIFICATION : La fonction devient asynchrone (async) pour avoir le temps de charger l'image
+async function generateRebutPDF(data) {
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF();
+    const dateToday = new Date().toLocaleDateString('fr-FR');
+    const filenameDate = new Date().toISOString().split('T')[0].replace(/-/g, '');
+
+    // =======================================================
+    // EN-TÊTE OFFICIEL TYPE DSFR (AVEC MARIANNE)
+    // =======================================================
+    
+    try {
+        // Chargement de l'icône Marianne présente dans votre dossier DSFR
+        const img = new Image();
+        img.src = 'dsfr-v1.14.3/dist/favicon/apple-touch-icon.png'; 
+        await new Promise((resolve, reject) => {
+            img.onload = resolve;
+            img.onerror = reject;
+        });
+        
+        // Conversion de l'image pour jsPDF
+        const canvas = document.createElement('canvas');
+        canvas.width = img.width;
+        canvas.height = img.height;
+        const ctx = canvas.getContext('2d');
+        ctx.drawImage(img, 0, 0);
+        const imgData = canvas.toDataURL('image/png');
+        
+        // Impression du logo sur le PDF (X: 20, Y: 15, Largeur: 14, Hauteur: 14)
+        doc.addImage(imgData, 'PNG', 20, 15, 14, 14);
+    } catch (e) {
+        console.warn("Impossible de charger le logo Marianne. L'en-tête sera uniquement textuel.");
+    }
+
+    // 1. Textes du Bloc Marque (décalés vers la droite pour laisser la place au logo)
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(11);
+    doc.text("RÉPUBLIQUE\nFRANÇAISE", 38, 20); // X passe de 20 à 38
+    
+    doc.setFont("helvetica", "italic");
+    doc.setFontSize(8);
+    doc.text("Liberté\nÉgalité\nFraternité", 38, 31);
+
+    // 2. Nom de l'Administration et Direction
+    doc.setFont("helvetica", "bold");
+    doc.setFontSize(12);
+    doc.text(state.config.administration.toUpperCase(), 75, 20, { maxWidth: 120 }); // X passe de 60 à 75
+    
+    doc.setFont("helvetica", "normal");
+    doc.setFontSize(10);
+    doc.text(state.config.direction, 75, 28, { maxWidth: 120 });
+
+    // 3. Ligne de séparation "Bleu France"
+    doc.setDrawColor(0, 0, 145); 
+    doc.setLineWidth(0.5);
+    doc.line(20, 45, 190, 45);
+
+    // =======================================================
+    // CORPS DU DOCUMENT
+    // =======================================================
+
+    doc.setFontSize(16);
+    doc.setFont("helvetica", "bold");
+    doc.setTextColor(0, 0, 145); 
+    doc.text("ANNEXE PROCÈS-VERBAL CESSION", 105, 56, { align: 'center' });
+    
+    doc.setTextColor(0, 0, 0);
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "normal");
+    doc.text(`Référence document : TRACE-REBUT-${filenameDate}`, 20, 70);
+    doc.text(`Date d'édition : ${dateToday}`, 20, 76);
+    doc.text(`Équipements traités : ${data.length} unité(s)`, 20, 82);
+
+    const tableBody = data.map(item => [
+        item.id_metier,
+        item.gabarit_nom,
+        item.structure_libelle,
+        item.lieu_nom,
+        (item.remarques || '').substring(0, 50) 
+    ]);
+
+    doc.autoTable({
+        startY: 90,
+        head: [['ID Métier', 'Modèle', 'Service Affectation', 'Lieu', 'Observations']],
+        body: tableBody,
+        theme: 'grid',
+        headStyles: { 
+            fillColor: [0, 0, 145], 
+            textColor: [255, 255, 255],
+            fontStyle: 'bold'
+        },
+        styles: { fontSize: 8, font: 'helvetica' },
+        alternateRowStyles: { fillColor: [246, 246, 246] }
+    });
+
+    // =======================================================
+    // ZONE DE SIGNATURE
+    // =======================================================
+    const finalY = doc.lastAutoTable.finalY + 20;
+    
+    doc.setFontSize(10);
+    doc.setFont("helvetica", "bold");
+    doc.text("Cachet du service et signature de l'autorité compétente :", 100, finalY);
+    
+    doc.setDrawColor(0, 0, 0);
+    doc.setLineWidth(0.2);
+    doc.rect(100, finalY + 5, 90, 35); 
+
+    doc.save(`PVSORTIETRACE_${filenameDate}.pdf`);
+}
+
+
+// ============================================================================
+// JOURNAL D'AUDIT (TRAÇABILITÉ)
+// ============================================================================
+async function loadAuditLogs() {
+    try {
+        // On récupère les 500 dernières actions, classées de la plus récente à la plus ancienne
+        const res = await apiFetch(`${API_URL}/audit_logs?order=date_action.desc&limit=500`, { headers: getHeaders() });
+        if (!res.ok) throw new Error("Accès refusé au journal.");
+        state.auditLogs = await res.json();
+        renderAuditLogs();
+    } catch (e) { console.error("Erreur journal d'audit:", e); }
+}
+
+function renderAuditLogs() {
+    const tbody = document.getElementById('table-audit-body');
+    if (!tbody) return;
+    tbody.innerHTML = '';
+
+    const totalPages = Math.ceil(state.auditLogs.length / 50) || 1;
+    const startIndex = (state.auditPage - 1) * 50;
+    const paginatedLogs = state.auditLogs.slice(startIndex, startIndex + 50);
+
+    paginatedLogs.forEach(log => {
+        const dateObj = new Date(log.date_action);
+        const dateStr = dateObj.toLocaleDateString('fr-FR') + ' à ' + dateObj.toLocaleTimeString('fr-FR', { hour: '2-digit', minute:'2-digit' });
+        
+        let badgeColor = 'info';
+        if (log.action === 'CRÉATION') badgeColor = 'success';
+        if (log.action === 'SUPPRESSION') badgeColor = 'error';
+
+        tbody.innerHTML += `<tr>
+            <td class="fr-text--sm">${dateStr}</td>
+            <td class="fr-text--sm fr-text--bold">${escapeHTML(log.utilisateur)}</td>
+            <td><span class="fr-badge fr-badge--${badgeColor} fr-badge--sm">${escapeHTML(log.action)}</span></td>
+            <td class="fr-text--sm" style="font-family: monospace;">${escapeHTML(log.id_metier)}</td>
+            <td class="fr-text--xs">${escapeHTML(log.details)}</td>
+        </tr>`;
+    });
+    
+    document.getElementById('page-info-audit').innerText = `Page ${state.auditPage} sur ${totalPages}`;
+    document.getElementById('btn-prev-audit').disabled = (state.auditPage === 1);
+    document.getElementById('btn-next-audit').disabled = (state.auditPage >= totalPages);
+}
+
 
 // ============================================================================
 // INIT
 // ============================================================================
-document.addEventListener('DOMContentLoaded', () => { 
+document.addEventListener('DOMContentLoaded', async () => { 
+    // NOUVEAU : On charge la configuration avant toute chose
+    await loadAppConfig();
+	 
     if (sessionStorage.getItem('trace_jwt')) { 
         document.getElementById('view-login').classList.remove('active'); 
         document.getElementById('view-app').classList.add('active'); 
