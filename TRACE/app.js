@@ -2,12 +2,17 @@
 const API_URL = '/api';
 
 let state = {
-    mobiliers: [],
     totalItems: 0,
     gabarits: [], structures: [], lieux: [], utilisateurs: [],
     maps: { g: new Map(), s: new Map(), l: new Map() },
     query: '', filterGabarit: '', filterUa: '', filterStatut: '',
-    sortBy: 'id_metier', sortAsc: true, currentPage: 1, itemsPerPage: 50, filteredData: []
+    sortBy: 'id_metier', sortAsc: true, currentPage: 1, itemsPerPage: 50, filteredData: [],
+    gabQuery: '', gabFilterCat: '',
+    gabSortBy: 'reference_catalogue', gabSortAsc: true, filteredGabarits: [],
+    userSortBy: 'email', userSortAsc: true,
+    uaSortBy: 'code_sages', uaSortAsc: true,
+    lieuSortBy: 'nom', lieuSortAsc: true
+    
 };
 
 function getHeaders() { 
@@ -107,32 +112,36 @@ async function verifierDroitsAdmin() {
 // ============================================================================
 async function loadData() {
     try {
-        const [gRes, sRes, lRes, mRes] = await Promise.all([
+        // MODIFICATION : On ne charge que les 3 référentiels, mobiliers a été retiré
+        const [gRes, sRes, lRes] = await Promise.all([
             apiFetch(`${API_URL}/gabarits`, { headers: getHeaders() }),
             apiFetch(`${API_URL}/structures`, { headers: getHeaders() }),
-            apiFetch(`${API_URL}/lieux`, { headers: getHeaders() }),
-            apiFetch(`${API_URL}/mobiliers`, { headers: getHeaders() })
+            apiFetch(`${API_URL}/lieux`, { headers: getHeaders() })
         ]);
         
-        if (!mRes.ok) throw new Error("Session expirée.");
+        if (!lRes.ok) throw new Error("Session expirée.");
 
-        state.gabarits = await gRes.json(); state.structures = await sRes.json();
-        state.lieux = await lRes.json(); state.mobiliers = await mRes.json();
+        state.gabarits = await gRes.json(); 
+        state.structures = await sRes.json();
+        state.lieux = await lRes.json(); 
 
         state.maps.g.clear(); state.gabarits.forEach(g => state.maps.g.set(g.id, g));
         state.maps.s.clear(); state.structures.forEach(s => state.maps.s.set(s.code_sages, s));
         state.maps.l.clear(); state.lieux.forEach(l => state.maps.l.set(l.id, l));
 
         fillSelect('filter-gabarit', state.gabarits, 'id', 'nom_descriptif', { placeholder: 'Tous les modèles', disablePlaceholder: false });
-		fillSelect('filter-ua', state.structures, 'code_sages', 'libelle', { placeholder: 'Toutes les affectations', disablePlaceholder: false });
+        fillSelect('filter-ua', state.structures, 'code_sages', 'libelle', { placeholder: 'Toutes les affectations', disablePlaceholder: false });
 
         renderGabarits();
+        applyGabFiltersAndSort();
         renderStructures();
-		renderLieux();
+        renderLieux();
+        
+        // C'est cette fonction qui ira chercher la 1ère page (50 éléments)
         applyFiltersAndSort();
     } catch (e) { 
         showAlert("Sécurité", e.message, "error"); 
-        deconnecter(); 
+        
     }
 }
 
@@ -181,7 +190,7 @@ function fillSelect(selectId, dataArray, valueKey, labelKey, options = {}) {
 // ============================================================================
 let searchTimeout;
 function updateFilters(filterName, value) { 
-    state[filterName] = value.toLowerCase().trim(); 
+    state[filterName] = value.trim(); 
     state.currentPage = 1; 
     clearTimeout(searchTimeout);
     searchTimeout = setTimeout(() => {
@@ -208,48 +217,49 @@ async function applyFiltersAndSort() {
     const startIndex = (state.currentPage - 1) * state.itemsPerPage;
     const endIndex = startIndex + state.itemsPerPage - 1;
 
-    // 1. Construction de la Query String pour PostgREST
     let params = new URLSearchParams();
     
-    // Filtres exacts
+    // FILTRES
     if (state.filterGabarit) params.append('gabarit_id', `eq.${state.filterGabarit}`);
     if (state.filterUa) params.append('code_sages', `eq.${state.filterUa}`);
     if (state.filterStatut) params.append('statut', `eq.${state.filterStatut}`);
 
-    // Recherche globale optimisée (utilise l'index Trigram de la Semaine 1)
+    // RECHERCHE GLOBALE ÉTENDUE
     if (state.query) {
-        // On cherche dans l'ID métier OU les remarques
-        params.append('or', `(id_metier.ilike.*${state.query}*,remarques.ilike.*${state.query}*)`);
+        // On cherche désormais dans : ID, Remarques, Nom Modèle, Libellé Service, Nom Lieu et le JSON !
+        params.append('or', `(` +
+            `id_metier.ilike.*${state.query}*,` +
+            `remarques.ilike.*${state.query}*,` +
+            `gabarit_nom.ilike.*${state.query}*,` +
+            `structure_libelle.ilike.*${state.query}*,` +
+            `lieu_nom.ilike.*${state.query}*,` +
+            `gabarit_json_txt.ilike.*${state.query}*` +
+        `)`);
     }
 
-    // Tri côté serveur
     const orderDir = state.sortAsc ? 'asc' : 'desc';
     params.append('order', `${state.sortBy}.${orderDir}`);
 
     try {
-        // 2. Appel API avec Range Header pour la pagination
-        const res = await apiFetch(`${API_URL}/mobiliers?${params.toString()}`, {
+        // MODIFICATION : On interroge la VUE au lieu de la TABLE
+        const res = await apiFetch(`${API_URL}/vue_mobiliers_recherche?${params.toString()}`, {
             headers: {
                 ...getHeaders(),
                 'Range': `${startIndex}-${endIndex}`,
-                'Prefer': 'count=exact' // Demande au serveur de compter le total
+                'Prefer': 'count=exact'
             }
         });
 
-        if (!res.ok) throw new Error("Erreur de récupération des données");
+        if (!res.ok) throw new Error("Erreur de recherche");
 
-        // 3. Mise à jour du state avec les résultats partiels
         state.filteredData = await res.json();
-
-        // 4. Récupération du total pour la pagination UI
-        const contentRange = res.headers.get('Content-Range'); // Format: "0-49/1000000"
-        if (contentRange) {
-            state.totalItems = parseInt(contentRange.split('/')[1]);
-        }
+        const contentRange = res.headers.get('Content-Range'); 
+        if (contentRange) state.totalItems = parseInt(contentRange.split('/')[1]);
 
         renderMobilierPage();
+        updateSortUI(); 
     } catch (e) {
-        showAlert("Erreur", e.message, "error");
+        showAlert("Erreur", "La recherche a échoué.", "error");
     }
 }
 
@@ -265,27 +275,32 @@ function renderMobilierPage() {
     const totalItems = state.filteredData.length; 
 	const totalPages = Math.ceil(state.totalItems / state.itemsPerPage) || 1;    const startIndex = (state.currentPage - 1) * state.itemsPerPage;
 
-	state.filteredData.forEach(mob => {
+state.filteredData.forEach(mob => {
         const gab = state.maps.g.get(mob.gabarit_id) || { nom_descriptif: 'Inconnu' };
         const lieu = state.maps.l.get(mob.lieu_id) || { nom: 'Inconnu' };
         const ua = state.maps.s.get(mob.code_sages) || { libelle: 'Inconnu' };
 
-        // --- ÉTAPE 2 : SÉCURISATION XSS ---
+        // --- SÉCURISATION XSS ---
         const safeNom = escapeHTML(gab.nom_descriptif);
         const safeUa = escapeHTML(ua.libelle);
         const safeLieu = escapeHTML(lieu.nom);
         const safeId = escapeHTML(mob.id_metier);
         // ----------------------------------
 
+        // NOUVEAU : Récupération et formatage des attributs JSON
+        const jsonText = formatJsonToText(gab.caracteristiques);
+        const jsonHtml = jsonText ? `<br><span class="fr-text--xs" style="color: var(--text-mention-grey);">${jsonText}</span>` : '';
+
         let badge = `<p class="fr-badge fr-badge--new fr-badge--sm fr-mb-0">En service</p>`;
         if(mob.statut === 'dispo_reemploi') badge = `<p class="fr-badge fr-badge--success fr-badge--sm fr-mb-0">Réemploi</p>`;
         if(mob.statut === 'en_maintenance') badge = `<p class="fr-badge fr-badge--warning fr-badge--sm fr-mb-0">Maintenance</p>`;
         if(mob.statut === 'au_rebut') badge = `<p class="fr-badge fr-badge--error fr-badge--sm fr-mb-0">Au Rebut</p>`;
 
+        // MODIFICATION : Ajout de ${jsonHtml} juste après le nom du modèle
         tbody.innerHTML += `<tr>
-            <td><span class="uuid-badge" title="Copier ID" onclick="navigator.clipboard.writeText('${escapeHTML(mob.id_metier)}')">${escapeHTML(mob.id_metier)}</span></td>
-            <td><span class="fr-text--bold">${escapeHTML(gab.nom_descriptif)}</span></td>
-            <td class="fr-text--sm">${escapeHTML(ua.libelle)}<br><span class="fr-text--light">${escapeHTML(lieu.nom)}</span></td>
+            <td><span class="uuid-badge" title="Copier ID" onclick="navigator.clipboard.writeText('${safeId}')">${safeId}</span></td>
+            <td><span class="fr-text--bold">${safeNom}</span>${jsonHtml}</td>
+            <td class="fr-text--sm">${safeUa}<br><span class="fr-text--light">${safeLieu}</span></td>
             <td>${badge}</td>
             <td><button onclick="editMobilierByUuid('${mob.uuid}')" class="fr-btn fr-btn--secondary fr-btn--sm">Fiche</button></td>
         </tr>`;
@@ -319,23 +334,9 @@ function changePage(direction) {
 // ============================================================================
 // CRUD MOBILIER (AVEC BULK INSERT)
 // ============================================================================
-/**
- * Calcule le prochain identifiant métier disponible.
- * @param {number} offset - Le décalage à appliquer (1 pour le suivant, 2 pour celui d'après, etc.)
- */
-function calculateNextMobId(offset = 1) {
-    let max = 0;
-    state.mobiliers.forEach(m => {
-        if(m.id_metier && m.id_metier.startsWith('MOB-')) {
-            const num = parseInt(m.id_metier.replace('MOB-', ''), 10);
-            if(!isNaN(num) && num > max) max = num;
-        }
-    });
-    return 'MOB-' + String(max + offset).padStart(6, '0');
-}
 
 function openCreateMobilier() {
-    document.getElementById('new-mob-id').value = calculateNextMobId();
+    document.getElementById('new-mob-id').value = "Auto-généré";
     document.getElementById('new-mob-quantite').value = 1; // Réinitialise la quantité
 	fillSelect('new-mob-gabarit', state.gabarits, 'id', 'nom_descriptif');
 	fillSelect('new-mob-ua', state.structures, 'code_sages', 'libelle');
@@ -346,7 +347,7 @@ function openCreateMobilier() {
 }
 
 function editMobilier(uuid) {
-    const mob = state.mobiliers.find(m => m.uuid === uuid); 
+    const mob = state.filteredData.find(m => m.uuid === uuid);
     if(!mob) return;
     
     // Remplissage des champs du formulaire
@@ -367,17 +368,17 @@ async function saveMobilier(e, mode) {
     const prefix = mode === 'CREATE' ? 'new' : 'edit';
     const uuid = mode === 'EDIT' ? document.getElementById('edit-mob-uuid').value : null;
     
-    // Récupération de l'ID métier
-    const idMetier = document.getElementById(`${prefix}-mob-id`).value.trim().toUpperCase();
-    
     // --- VALIDATION SÉCURITÉ : REGEX ID MÉTIER ---
-    const idRegex = /^MOB-\d{6}$/;
-    if (!idRegex.test(idMetier)) {
-        showAlert("Erreur d'identifiant", "L'ID métier est mal formé.", "error");
-        return;
+    // On ne vérifie la regex QUE si on modifie un équipement existant
+    if (mode === 'EDIT') {
+        const idMetier = document.getElementById('edit-mob-id').value.trim().toUpperCase();
+        const idRegex = /^MOB-\d{6}$/;
+        if (!idRegex.test(idMetier)) {
+            showAlert("Erreur d'identifiant", "L'ID métier est mal formé.", "error");
+            return;
+        }
     }
     // ---------------------------------------------
-    
     
     // On récupère les valeurs communes
     const gabarit_id = parseInt(document.getElementById(`${prefix}-mob-gabarit`).value);
@@ -389,12 +390,18 @@ async function saveMobilier(e, mode) {
     try {
         if (mode === 'CREATE') {
             const quantite = parseInt(document.getElementById('new-mob-quantite').value) || 1;
+            
+            if (quantite > 100) {
+                if (!confirm(`Attention, vous êtes sur le point de créer ${quantite} équipements identiques d'un coup. Confirmez-vous cette action ?`)) {
+                    return; // Annule la sauvegarde si l'agent clique sur "Annuler"
+                }
+            }
+            
             const payloads = [];
 
-            // On utilise la fonction centralisée avec l'offset i+1
+            // On n'envoie PLUS l'id_metier, PostgreSQL s'en charge
             for (let i = 0; i < quantite; i++) {
                 payloads.push({
-                    id_metier: calculateNextMobId(i + 1),
                     gabarit_id: gabarit_id,
                     code_sages: code_sages,
                     lieu_id: lieu_id,
@@ -410,9 +417,21 @@ async function saveMobilier(e, mode) {
             });
             
             if(!res.ok) throw new Error("Erreur serveur lors de la création par lot.");
-            showAlert("Succès", `${quantite} équipement(s) créé(s) avec succès.`, "success");
+            
+            // On récupère les données insérées par le serveur pour lire les vrais IDs
+            const createdData = await res.json();
+            
+            // Affichage dynamique du succès selon la quantité
+            if (quantite === 1) {
+                showAlert("Succès", `L'équipement ${createdData[0].id_metier} a été créé.`, "success");
+            } else {
+                const firstId = createdData[0].id_metier;
+                const lastId = createdData[createdData.length - 1].id_metier;
+                showAlert("Succès", `${quantite} équipements créés (de ${firstId} à ${lastId}).`, "success");
+            }
 
         } else {
+            // Mode EDIT
             const payload = {
                 id_metier: document.getElementById('edit-mob-id').value,
                 gabarit_id: gabarit_id,
@@ -576,6 +595,7 @@ async function processFileImport() {
     const fileInput = document.getElementById('file-upload');
     const logArea = document.getElementById('import-log');
     const progressBar = document.querySelector('#import-progress progress');
+    const progressText = document.querySelector('#import-progress p');
     const progressDiv = document.getElementById('import-progress');
 
     if (!fileInput.files[0]) {
@@ -596,59 +616,83 @@ async function processFileImport() {
     const reader = new FileReader();
 
     reader.onload = async (e) => {
-        // Extraction des IDs (on nettoie les espaces et on ignore les lignes vides) 
+        // Extraction et nettoyage des IDs
         const content = e.target.result;
-        const ids = content.split(/\r?\n/).map(id => id.trim().toUpperCase()).filter(id => id.length > 0);
+        const rawIds = content.split(/\r?\n/).map(id => id.trim().toUpperCase());
+        
+        // On enlève les lignes vides et on supprime les doublons éventuels dans le fichier
+        const ids = [...new Set(rawIds.filter(id => id.length > 0))];
 
         if (ids.length === 0) {
-            showAlert("Erreur", "Le fichier est vide.", "error");
+            showAlert("Erreur", "Le fichier est vide ou ne contient que des sauts de ligne.", "error");
+            return;
+        }
+
+        // --- VALIDATION SÉCURITÉ : Format des IDs ---
+        const invalidIds = ids.filter(id => !/^MOB-\d{6}$/.test(id));
+        if (invalidIds.length > 0) {
+            showAlert("Erreur de format", `Le fichier contient des identifiants invalides (ex: ${escapeHTML(invalidIds[0])}). L'import est annulé.`, "error");
             return;
         }
 
         logArea.innerHTML = '';
         progressDiv.style.display = 'block';
-        let successCount = 0;
+        progressText.innerText = `Préparation de l'import de ${ids.length} équipements...`;
+        progressBar.value = 50;
 
-// À l'intérieur du reader.onload, dans la boucle for :
-for (let i = 0; i < ids.length; i++) {
-    const idMetier = ids[i];
-    
-    // --- SÉCURISATION XSS ---
-    const safeId = escapeHTML(idMetier);
-    // -------------------------
+        // Construction du Bulk Payload (Un tableau avec tous les équipements à mettre à jour)
+        const bulkPayload = ids.map(idMetier => ({
+            id_metier: idMetier, // Clé d'identification
+            code_sages: ua,
+            lieu_id: lieu,
+            statut: statut
+        }));
 
-    const mob = state.mobiliers.find(m => m.id_metier === idMetier);
-    progressBar.value = ((i + 1) / ids.length) * 100;
+        try {
+            // Requête unique (Bulk Update) vers PostgREST
+            // L'astuce est de spécifier ?columns=id_metier pour dire à PostgREST quelle est la clé primaire à utiliser pour la mise à jour
+            const res = await apiFetch(`${API_URL}/mobiliers?columns=id_metier`, { 
+                method: 'PATCH', 
+                headers: {
+                    ...getHeaders(),
+                    'Prefer': 'return=representation' // Demande à l'API de renvoyer les lignes effectivement modifiées
+                },
+                body: JSON.stringify(bulkPayload) 
+            });
 
-    if (!mob) {
-        logArea.insertAdjacentHTML('afterbegin', `<li class="fr-mb-1v"><span class="fr-badge fr-badge--error">${safeId}</span> Inconnu</li>`);
-        continue;
-    }
+            if (!res.ok) throw new Error("Erreur lors de la mise à jour en masse sur le serveur.");
 
-    try {
-        const payload = { code_sages: ua, lieu_id: lieu, statut: statut };
-        const res = await apiFetch(`${API_URL}/mobiliers?uuid=eq.${mob.uuid}`, { 
-            method: 'PATCH', 
-            headers: getHeaders(), 
-            body: JSON.stringify(payload) 
-        });
+            // On récupère la liste des équipements qui ont *vraiment* été modifiés
+            const updatedItems = await res.json();
+            const successCount = updatedItems.length;
+            const notFoundCount = ids.length - successCount;
 
-        if (!res.ok) throw new Error();
+            progressBar.value = 100;
+            progressText.innerText = "Import terminé";
 
-        mob.code_sages = ua;
-        mob.lieu_id = lieu;
-        mob.statut = statut;
-        successCount++;
+            // Affichage du résumé
+            if (notFoundCount === 0) {
+                 showAlert("Succès total", `Les ${successCount} équipements ont été réaffectés.`, "success");
+            } else {
+                 showAlert("Succès partiel", `${successCount} réaffectés. ${notFoundCount} identifiants étaient inconnus en base.`, "warning");
+                 
+                 // On crée un Set des IDs mis à jour pour trouver facilement ceux qui ont échoué
+                 const updatedIdsSet = new Set(updatedItems.map(item => item.id_metier));
+                 
+                 // On affiche ceux qui n'ont pas été trouvés dans le log
+                 ids.filter(id => !updatedIdsSet.has(id)).forEach(failedId => {
+                     logArea.insertAdjacentHTML('afterbegin', `<li class="fr-mb-1v"><span class="fr-badge fr-badge--error">${escapeHTML(failedId)}</span> Introuvable en base</li>`);
+                 });
+            }
 
-        logArea.insertAdjacentHTML('afterbegin', `<li class="fr-mb-1v"><span class="fr-badge fr-badge--success">${safeId}</span> Mis à jour</li>`);
-    } catch (err) {
-        logArea.insertAdjacentHTML('afterbegin', `<li class="fr-mb-1v"><span class="fr-badge fr-badge--error">${safeId}</span> Échec API</li>`);
-    }
-}
+            // Rafraîchit l'inventaire principal pour refléter les changements
+            applyFiltersAndSort();
 
-        document.querySelector('#import-progress p').innerText = "Import terminé";
-        showAlert("Terminé", `${successCount} équipement(s) réaffecté(s) sur ${ids.length}.`, "success");
-        applyFiltersAndSort(); // Rafraîchit l'inventaire principal
+        } catch (err) {
+            progressBar.value = 0;
+            progressText.innerText = "Échec de l'import";
+            showAlert("Erreur réseau ou API", err.message, "error");
+        }
     };
 
     reader.readAsText(file);
@@ -659,21 +703,74 @@ for (let i = 0; i < ids.length; i++) {
 // ============================================================================
 // CRUD GABARITS (CATALOGUE)
 // ============================================================================
+
+let gabSearchTimeout;
+function updateGabFilters(filterName, value) {
+    state[filterName] = value.trim();
+    clearTimeout(gabSearchTimeout);
+    gabSearchTimeout = setTimeout(() => { applyGabFiltersAndSort(); }, 200);
+}
+
+function toggleGabSort(columnName) {
+    if (state.gabSortBy === columnName) { state.gabSortAsc = !state.gabSortAsc; }
+    else { state.gabSortBy = columnName; state.gabSortAsc = true; }
+    applyGabFiltersAndSort();
+}
+
+function applyGabFiltersAndSort() {
+    let result = [...state.gabarits];
+
+    // 1. Filtrage strict (Catégorie)
+    if (state.gabFilterCat) {
+        result = result.filter(g => g.categorie === state.gabFilterCat);
+    }
+
+    // 2. Recherche textuelle globale (Référence, Nom, et Contenu JSON !)
+    if (state.gabQuery) {
+        const q = state.gabQuery.toLowerCase();
+        result = result.filter(g => {
+            const ref = (g.reference_catalogue || '').toLowerCase();
+            const nom = (g.nom_descriptif || '').toLowerCase();
+            // Astuce : On convertit le JSON en texte pour chercher dedans
+            const jsonTxt = (g.caracteristiques ? JSON.stringify(g.caracteristiques).toLowerCase() : '');
+            return ref.includes(q) || nom.includes(q) || jsonTxt.includes(q);
+        });
+    }
+
+    // 3. Tri
+    result.sort((a, b) => {
+        let valA = (a[state.gabSortBy] || '').toString().toLowerCase();
+        let valB = (b[state.gabSortBy] || '').toString().toLowerCase();
+
+        if (valA < valB) return state.gabSortAsc ? -1 : 1;
+        if (valA > valB) return state.gabSortAsc ? 1 : -1;
+        return 0;
+    });
+
+    state.filteredGabarits = result;
+    renderGabarits();
+    
+    // Animation des flèches de tri
+    document.getElementById('table-gabarits-body').closest('table').querySelectorAll('.sort-icon').forEach(icon => icon.style.opacity = '0');
+    const activeIcon = document.getElementById(`icon-sort-gab-${state.gabSortBy}`);
+    if(activeIcon) {
+        activeIcon.style.opacity = '1';
+        activeIcon.className = state.gabSortAsc ? "fr-icon-arrow-up-s-line sort-icon" : "fr-icon-arrow-down-s-line sort-icon";
+    }
+}
+
 function renderGabarits() {
     const tbody = document.getElementById('table-gabarits-body'); 
     tbody.innerHTML = '';
     
-    [...state.gabarits].reverse().forEach(gab => {
-        // --- SÉCURISATION XSS ---
+    state.filteredGabarits.forEach(gab => {
         const safeRef = escapeHTML(gab.reference_catalogue);
         const safeCat = escapeHTML(gab.categorie);
         const safeNom = escapeHTML(gab.nom_descriptif);
 
-        // Échappement spécifique pour le bloc JSON stylisé
         const formattedJson = Object.entries(gab.caracteristiques || {})
             .map(([k, v]) => `<span style="color:var(--text-action-high-blue-france)">"${escapeHTML(k)}"</span>: "${escapeHTML(v)}"`)
             .join(',<br>');
-        // -------------------------
 
         tbody.innerHTML += `<tr>
             <td class="fr-text--bold">${safeRef}</td>
@@ -774,23 +871,38 @@ async function loadUsers() {
     } catch (e) { console.error("Erreur admin:", e); }
 }
 
+function toggleUserSort(columnName) {
+    if (state.userSortBy === columnName) { state.userSortAsc = !state.userSortAsc; }
+    else { state.userSortBy = columnName; state.userSortAsc = true; }
+    renderUsers();
+}
+
 function renderUsers() {
     const tbody = document.getElementById('table-users-body');
     tbody.innerHTML = '';
-    state.utilisateurs.forEach(user => {
+
+    // Tri en mémoire
+    const sortedUsers = [...state.utilisateurs].sort((a, b) => {
+        let valA = (a[state.userSortBy] || '').toLowerCase();
+        let valB = (b[state.userSortBy] || '').toLowerCase();
+        return state.userSortAsc ? valA.localeCompare(valB) : valB.localeCompare(valA);
+    });
+
+    sortedUsers.forEach(user => {
         const badgeRole = user.role === 'administrateur' 
             ? `<span class="fr-badge fr-badge--error">Administrateur</span>` 
             : `<span class="fr-badge fr-badge--info">Agent</span>`;
             
         tbody.innerHTML += `<tr>
-            <td class="fr-text--bold">${user.email}</td>
+            <td class="fr-text--bold">${escapeHTML(user.email)}</td>
             <td>${badgeRole}</td>
             <td>
-                <button onclick="resetUserPassword('${user.email}')" class="fr-btn fr-btn--secondary fr-btn--sm fr-icon-lock-unlock-line fr-mr-1w" title="Réinitialiser le mot de passe"></button>
-                <button onclick="deleteUser('${user.email}')" class="fr-btn fr-btn--tertiary-no-outline fr-btn--sm fr-icon-delete-line" style="color: var(--text-default-error);" title="Supprimer le compte"></button>
+                <button onclick="resetUserPassword('${user.email}')" class="fr-btn fr-btn--secondary fr-btn--sm fr-icon-lock-unlock-line fr-mr-1w" title="Réinitialiser"></button>
+                <button onclick="deleteUser('${user.email}')" class="fr-btn fr-btn--tertiary-no-outline fr-btn--sm fr-icon-delete-line" style="color: var(--text-default-error);" title="Supprimer"></button>
             </td>
         </tr>`;
     });
+    updateAdminSortUI('user', state.userSortBy, state.userSortAsc);
 }
 
 function openCreateUser() {
@@ -844,55 +956,93 @@ async function resetUserPassword(email) {
     } catch (err) { showAlert("Erreur", err.message, "error"); }
 }
 
+
+
+
+
+
+
 // ============================================================================
 // EXPORTATION CSV
 // Génère un fichier compatible Excel (FR) avec les équipements visibles.
 // ============================================================================
 
-function exportToCSV() {
-    if (state.filteredData.length === 0) {
-        showAlert("Export impossible", "Aucune donnée à exporter.", "warning");
-        return;
+// ============================================================================
+// EXPORTATION CSV (Version optimisée pour la pagination)
+// ============================================================================
+async function exportToCSV() {
+    // 1. Préparation des filtres (identique à applyFiltersAndSort)
+    let params = new URLSearchParams();
+    if (state.filterGabarit) params.append('gabarit_id', `eq.${state.filterGabarit}`);
+    if (state.filterUa) params.append('code_sages', `eq.${state.filterUa}`);
+    if (state.filterStatut) params.append('statut', `eq.${state.filterStatut}`);
+    
+    if (state.query) {
+        params.append('or', `(id_metier.ilike.*${state.query}*,remarques.ilike.*${state.query}*)`);
     }
 
-    // Définition des colonnes
-    const headers = ["ID Métier", "Modèle", "Catégorie", "Affectation", "Lieu", "Statut", "Remarques"];
-    
-    // Transformation des données en utilisant les Maps de correspondance
-    const rows = state.filteredData.map(mob => {
-        const gab = state.maps.g.get(mob.gabarit_id) || {};
-        const ua = state.maps.s.get(mob.code_sages) || {};
-        const lieu = state.maps.l.get(mob.lieu_id) || {};
+    // On conserve le tri choisi par l'utilisateur
+    const orderDir = state.sortAsc ? 'asc' : 'desc';
+    params.append('order', `${state.sortBy}.${orderDir}`);
+
+    try {
+        showAlert("Export", "Récupération des données intégrales...", "info");
+
+        // 2. Appel API SANS header "Range" pour obtenir TOUS les résultats filtrés
+        const res = await apiFetch(`${API_URL}/mobiliers?${params.toString()}`, {
+            headers: getHeaders() 
+        });
+
+        if (!res.ok) throw new Error("Erreur lors de la récupération des données d'export.");
         
-        return [
-            mob.id_metier,
-            gab.nom_descriptif || 'Inconnu',
-            gab.categorie || 'Autre',
-            ua.libelle || mob.code_sages,
-            lieu.nom || 'Inconnu',
-            mob.statut,
-            (mob.remarques || '').replace(/(\r\n|\n|\r|;)/gm, " ") // Nettoyage pour le format CSV
-        ];
-    });
+        const allData = await res.json();
 
-    // Construction du contenu (point-virgule pour Excel FR + BOM UTF-8 pour les accents)
-    let csvContent = "\ufeff" + headers.join(";") + "\n";
-    rows.forEach(row => {
-        csvContent += row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(";") + "\n";
-    });
+        if (allData.length === 0) {
+            showAlert("Export impossible", "Aucune donnée ne correspond à vos filtres.", "warning");
+            return;
+        }
 
-    // Déclenchement du téléchargement
-    const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
-    const url = URL.createObjectURL(blob);
-    const link = document.createElement("a");
-    const date = new Date().toISOString().split('T')[0];
+        // 3. Génération du CSV avec les données complètes
+        const headers = ["ID Métier", "Modèle", "Catégorie", "Affectation", "Lieu", "Statut", "Remarques"];
+        
+        const rows = allData.map(mob => {
+            const gab = state.maps.g.get(mob.gabarit_id) || {};
+            const ua = state.maps.s.get(mob.code_sages) || {};
+            const lieu = state.maps.l.get(mob.lieu_id) || {};
+            
+            return [
+                mob.id_metier,
+                gab.nom_descriptif || 'Inconnu',
+                gab.categorie || 'Autre',
+                ua.libelle || mob.code_sages,
+                lieu.nom || 'Inconnu',
+                mob.statut,
+                (mob.remarques || '').replace(/(\r\n|\n|\r|;)/gm, " ") // Nettoyage CSV
+            ];
+        });
 
-    link.setAttribute("href", url);
-    link.setAttribute("download", `TRACE_Export_${date}.csv`);
-    link.style.visibility = 'hidden';
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
+        // Construction du contenu (BOM UTF-8 pour Excel FR)
+        let csvContent = "\ufeff" + headers.join(";") + "\n";
+        rows.forEach(row => {
+            csvContent += row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(";") + "\n";
+        });
+
+        // 4. Déclenchement du téléchargement
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        const date = new Date().toISOString().split('T')[0];
+
+        link.setAttribute("href", url);
+        link.setAttribute("download", `TRACE_Export_Complet_${date}.csv`);
+        link.click();
+        URL.revokeObjectURL(url);
+        
+        showAlert("Succès", `Export de ${allData.length} lignes terminé.`, "success");
+
+    } catch (err) {
+        showAlert("Erreur Export", err.message, "error");
+    }
 }
 
 // ============================================================================
@@ -900,16 +1050,30 @@ function exportToCSV() {
 // ============================================================================
 
 // --- STRUCTURES (UA) ---
+function toggleUASort(columnName) {
+    if (state.uaSortBy === columnName) { state.uaSortAsc = !state.uaSortAsc; }
+    else { state.uaSortBy = columnName; state.uaSortAsc = true; }
+    renderStructures();
+}
+
 function renderStructures() {
     const tbody = document.getElementById('table-ua-body');
     tbody.innerHTML = '';
-    state.structures.forEach(ua => {
+
+    const sortedUA = [...state.structures].sort((a, b) => {
+        let valA = (a[state.uaSortBy] || '').toLowerCase();
+        let valB = (b[state.uaSortBy] || '').toLowerCase();
+        return state.uaSortAsc ? valA.localeCompare(valB) : valB.localeCompare(valA);
+    });
+
+    sortedUA.forEach(ua => {
         tbody.innerHTML += `<tr>
-            <td class="fr-text--bold">${ua.code_sages}</td>
-            <td>${ua.libelle}</td>
+            <td class="fr-text--bold">${escapeHTML(ua.code_sages)}</td>
+            <td>${escapeHTML(ua.libelle)}</td>
             <td><button onclick="openEditUA('${ua.code_sages}')" class="fr-btn fr-btn--secondary fr-btn--sm fr-icon-edit-line"></button></td>
         </tr>`;
     });
+    updateAdminSortUI('ua', state.uaSortBy, state.uaSortAsc);
 }
 
 function openEditUA(code) {
@@ -956,18 +1120,41 @@ async function deleteUA() {
 // --- LIEUX PHYSIQUES ---
 
 // Affiche la liste des lieux dans le tableau d'administration 
+function toggleLieuSort(columnName) {
+    if (state.lieuSortBy === columnName) { state.lieuSortAsc = !state.lieuSortAsc; }
+    else { state.lieuSortBy = columnName; state.lieuSortAsc = true; }
+    renderLieux();
+}
+
 function renderLieux() {
     const tbody = document.getElementById('table-lieux-body');
     tbody.innerHTML = '';
-    // On trie par nom pour faciliter la lecture
-    [...state.lieux].sort((a, b) => a.nom.localeCompare(b.nom)).forEach(l => {
+
+    const sortedLieux = [...state.lieux].sort((a, b) => {
+        let valA = (a[state.lieuSortBy] || '').toLowerCase();
+        let valB = (b[state.lieuSortBy] || '').toLowerCase();
+        return state.lieuSortAsc ? valA.localeCompare(valB) : valB.localeCompare(valA);
+    });
+
+    sortedLieux.forEach(l => {
         tbody.innerHTML += `<tr>
-            <td class="fr-text--bold">${l.nom}</td>
-            <td>
-                <button onclick="openEditLieu(${l.id})" class="fr-btn fr-btn--secondary fr-btn--sm fr-icon-edit-line" title="Modifier"></button>
-            </td>
+            <td class="fr-text--bold">${escapeHTML(l.nom)}</td>
+            <td><button onclick="openEditLieu(${l.id})" class="fr-btn fr-btn--secondary fr-btn--sm fr-icon-edit-line"></button></td>
         </tr>`;
     });
+    updateAdminSortUI('lieu', state.lieuSortBy, state.lieuSortAsc);
+}
+
+function updateAdminSortUI(prefix, sortBy, isAsc) {
+    // On nettoie toutes les icônes du tableau concerné
+    document.querySelectorAll(`[id^="icon-sort-${prefix}-"]`).forEach(icon => icon.style.opacity = '0');
+    
+    // On affiche l'icône active
+    const activeIcon = document.getElementById(`icon-sort-${prefix}-${sortBy}`);
+    if (activeIcon) {
+        activeIcon.style.opacity = '1';
+        activeIcon.className = isAsc ? "fr-icon-arrow-up-s-line sort-icon" : "fr-icon-arrow-down-s-line sort-icon";
+    }
 }
 
 // Ouvre le formulaire en mode création (id=null) ou édition 

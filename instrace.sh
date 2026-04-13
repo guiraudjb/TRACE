@@ -120,6 +120,21 @@ CREATE TABLE public.gabarits (id SERIAL PRIMARY KEY, reference_catalogue VARCHAR
 CREATE TABLE public.mobiliers (uuid UUID PRIMARY KEY DEFAULT gen_random_uuid(), id_metier VARCHAR(20) UNIQUE, gabarit_id INTEGER REFERENCES public.gabarits(id), lieu_id INTEGER REFERENCES public.lieux(id), code_sages VARCHAR(10) REFERENCES public.structures(code_sages), statut statut_mobilier DEFAULT 'en_service', remarques TEXT, date_saisie TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP);
 
 -- =============================================================================
+-- AJOUT : Séquence et fonction pour l'auto-génération des ID Métier
+-- =============================================================================
+CREATE SEQUENCE public.seq_mobilier_id START 1;
+
+CREATE OR REPLACE FUNCTION public.set_mob_id()
+RETURNS TRIGGER AS \$\$
+BEGIN
+  NEW.id_metier := 'MOB-' || LPAD(nextval('public.seq_mobilier_id')::TEXT, 6, '0');
+  RETURN NEW;
+END;
+\$\$ LANGUAGE plpgsql;
+
+
+
+-- =============================================================================
 -- INDEX DE PERFORMANCE (Optimisation 1M lignes)
 -- =============================================================================
 -- Index B-Tree pour les filtres et jointures (complexité O(log n))
@@ -180,6 +195,24 @@ DO \$\$BEGIN
     IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'administrateur') THEN CREATE ROLE administrateur NOLOGIN; END IF;
 END\$\$;
 
+-- 1. Création d'une vue qui rassemble toutes les informations textuelles
+CREATE OR REPLACE VIEW public.vue_mobiliers_recherche AS
+SELECT 
+    m.*,
+    g.nom_descriptif AS gabarit_nom,
+    g.categorie AS gabarit_categorie,
+    g.caracteristiques::text AS gabarit_json_txt, -- Conversion du JSON en texte pour la recherche
+    s.libelle AS structure_libelle,
+    l.nom AS lieu_nom
+FROM public.mobiliers m
+JOIN public.gabarits g ON m.gabarit_id = g.id
+JOIN public.structures s ON m.code_sages = s.code_sages
+JOIN public.lieux l ON m.lieu_id = l.id;
+
+-- 2. On donne les droits d'accès à l'API
+GRANT SELECT ON public.vue_mobiliers_recherche TO divagil, agent, administrateur;
+
+
 GRANT agent TO divagil;
 GRANT administrateur TO divagil;
 GRANT USAGE ON SCHEMA public TO divagil, agent, administrateur;
@@ -202,6 +235,20 @@ VALUES ('$ADMIN_EMAIL', crypt('$ADMIN_PASS', gen_salt('bf')), 'Administrateur', 
 SELECT setval('public.lieux_id_seq', (SELECT MAX(id) FROM public.lieux));
 \copy public.gabarits(reference_catalogue, categorie, nom_descriptif, caracteristiques) FROM '/tmp/trace_csv/gabarits.csv' DELIMITER ',' CSV HEADER;
 \copy public.mobiliers(id_metier, gabarit_id, lieu_id, code_sages, statut, remarques) FROM '/tmp/trace_csv/mobiliers.csv' DELIMITER ',' CSV HEADER;
+
+-- =============================================================================
+-- AJOUT : Activation du trigger d'ID Métier APRES l'import
+-- =============================================================================
+-- 1. On met à jour la séquence en fonction du plus grand ID importé du CSV
+SELECT setval('public.seq_mobilier_id', COALESCE((SELECT MAX(CAST(SUBSTRING(id_metier FROM 5) AS INTEGER)) FROM public.mobiliers), 0));
+
+-- 2. On attache le trigger pour toutes les futures insertions
+CREATE TRIGGER trig_set_mob_id
+BEFORE INSERT ON public.mobiliers
+FOR EACH ROW
+EXECUTE FUNCTION public.set_mob_id();
+
+
 ANALYZE public.mobiliers;
 ANALYZE public.gabarits;
 EOF

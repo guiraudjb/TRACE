@@ -1,10 +1,11 @@
 <!DOCTYPE html>
 <html lang="fr" data-fr-theme="light">
+	
+<head>
 	<!-- Favicons officiels DSFR -->
     <link rel="apple-touch-icon" href="dsfr-v1.14.3/dist/favicon/apple-touch-icon.png"><!-- Pour iOS -->
     <link rel="icon" href="dsfr-v1.14.3/dist/favicon/favicon.svg" type="image/svg+xml"><!-- Pour les navigateurs modernes -->
     <link rel="shortcut icon" href="dsfr-v1.14.3/dist/favicon/favicon.ico" type="image/x-icon"><!-- Fallback (l'erreur 404 venait de là) -->
-<head>
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <title>TRACE - Division Éco-responsabilité (DGFIP)</title>
@@ -156,7 +157,7 @@
                                             <div class="fr-col-12 fr-col-md-4">
                                                 <div class="fr-input-group">
                                                     <label class="fr-label">Quantité à créer</label>
-                                                    <input class="fr-input" type="number" id="new-mob-quantite" min="1" max="100" value="1" required>
+                                                    <input class="fr-input" type="number" id="new-mob-quantite" min="1" max="1000" value="1" required>
                                                 </div>
                                             </div>
                                         </div>
@@ -291,13 +292,40 @@
                             </div>
                         </div>
                         <div class="trace-card">
-                            <div class="fr-table fr-table--bordered">
-                                <table>
-                                    <thead><tr><th style="width:15%">Référence</th><th style="width:15%">Catégorie</th><th style="width:25%">Nom descriptif</th><th style="width:35%">Attributs (JSON)</th><th style="width:10%">Actions</th></tr></thead>
-                                    <tbody id="table-gabarits-body"></tbody>
-                                </table>
-                            </div>
-                        </div>
+    <div class="fr-grid-row fr-grid-row--gutters fr-mb-3w">
+        <div class="fr-col-12 fr-col-md-6">
+            <div class="fr-search-bar" id="search-gab" role="search">
+                <label class="fr-label" for="search-gab-input">Recherche modèle</label>
+                <input class="fr-input" placeholder="Ex: Bureau, Gris, Metal..." type="search" id="search-gab-input" oninput="updateGabFilters('gabQuery', this.value)">
+                <button class="fr-btn" title="Rechercher">Rechercher</button>
+            </div>
+        </div>
+        <div class="fr-col-12 fr-col-md-6">
+            <select class="fr-select" id="filter-gab-cat" onchange="updateGabFilters('gabFilterCat', this.value)">
+                <option value="" selected>Toutes les catégories</option>
+                <option value="Bureau">Bureau / Table</option>
+                <option value="Assise">Assise</option>
+                <option value="Rangement">Rangement</option>
+                <option value="Autre">Autre équipement</option>
+            </select>
+        </div>
+    </div>
+
+						<div class="fr-table fr-table--bordered">
+							<table>
+								<thead>
+									<tr>
+										<th class="sortable-header" onclick="toggleGabSort('reference_catalogue')" style="width:15%">Référence <span id="icon-sort-gab-reference_catalogue" class="fr-icon-arrow-down-s-line sort-icon" style="opacity: 0;"></span></th>
+										<th class="sortable-header" onclick="toggleGabSort('categorie')" style="width:15%">Catégorie <span id="icon-sort-gab-categorie" class="fr-icon-arrow-down-s-line sort-icon" style="opacity: 0;"></span></th>
+										<th class="sortable-header" onclick="toggleGabSort('nom_descriptif')" style="width:25%">Nom descriptif <span id="icon-sort-gab-nom_descriptif" class="fr-icon-arrow-down-s-line sort-icon" style="opacity: 0;"></span></th>
+										<th style="width:35%">Attributs (JSON)</th>
+										<th style="width:10%">Actions</th>
+									</tr>
+								</thead>
+								<tbody id="table-gabarits-body"></tbody>
+							</table>
+						</div>
+						</div>
                     </div>
 
                     <div id="view-gabarits-form" class="sub-view">
@@ -342,7 +370,21 @@
             <div class="fr-col-6"><h3 class="fr-m-0">Comptes Accès</h3></div>
             <div class="fr-col-6 fr-text-right"><button class="fr-btn fr-icon-user-add-line fr-btn--icon-left" onclick="openCreateUser()">Nouveau</button></div>
         </div>
-        <div class="trace-card"><div class="fr-table fr-table--bordered"><table><thead><tr><th>Mél</th><th>Rôle</th><th>Actions</th></tr></thead><tbody id="table-users-body"></tbody></table></div></div>
+        <div class="trace-card">
+            <div class="fr-table fr-table--bordered">
+                <table>
+                    <thead>
+                        <tr>
+                            <th class="sortable-header" onclick="toggleUserSort('email')">Mél <span id="icon-sort-user-email" class="sort-icon" style="opacity: 0;"></span></th>
+                            <th class="sortable-header" onclick="toggleUserSort('role')">Rôle <span id="icon-sort-user-role" class="sort-icon" style="opacity: 0;"></span></th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-users-body">
+                        </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 
                     <div id="view-users-form" class="sub-view">
@@ -385,7 +427,21 @@
             <div class="fr-col-6"><h3 class="fr-m-0">Services (Structures)</h3></div>
             <div class="fr-col-6 fr-text-right"><button class="fr-btn fr-icon-add-line fr-btn--icon-left" onclick="openEditUA(null)">Ajouter UA</button></div>
         </div>
-        <div class="trace-card"><div class="fr-table fr-table--bordered"><table><thead><tr><th style="width:20%">Code Sages</th><th style="width:60%">Libellé du service</th><th style="width:20%">Actions</th></tr></thead><tbody id="table-ua-body"></tbody></table></div></div>
+       <div class="trace-card">
+            <div class="fr-table fr-table--bordered">
+                <table>
+                    <thead>
+                        <tr>
+                            <th class="sortable-header" onclick="toggleUASort('code_sages')" style="width:20%">Code Sages <span id="icon-sort-ua-code_sages" class="sort-icon" style="opacity: 0;"></span></th>
+                            <th class="sortable-header" onclick="toggleUASort('libelle')" style="width:60%">Libellé du service <span id="icon-sort-ua-libelle" class="sort-icon" style="opacity: 0;"></span></th>
+                            <th style="width:20%">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-ua-body">
+                        </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 
     <div id="view-lieux-list" class="sub-view">
@@ -393,7 +449,20 @@
             <div class="fr-col-6"><h3 class="fr-m-0">Lieux Physiques</h3></div>
             <div class="fr-col-6 fr-text-right"><button class="fr-btn fr-icon-add-line fr-btn--icon-left" onclick="openEditLieu(null)">Ajouter Lieu</button></div>
         </div>
-        <div class="trace-card"><div class="fr-table fr-table--bordered"><table><thead><tr><th style="width:80%">Nom du bâtiment / bureau</th><th style="width:20%">Actions</th></tr></thead><tbody id="table-lieux-body"></tbody></table></div></div>
+        <div class="trace-card">
+            <div class="fr-table fr-table--bordered">
+                <table>
+                    <thead>
+                        <tr>
+                            <th class="sortable-header" onclick="toggleLieuSort('nom')" style="width:80%">Nom du bâtiment / bureau <span id="icon-sort-lieu-nom" class="sort-icon" style="opacity: 0;"></span></th>
+                            <th style="width:20%">Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-lieux-body">
+                        </tbody>
+                </table>
+            </div>
+        </div>
     </div>
 
     <div id="view-ua-form" class="sub-view">

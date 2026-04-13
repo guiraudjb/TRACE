@@ -2,7 +2,7 @@
 
 # --- CONFIGURATION ---
 # Nombre de lignes à générer
-COUNT=1000
+COUNT=100000
 # Fichier de sortie
 OUTPUT="mobiliers.csv"
 # Liste des statuts autorisés (extraits de la logique métier)
