@@ -814,6 +814,44 @@ function addJsonRow(key = "", val = "") {
     document.getElementById('json-builder').appendChild(row);
 }
 
+// ============================================================================
+// AUTO-NUMÉROTATION DES GABARITS
+// ============================================================================
+function suggestNextReference() {
+    // 1. On vérifie qu'on est bien en mode "Création" (pas d'écrasement si on édite un ancien modèle)
+    const isEdit = document.getElementById('edit-gab-id').value !== "";
+    if (isEdit) return;
+
+    const catSelect = document.getElementById('new-gab-cat');
+    const refInput = document.getElementById('new-gab-ref');
+    if (!catSelect || !refInput || !catSelect.value) return;
+
+    // 2. Déduction du préfixe selon la catégorie choisie
+    let prefix = "AUT"; // Autre par défaut
+    const catLower = catSelect.value.toLowerCase();
+    if (catLower.includes('bureau')) prefix = "BUR";
+    else if (catLower.includes('assise')) prefix = "ASS";
+    else if (catLower.includes('rangement')) prefix = "RAN";
+
+    // 3. Recherche du numéro le plus élevé existant pour ce préfixe
+    let maxNum = 0;
+    state.gabarits.forEach(gab => {
+        if (gab.reference_catalogue && gab.reference_catalogue.startsWith(prefix + '-')) {
+            const parts = gab.reference_catalogue.split('-');
+            if (parts.length === 2) {
+                const num = parseInt(parts[1], 10);
+                if (!isNaN(num) && num > maxNum) {
+                    maxNum = num;
+                }
+            }
+        }
+    });
+
+    // 4. Génération de la nouvelle référence (ex: BUR + 003)
+    const nextNum = maxNum + 1;
+    refInput.value = `${prefix}-${String(nextNum).padStart(3, '0')}`;
+}
+
 function openCreateGabarit() {
     document.getElementById('edit-gab-id').value = "";
     document.getElementById('new-gab-ref').value = "";
@@ -828,6 +866,9 @@ function openCreateGabarit() {
     addJsonRow("reference_ugap", "null");
     addJsonRow("annee_acquisition", new Date().getFullYear().toString());
     // -------------------------------------------------------------------
+    const catSelect = document.getElementById('new-gab-cat');
+    catSelect.removeEventListener('change', suggestNextReference); // Nettoyage de sécurité
+    catSelect.addEventListener('change', suggestNextReference);
 
     document.getElementById('gab-form-title').innerText = "Créer un nouveau Modèle";
     document.getElementById('btn-delete-gab').style.display = 'none';

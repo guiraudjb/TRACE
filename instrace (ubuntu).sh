@@ -368,7 +368,137 @@ systemctl daemon-reload
 systemctl enable --now trace-api
 
 # ------------------------------------------------------------------------------
-# 6. CONFIGURATION NGINX
+# 7. MAINTENANCE AUTOMATISÉE (CRON)
+# ------------------------------------------------------------------------------
+echo -e "\n--- 7. Configuration de la purge automatique des logs (3 mois) ---"
+
+# Création d'un fichier cron système dédié (plus propre et 100% fiable)
+cat << EOF > /etc/cron.d/trace_purge_logs
+# Purge quotidienne des logs d'audit TRACE (plus de 3 mois)
+0 0 * * * postgres /usr/bin/psql -d $DB_NAME -c "DELETE FROM public.audit_logs WHERE date_action < CURRENT_DATE - INTERVAL '3 months';"
+EOF
+
+# Les fichiers dans /etc/cron.d/ doivent avoir des permissions strictes
+chmod 644 /etc/cron.d/trace_purge_logs
+
+echo "Tâche planifiée créée dans /etc/cron.d/trace_purge_logs"
+
+# ------------------------------------------------------------------------------
+# 8. SAUVEGARDE AUTOMATIQUE (BACKUP)
+# ------------------------------------------------------------------------------
+echo -e "\n--- 8. Configuration de la sauvegarde automatique ---"
+
+BACKUP_DIR="/mnt/savetrace"
+mkdir -p $BACKUP_DIR
+chown postgres:postgres $BACKUP_DIR
+
+# Création du script de sauvegarde avec rotation (30 jours)
+cat << 'EOF' > /usr/local/bin/trace_backup.sh
+#!/bin/bash
+BACKUP_DIR="/mnt/savetrace"
+DB_NAME="parc_mobilier_dgfip"
+DATE=$(date +%Y-%m-%d)
+FILE="$BACKUP_DIR/trace_backup_$DATE.dump"
+
+# Sauvegarde compressée
+/usr/bin/pg_dump -Fc -d $DB_NAME -f $FILE
+
+# Nettoyage des sauvegardes de plus de 30 jours
+find $BACKUP_DIR -type f -name "trace_backup_*.dump" -mtime +30 -exec rm {} \;
+EOF
+
+chmod +x /usr/local/bin/trace_backup.sh
+chown postgres:postgres /usr/local/bin/trace_backup.sh
+
+# Création de la tâche Cron système (à 02h00 du matin)
+cat << EOF > /etc/cron.d/trace_backup
+# Sauvegarde quotidienne de la base TRACE à 02h00
+0 */1 * * * postgres /usr/local/bin/trace_backup.sh
+EOF
+
+chmod 644 /etc/cron.d/trace_backup
+
+# ------------------------------------------------------------------------------
+# 9. OUTIL DE RESTAURATION INTERACTIF (RESTORE)
+# ------------------------------------------------------------------------------
+echo -e "\n--- 9. Création de l'outil de restauration interactif ---"
+
+# Utilisation de 'EOF' entre guillemets pour que les variables du script de restauration 
+# ne soient pas interprétées pendant l'exécution de instrace.sh
+cat << 'EOF' > /usr/local/bin/trace_restore.sh
+#!/bin/bash
+BACKUP_DIR="/mnt/savetrace"
+DB_NAME="parc_mobilier_dgfip"
+ITEMS_PER_PAGE=10
+
+if [ "$EUID" -ne 0 ] && [ "$(whoami)" != "postgres" ]; then
+  echo -e "\e[31mErreur : Ce script doit être exécuté avec 'sudo' ou par l'utilisateur 'postgres'.\e[0m"
+  exit 1
+fi
+
+echo -e "\n\e[1;34m=== OUTIL DE RESTAURATION DE LA BASE DE DONNÉES TRACE ===\e[0m"
+
+mapfile -t BACKUPS < <(find "$BACKUP_DIR" -maxdepth 1 -type f -name "*.dump" -printf "%T@ %p\n" | sort -nr | cut -d' ' -f2-)
+TOTAL_BACKUPS=${#BACKUPS[@]}
+
+if [ "$TOTAL_BACKUPS" -eq 0 ]; then
+    echo -e "\e[33mAucune sauvegarde trouvée dans $BACKUP_DIR.\e[0m"
+    exit 0
+fi
+
+afficher_page() {
+    local PAGE=$1
+    local START=$(( (PAGE - 1) * ITEMS_PER_PAGE ))
+    local END=$(( START + ITEMS_PER_PAGE - 1 ))
+    local TOTAL_PAGES=$(( (TOTAL_BACKUPS + ITEMS_PER_PAGE - 1) / ITEMS_PER_PAGE ))
+    echo -e "\n\e[1;36mSauvegardes disponibles (Page $PAGE/$TOTAL_PAGES) :\e[0m"
+    echo "--------------------------------------------------------"
+    for i in $(seq "$START" "$END"); do
+        if [ "$i" -lt "$TOTAL_BACKUPS" ]; then
+            FILE_PATH="${BACKUPS[$i]}"
+            printf "\e[1;33m[%2d]\e[0m %-30s | %-8s | %s\n" "$((i + 1))" "$(basename "$FILE_PATH")" "$(du -h "$FILE_PATH" | cut -f1)" "$(stat -c "%y" "$FILE_PATH" | cut -d'.' -f1)"
+        fi
+    done
+    echo "--------------------------------------------------------"
+}
+
+CURRENT_PAGE=1
+TOTAL_PAGES=$(( (TOTAL_BACKUPS + ITEMS_PER_PAGE - 1) / ITEMS_PER_PAGE ))
+while true; do
+    afficher_page "$CURRENT_PAGE"
+    echo -e "\nEntrez le \e[1;33mnuméro\e[0m du fichier à restaurer,"
+    [ "$CURRENT_PAGE" -lt "$TOTAL_PAGES" ] && echo -e "tapez \e[1;32ms\e[0m (Suivant),"
+    [ "$CURRENT_PAGE" -gt 1 ] && echo -e "tapez \e[1;32mp\e[0m (Précédent),"
+    echo -e "ou \e[1;31mq\e[0m pour Quitter."
+    read -rp "Choix : " CHOIX
+    case $CHOIX in
+        [qQ]) exit 0 ;;
+        [sS]) [ "$CURRENT_PAGE" -lt "$TOTAL_PAGES" ] && ((CURRENT_PAGE++)) ;;
+        [pP]) [ "$CURRENT_PAGE" -gt 1 ] && ((CURRENT_PAGE--)) ;;
+        *)
+            if [[ "$CHOIX" =~ ^[0-9]+$ ]] && [ "$CHOIX" -ge 1 ] && [ "$CHOIX" -le "$TOTAL_BACKUPS" ]; then
+                SELECTED_FILE="${BACKUPS[$((CHOIX - 1))]}"
+                break
+            fi
+            ;;
+    esac
+done
+
+echo -e "\n\e[1;31m/!\\ ATTENTION /!\\\e[0m Restauration de : \e[1m$(basename "$SELECTED_FILE")\e[0m"
+read -rp "Confirmer l'écrasement de '$DB_NAME' ? (Tapez OUI) : " CONFIRM
+if [ "$CONFIRM" != "OUI" ]; then echo "Annulé."; exit 0; fi
+
+sudo -u postgres psql -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '$DB_NAME' AND pid <> pg_backend_pid();"
+sudo -u postgres pg_restore --clean --if-exists -d "$DB_NAME" "$SELECTED_FILE"
+
+if [ $? -eq 0 ]; then echo -e "\n\e[1;32m=== RESTAURATION TERMINÉE ===\e[0m"; else echo -e "\n\e[1;31m=== ERREUR ===\e[0m"; fi
+EOF
+
+chmod +x /usr/local/bin/trace_restore.sh
+chown postgres:postgres /usr/local/bin/trace_restore.sh
+
+# ------------------------------------------------------------------------------
+# 10. CONFIGURATION NGINX
 # ------------------------------------------------------------------------------
 echo -e "\n--- 6. Configuration Nginx ---"
 cat << 'EOF' > /etc/nginx/sites-available/trace
@@ -411,7 +541,7 @@ rm -f /etc/nginx/sites-enabled/default
 systemctl restart nginx
 
 # ------------------------------------------------------------------------------
-# 7. RÉSUMÉ
+# 11. RÉSUMÉ
 # ------------------------------------------------------------------------------
 echo -e "\n======================================================"
 echo -e "\e[32m DÉPLOIEMENT RÉUSSI ET OPÉRATIONNEL ! \e[0m"
