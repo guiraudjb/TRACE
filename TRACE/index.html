@@ -134,6 +134,8 @@
                                         onchange="updateFilters('filterGabarit', this.value)"></select></div>
                                 <div class="fr-col-12 fr-col-md-3"><select class="fr-select" id="filter-ua"
                                         onchange="updateFilters('filterUa', this.value)"></select></div>
+                                <div class="fr-col-12 fr-col-md-3"><select class="fr-select" id="filter-lieu" 
+                                        onchange="updateFilters('filterLieu', this.value)"></select></div>
                                 <div class="fr-col-12 fr-col-md-3">
                                     <select class="fr-select" id="filter-statut"
                                         onchange="updateFilters('filterStatut', this.value)">
@@ -725,6 +727,12 @@
                                         class="fr-input" id="ua-code" required></div>
                                 <div class="fr-input-group"><label class="fr-label">Libellé complet</label><input
                                         class="fr-input" id="ua-libelle" required></div>
+                                <div class="fr-select-group">
+                                    <label class="fr-label" for="ua-lieu">Lieu physique par défaut (Optionnel)</label>
+                                    <select class="fr-select" id="ua-lieu">
+                                        <option value="">Aucun lieu défini</option>
+                                    </select>
+                                </div>
                                 <button type="submit" class="fr-btn">Enregistrer</button>
                                 <button type="button" id="btn-del-ua" class="fr-btn fr-btn--secondary"
                                     onclick="deleteUA()">Supprimer</button>

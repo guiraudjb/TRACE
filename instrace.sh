@@ -34,7 +34,7 @@ systemctl stop trace-api 2>/dev/null || true
 systemctl stop nginx 2>/dev/null || true
 
 apt-get update
-apt-get install -y postgresql postgresql-contrib nginx openssl
+apt-get install -y postgresql postgresql-contrib nginx openssl sudo
 
 # ------------------------------------------------------------------------------
 # 2. INSTALLATION POSTGREST ET FRONTEND
@@ -113,8 +113,8 @@ CREATE TYPE public.statut_mobilier AS ENUM ('en_service', 'en_maintenance', 'dis
 CREATE TYPE public.jwt_token AS (token text);
 
 -- Tables
-CREATE TABLE public.structures (code_sages VARCHAR(10) PRIMARY KEY, libelle TEXT NOT NULL);
 CREATE TABLE public.lieux (id SERIAL PRIMARY KEY, nom TEXT NOT NULL, parent_id INTEGER REFERENCES public.lieux(id), type_lieu TEXT CHECK (type_lieu IN ('batiment', 'etage', 'bureau', 'local')));
+CREATE TABLE public.structures (code_sages VARCHAR(10) PRIMARY KEY, libelle TEXT NOT NULL, lieu_id INTEGER REFERENCES public.lieux(id));
 CREATE TABLE public.utilisateurs (id SERIAL PRIMARY KEY, email TEXT UNIQUE NOT NULL, mot_de_passe_hash TEXT NOT NULL, nom_complet TEXT NOT NULL, role TEXT NOT NULL CHECK (role IN ('agent', 'administrateur')) DEFAULT 'agent');
 CREATE TABLE public.gabarits (id SERIAL PRIMARY KEY, reference_catalogue VARCHAR(50) UNIQUE NOT NULL, categorie TEXT, nom_descriptif TEXT NOT NULL, caracteristiques JSONB DEFAULT '{}'::jsonb);
 CREATE TABLE public.mobiliers (uuid UUID PRIMARY KEY DEFAULT gen_random_uuid(), id_metier VARCHAR(20) UNIQUE, gabarit_id INTEGER REFERENCES public.gabarits(id), lieu_id INTEGER REFERENCES public.lieux(id), code_sages VARCHAR(10) REFERENCES public.structures(code_sages), statut statut_mobilier DEFAULT 'en_service', remarques TEXT, date_saisie TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP);
@@ -230,8 +230,8 @@ INSERT INTO utilisateurs (email, mot_de_passe_hash, nom_complet, role)
 VALUES ('$ADMIN_EMAIL', crypt('$ADMIN_PASS', gen_salt('bf')), 'Administrateur', 'administrateur') ON CONFLICT (email) DO NOTHING;
 
 -- Import CSV depuis le dossier temporaire sécurisé
-\copy public.structures(code_sages, libelle) FROM '/tmp/trace_csv/structures.csv' DELIMITER ',' CSV HEADER;
 \copy public.lieux(id, nom, parent_id, type_lieu) FROM '/tmp/trace_csv/lieux.csv' DELIMITER ',' CSV HEADER;
+\copy public.structures(code_sages, libelle, lieu_id) FROM '/tmp/trace_csv/structures.csv' DELIMITER ',' CSV HEADER;
 SELECT setval('public.lieux_id_seq', (SELECT MAX(id) FROM public.lieux));
 \copy public.gabarits(reference_catalogue, categorie, nom_descriptif, caracteristiques) FROM '/tmp/trace_csv/gabarits.csv' DELIMITER ',' CSV HEADER;
 \copy public.mobiliers(id_metier, gabarit_id, lieu_id, code_sages, statut, remarques) FROM '/tmp/trace_csv/mobiliers.csv' DELIMITER ',' CSV HEADER;
@@ -447,7 +447,7 @@ DB_NAME="parc_mobilier_dgfip"
 ITEMS_PER_PAGE=10
 
 if [ "$EUID" -ne 0 ] && [ "$(whoami)" != "postgres" ]; then
-  echo -e "\e[31mErreur : Ce script doit être exécuté avec 'sudo' ou par l'utilisateur 'postgres'.\e[0m"
+  echo -e "\e[31mErreur : Ce script doit être exécuté avec 'su' ou par l'utilisateur 'postgres'.\e[0m"
   exit 1
 fi
 

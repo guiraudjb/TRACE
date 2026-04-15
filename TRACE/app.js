@@ -5,7 +5,7 @@ let state = {
     totalItems: 0,
     gabarits: [], structures: [], lieux: [], utilisateurs: [],
     maps: { g: new Map(), s: new Map(), l: new Map() },
-    query: '', filterGabarit: '', filterUa: '', filterStatut: '',
+    query: '', filterGabarit: '', filterUa: '', filterStatut: '', filterLieu: '',
     sortBy: 'id_metier', sortAsc: true, currentPage: 1, itemsPerPage: 50, filteredData: [],
     gabQuery: '', gabFilterCat: '',
     gabSortBy: 'reference_catalogue', gabSortAsc: true, filteredGabarits: [],
@@ -136,6 +136,8 @@ async function loadData() {
 
         fillSelect('filter-gabarit', state.gabarits, 'id', 'nom_descriptif', { placeholder: 'Tous les modèles', disablePlaceholder: false });
         fillSelect('filter-ua', state.structures, 'code_sages', 'libelle', { placeholder: 'Toutes les affectations', disablePlaceholder: false });
+        fillSelect('filter-lieu', state.lieux, 'id', 'nom', { placeholder: 'Tous les lieux', disablePlaceholder: false });
+        
 
         renderGabarits();
         applyGabFiltersAndSort();
@@ -208,7 +210,8 @@ function resetFilters() {
     document.getElementById('filter-gabarit').value = '';
     document.getElementById('filter-ua').value = '';
     document.getElementById('filter-statut').value = '';
-    state.query = ''; state.filterGabarit = ''; state.filterUa = ''; state.filterStatut = ''; state.currentPage = 1;
+    document.getElementById('filter-lieu').value = '';
+    state.query = ''; state.filterGabarit = ''; state.filterUa = ''; state.filterLieu= ''; state.filterStatut = ''; state.currentPage = 1;
     applyFiltersAndSort();
 }
 
@@ -227,6 +230,7 @@ async function applyFiltersAndSort() {
     // FILTRES
     if (state.filterGabarit) params.append('gabarit_id', `eq.${state.filterGabarit}`);
     if (state.filterUa) params.append('code_sages', `eq.${state.filterUa}`);
+    if (state.filterLieu) params.append('lieu_id', `eq.${state.filterLieu}`);
     if (state.filterStatut) params.append('statut', `eq.${state.filterStatut}`);
 
     // RECHERCHE GLOBALE ÉTENDUE
@@ -370,6 +374,15 @@ function openCreateMobilier() {
     document.getElementById('new-mob-statut').value = 'en_service';
     document.getElementById('new-mob-remarques').value = '';
     showSubView('view-mobilier-create', 'panel-mobilier');
+    
+    document.getElementById('new-mob-ua').addEventListener('change', function() {
+    const selectedSages = this.value;
+    const ua = state.maps.s.get(selectedSages);
+    
+    if (ua && ua.lieu_id) {
+        document.getElementById('new-mob-lieu').value = ua.lieu_id;
+    }
+});
 }
 
 function editMobilier(uuid) {
@@ -1240,6 +1253,12 @@ function openEditUA(code) {
     document.getElementById('ua-code').value = ua.code_sages;
     document.getElementById('ua-code').readOnly = !!code;
     document.getElementById('ua-libelle').value = ua.libelle;
+    fillSelect('ua-lieu', state.lieux, 'id', 'nom', { 
+        placeholder: 'Aucun lieu défini', 
+        disablePlaceholder: false, 
+        selected: ua.lieu_id 
+    });
+    
     document.getElementById('ua-form-title').innerText = code ? "Modifier le Service" : "Nouveau Service";
     document.getElementById('btn-del-ua').style.display = code ? "inline-flex" : "none";
     showSubView('view-ua-form', 'panel-admin');
@@ -1249,7 +1268,15 @@ async function saveUA(e) {
     e.preventDefault();
     const isNew = document.getElementById('ua-is-new').value === "1";
     const code = document.getElementById('ua-code').value;
-    const payload = { code_sages: code, libelle: document.getElementById('ua-libelle').value };
+    const lieuVal = document.getElementById('ua-lieu').value;
+    const lieuId = lieuVal ? parseInt(lieuVal) : null;
+    
+    
+    const payload = { 
+        code_sages: code, 
+        libelle: document.getElementById('ua-libelle').value,
+        lieu_id: lieuId 
+    };
 
     try {
         const url = isNew ? `${API_URL}/structures` : `${API_URL}/structures?code_sages=eq.${code}`;
