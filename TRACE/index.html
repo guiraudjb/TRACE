@@ -1,11 +1,13 @@
 <!DOCTYPE html>
 <html lang="fr" data-fr-theme="light">
-	
+
 <head>
-	<!-- Favicons officiels DSFR -->
+    <!-- Favicons officiels DSFR -->
     <link rel="apple-touch-icon" href="dsfr-v1.14.3/dist/favicon/apple-touch-icon.png"><!-- Pour iOS -->
-    <link rel="icon" href="dsfr-v1.14.3/dist/favicon/favicon.svg" type="image/svg+xml"><!-- Pour les navigateurs modernes -->
-    <link rel="shortcut icon" href="dsfr-v1.14.3/dist/favicon/favicon.ico" type="image/x-icon"><!-- Fallback (l'erreur 404 venait de là) -->
+    <link rel="icon" href="dsfr-v1.14.3/dist/favicon/favicon.svg" type="image/svg+xml">
+    <!-- Pour les navigateurs modernes -->
+    <link rel="shortcut icon" href="dsfr-v1.14.3/dist/favicon/favicon.ico" type="image/x-icon">
+    <!-- Fallback (l'erreur 404 venait de là) -->
     <meta charset="utf-8">
     <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
     <title>TRACE - Division Éco-responsabilité (DGFIP)</title>
@@ -13,14 +15,15 @@
     <!-- Framework DSFR -->
     <link rel="stylesheet" href="dsfr-v1.14.3/dist/dsfr.min.css">
     <link rel="stylesheet" href="dsfr-v1.14.3/dist/utility/utility.main.min.css">
-    
+
     <!-- Styles de l'application -->
     <link rel="stylesheet" href="styles.css">
-    
+
     <script src="./utils/jspdf.umd.min.js"></script>
-	<script src="./utils/jspdf.plugin.autotable.min.js"></script>
-    
+    <script src="./utils/jspdf.plugin.autotable.min.js"></script>
+
 </head>
+
 <body>
 
     <header role="banner" class="fr-header no-print">
@@ -29,26 +32,32 @@
                 <div class="fr-header__body-row">
                     <div class="fr-header__brand fr-enlarge-link">
                         <div class="fr-header__brand-top">
-                            <div class="fr-header__logo"><p class="fr-logo">République<br>Française</p></div>
+                            <div class="fr-header__logo">
+                                <p class="fr-logo">République<br>Française</p>
+                            </div>
                         </div>
                         <div class="fr-header__service">
-                            <a href="#" title="Accueil - TRACE"><p class="fr-header__service-title">TRACE</p></a>
-                            <p class="fr-header__service-tagline">Traçabilité, Réemploi et Affectation Circulaire des Équipements</p>
+                            <a href="#" title="Accueil - TRACE">
+                                <p class="fr-header__service-title">TRACE</p>
+                            </a>
+                            <p class="fr-header__service-tagline">Traçabilité, Réemploi et Affectation Circulaire des
+                                Équipements</p>
                         </div>
                     </div>
-                       
+
                     <div class="fr-header__tools">
-					<div class="trace-header-tools"> 
-							<ul class="fr-btns-group">
-								<li id="logout-btn-container" style="display: none;">
-									<button class="fr-btn fr-btn--secondary fr-icon-logout-box-r-line" onclick="deconnecter()">Déconnexion</button>
-								</li>
-							</ul>
-						</div>
-					</div>
-                    
+                        <div class="trace-header-tools">
+                            <ul class="fr-btns-group">
+                                <li id="logout-btn-container" style="display: none;">
+                                    <button class="fr-btn fr-btn--secondary fr-icon-logout-box-r-line"
+                                        onclick="deconnecter()">Déconnexion</button>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+
+                </div>
             </div>
-        </div>
     </header>
 
     <main role="main">
@@ -62,13 +71,15 @@
                         <form onsubmit="authentifier(event)">
                             <div class="fr-input-group">
                                 <label class="fr-label">Mél professionnel</label>
-                                <input class="fr-input" type="email" id="login-email" required placeholder="nom@dgfip.finances.gouv.fr">
+                                <input class="fr-input" type="email" id="login-email" required
+                                    placeholder="nom@dgfip.finances.gouv.fr">
                             </div>
                             <div class="fr-input-group">
                                 <label class="fr-label">Mot de passe</label>
                                 <input class="fr-input" type="password" id="login-password" required>
                             </div>
-                            <button class="fr-btn fr-mt-2v fr-icon-lock-fill fr-btn--icon-left" type="submit" style="width: 100%;">Se connecter</button>
+                            <button class="fr-btn fr-mt-2v fr-icon-lock-fill fr-btn--icon-left" type="submit"
+                                style="width: 100%;">Se connecter</button>
                         </form>
                     </div>
                 </div>
@@ -78,21 +89,34 @@
         <div id="view-app" class="app-view">
             <div class="fr-tabs">
                 <ul class="fr-tabs__list no-print fr-container-fluid fr-px-2w fr-px-md-6w" role="tablist">
-                    <li role="presentation"><button id="tab-mobilier" class="fr-tabs__tab" tabindex="0" role="tab" aria-selected="true" aria-controls="panel-mobilier">1. Gestion du Mobilier</button></li>
-                    <li role="presentation"><button id="tab-gabarits" class="fr-tabs__tab" tabindex="-1" role="tab" aria-selected="false" aria-controls="panel-gabarits">2. Catalogue National</button></li>
-                    <li role="presentation"><button id="tab-admin" class="fr-tabs__tab" tabindex="-1" role="tab" aria-selected="false" aria-controls="panel-admin" style="display: none;">3. Administration</button></li>
+                    <li role="presentation"><button id="tab-mobilier" class="fr-tabs__tab" tabindex="0" role="tab"
+                            aria-selected="true" aria-controls="panel-mobilier">1. Gestion du Mobilier</button></li>
+                    <li role="presentation"><button id="tab-gabarits" class="fr-tabs__tab" tabindex="-1" role="tab"
+                            aria-selected="false" aria-controls="panel-gabarits">2. Catalogue National</button></li>
+                    <li role="presentation"><button id="tab-admin" class="fr-tabs__tab" tabindex="-1" role="tab"
+                            aria-selected="false" aria-controls="panel-admin" style="display: none;">3.
+                            Administration</button></li>
                 </ul>
 
-                <div id="panel-mobilier" class="fr-tabs__panel fr-tabs__panel--selected fr-container-fluid fr-px-2w fr-px-md-6w" role="tabpanel" aria-labelledby="tab-mobilier" tabindex="0">
-                    
+                <div id="panel-mobilier"
+                    class="fr-tabs__panel fr-tabs__panel--selected fr-container-fluid fr-px-2w fr-px-md-6w"
+                    role="tabpanel" aria-labelledby="tab-mobilier" tabindex="0">
+
                     <div id="view-mobilier-list" class="sub-view active">
                         <div class="fr-grid-row fr-grid-row--middle fr-mb-4w">
-                            <div class="fr-col-12 fr-col-md-4"><h2 class="fr-m-0">Inventaire du parc</h2></div>
+                            <div class="fr-col-12 fr-col-md-4">
+                                <h2 class="fr-m-0">Inventaire du parc</h2>
+                            </div>
                             <div class="fr-col-12 fr-col-md-8 fr-text-md-right fr-mt-2w fr-mt-md-0">
-                                <button class="fr-btn fr-btn--secondary fr-icon-file-line fr-btn--icon-left fr-mr-2w" onclick="exportToCSV()">Exporter (CSV)</button>
-                                <button class="fr-btn fr-btn--secondary fr-icon-qr-code-line fr-btn--icon-left fr-mr-2w" onclick="openScanner()">Réaffectation par scan</button>
-                                <button class="fr-btn fr-btn--secondary fr-icon-file-download-line fr-btn--icon-left fr-mr-2w" onclick="openImportFile()">Réaffectation par fichier</button>
-                                <button class="fr-btn fr-icon-add-circle-line fr-btn--icon-left" onclick="openCreateMobilier()"> Nouveau</button>
+                                <button class="fr-btn fr-btn--secondary fr-icon-file-line fr-btn--icon-left fr-mr-2w"
+                                    onclick="exportToCSV()">Exporter (CSV)</button>
+                                <button class="fr-btn fr-btn--secondary fr-icon-qr-code-line fr-btn--icon-left fr-mr-2w"
+                                    onclick="openScanner()">Réaffectation par scan</button>
+                                <button
+                                    class="fr-btn fr-btn--secondary fr-icon-file-download-line fr-btn--icon-left fr-mr-2w"
+                                    onclick="openImportFile()">Réaffectation par fichier</button>
+                                <button class="fr-btn fr-icon-add-circle-line fr-btn--icon-left"
+                                    onclick="openCreateMobilier()"> Nouveau</button>
                             </div>
                         </div>
 
@@ -101,36 +125,58 @@
                                 <div class="fr-col-12 fr-col-md-3">
                                     <div class="fr-search-bar" id="search" role="search">
                                         <label class="fr-label" for="search-input">Recherche globale</label>
-                                        <input class="fr-input" placeholder="Ex: Armoire couleur:gris" type="search" id="search-input" oninput="updateFilters('query', this.value)">
+                                        <input class="fr-input" placeholder="Ex: Armoire couleur:gris" type="search"
+                                            id="search-input" oninput="updateFilters('query', this.value)">
                                         <button class="fr-btn" title="Rechercher">Rechercher</button>
                                     </div>
                                 </div>
-                                <div class="fr-col-12 fr-col-md-3"><select class="fr-select" id="filter-gabarit" onchange="updateFilters('filterGabarit', this.value)"></select></div>
-								<div class="fr-col-12 fr-col-md-3"><select class="fr-select" id="filter-ua" onchange="updateFilters('filterUa', this.value)"></select></div>
+                                <div class="fr-col-12 fr-col-md-3"><select class="fr-select" id="filter-gabarit"
+                                        onchange="updateFilters('filterGabarit', this.value)"></select></div>
+                                <div class="fr-col-12 fr-col-md-3"><select class="fr-select" id="filter-ua"
+                                        onchange="updateFilters('filterUa', this.value)"></select></div>
                                 <div class="fr-col-12 fr-col-md-3">
-                                    <select class="fr-select" id="filter-statut" onchange="updateFilters('filterStatut', this.value)">
+                                    <select class="fr-select" id="filter-statut"
+                                        onchange="updateFilters('filterStatut', this.value)">
                                         <option value="" selected>Tous les statuts</option>
-                                        <option value="en_service">En service</option><option value="dispo_reemploi">Disponible réemploi</option><option value="en_maintenance">En maintenance</option><option value="au_rebut">Au rebut</option>
+                                        <option value="en_service">En service</option>
+                                        <option value="dispo_reemploi">Disponible réemploi</option>
+                                        <option value="en_maintenance">En maintenance</option>
+                                        <option value="au_rebut">Au rebut</option>
                                     </select>
                                 </div>
                             </div>
 
-                            <div class="fr-mb-2w fr-text--sm fr-text--bold text-[#000091]" style="display:flex; justify-content: space-between;">
+                            <div class="fr-mb-2w fr-text--sm fr-text--bold text-[#000091]"
+                                style="display:flex; justify-content: space-between;">
                                 <span id="results-count">-- équipements</span>
-                                <button class="fr-btn fr-btn--tertiary-no-outline fr-btn--sm fr-icon-refresh-line fr-btn--icon-left" onclick="resetFilters()">Réinitialiser</button>
+                                <button
+                                    class="fr-btn fr-btn--tertiary-no-outline fr-btn--sm fr-icon-refresh-line fr-btn--icon-left"
+                                    onclick="resetFilters()">Réinitialiser</button>
                             </div>
 
                             <div class="fr-table fr-table--bordered fr-mb-0">
                                 <table>
                                     <thead>
                                         <tr>
-                                            <th class="sortable-header" onclick="toggleSort('id_metier')" style="width: 20%">ID Métier <span id="icon-sort-id_metier" class="fr-icon-arrow-down-s-line sort-icon" style="opacity: 0;"></span></th>
-                                            
-                                            <th class="sortable-header" onclick="toggleSort('gabarit_nom')" style="width: 25%">Modèle <span id="icon-sort-gabarit_nom" class="fr-icon-arrow-down-s-line sort-icon" style="opacity: 0;"></span></th>
-                                            
-                                            <th class="sortable-header" onclick="toggleSort('structure_libelle')" style="width: 25%">Affectation <span id="icon-sort-structure_libelle" class="fr-icon-arrow-down-s-line sort-icon" style="opacity: 0;"></span></th>
-                                            
-                                            <th class="sortable-header" onclick="toggleSort('statut')" style="width: 10%">Statut <span id="icon-sort-statut" class="fr-icon-arrow-down-s-line sort-icon" style="opacity: 0;"></span></th>
+                                            <th class="sortable-header" onclick="toggleSort('id_metier')"
+                                                style="width: 20%">ID Métier <span id="icon-sort-id_metier"
+                                                    class="fr-icon-arrow-down-s-line sort-icon"
+                                                    style="opacity: 0;"></span></th>
+
+                                            <th class="sortable-header" onclick="toggleSort('gabarit_nom')"
+                                                style="width: 25%">Modèle <span id="icon-sort-gabarit_nom"
+                                                    class="fr-icon-arrow-down-s-line sort-icon"
+                                                    style="opacity: 0;"></span></th>
+
+                                            <th class="sortable-header" onclick="toggleSort('structure_libelle')"
+                                                style="width: 25%">Affectation <span id="icon-sort-structure_libelle"
+                                                    class="fr-icon-arrow-down-s-line sort-icon"
+                                                    style="opacity: 0;"></span></th>
+
+                                            <th class="sortable-header" onclick="toggleSort('statut')"
+                                                style="width: 10%">Statut <span id="icon-sort-statut"
+                                                    class="fr-icon-arrow-down-s-line sort-icon"
+                                                    style="opacity: 0;"></span></th>
                                             <th style="width: 15%">Actions</th>
                                         </tr>
                                     </thead>
@@ -139,15 +185,21 @@
                             </div>
 
                             <div class="pagination-controls">
-                                <div><button id="btn-prev" class="fr-btn fr-btn--secondary fr-btn--sm fr-icon-arrow-left-s-line fr-btn--icon-left" onclick="changePage(-1)">Précédent</button></div>
+                                <div><button id="btn-prev"
+                                        class="fr-btn fr-btn--secondary fr-btn--sm fr-icon-arrow-left-s-line fr-btn--icon-left"
+                                        onclick="changePage(-1)">Précédent</button></div>
                                 <div class="fr-text--sm fr-text--bold" id="page-info"></div>
-                                <div><button id="btn-next" class="fr-btn fr-btn--secondary fr-btn--sm fr-icon-arrow-right-s-line fr-btn--icon-right" onclick="changePage(1)">Suivant</button></div>
+                                <div><button id="btn-next"
+                                        class="fr-btn fr-btn--secondary fr-btn--sm fr-icon-arrow-right-s-line fr-btn--icon-right"
+                                        onclick="changePage(1)">Suivant</button></div>
                             </div>
                         </div>
                     </div>
 
                     <div id="view-mobilier-create" class="sub-view">
-                        <button class="fr-btn fr-btn--secondary fr-btn--icon-left fr-icon-arrow-left-line fr-mb-4w no-print" onclick="showSubView('view-mobilier-list', 'panel-mobilier')">Retour</button>
+                        <button
+                            class="fr-btn fr-btn--secondary fr-btn--icon-left fr-icon-arrow-left-line fr-mb-4w no-print"
+                            onclick="showSubView('view-mobilier-list', 'panel-mobilier')">Retour</button>
                         <div class="fr-grid-row fr-grid-row--gutters">
                             <div class="fr-col-12 fr-col-md-8 no-print">
                                 <div class="trace-card">
@@ -157,25 +209,44 @@
                                             <div class="fr-col-12 fr-col-md-8">
                                                 <div class="fr-input-group">
                                                     <label class="fr-label">Identifiant de départ</label>
-                                                    <input class="fr-input" type="text" id="new-mob-id" readonly title="Le système générera la suite automatiquement" style="font-family: monospace; font-weight: bold; background-color: var(--background-alt-blue-france); color: var(--text-action-high-blue-france);">
+                                                    <input class="fr-input" type="text" id="new-mob-id" readonly
+                                                        title="Le système générera la suite automatiquement"
+                                                        style="font-family: monospace; font-weight: bold; background-color: var(--background-alt-blue-france); color: var(--text-action-high-blue-france);">
                                                 </div>
                                             </div>
                                             <div class="fr-col-12 fr-col-md-4">
                                                 <div class="fr-input-group">
                                                     <label class="fr-label">Quantité à créer</label>
-                                                    <input class="fr-input" type="number" id="new-mob-quantite" min="1" max="1000" value="1" required>
+                                                    <input class="fr-input" type="number" id="new-mob-quantite" min="1"
+                                                        max="1000" value="1" required>
                                                 </div>
                                             </div>
                                         </div>
-                                        
-                                        <div class="fr-select-group"><label class="fr-label">Modèle (Catalogue)</label><select class="fr-select" id="new-mob-gabarit" required></select></div>
+
+                                        <div class="fr-select-group"><label class="fr-label">Modèle
+                                                (Catalogue)</label><select class="fr-select" id="new-mob-gabarit"
+                                                required></select></div>
                                         <div class="fr-grid-row fr-grid-row--gutters">
-                                            <div class="fr-col-12 fr-col-md-6"><div class="fr-select-group"><label class="fr-label">Service d'affectation</label><select class="fr-select" id="new-mob-ua" required></select></div></div>
-                                            <div class="fr-col-12 fr-col-md-6"><div class="fr-select-group"><label class="fr-label">Localisation physique</label><select class="fr-select" id="new-mob-lieu" required></select></div></div>
+                                            <div class="fr-col-12 fr-col-md-6">
+                                                <div class="fr-select-group"><label class="fr-label">Service
+                                                        d'affectation</label><select class="fr-select" id="new-mob-ua"
+                                                        required></select></div>
+                                            </div>
+                                            <div class="fr-col-12 fr-col-md-6">
+                                                <div class="fr-select-group"><label class="fr-label">Localisation
+                                                        physique</label><select class="fr-select" id="new-mob-lieu"
+                                                        required></select></div>
+                                            </div>
                                         </div>
-                                        <div class="fr-select-group"><label class="fr-label">Statut initial</label><select class="fr-select" id="new-mob-statut" required><option value="en_service" selected>En service</option><option value="dispo_reemploi">Disponible pour réemploi</option></select></div>
-                                        <div class="fr-input-group"><label class="fr-label">Remarques</label><textarea class="fr-input" id="new-mob-remarques" rows="2"></textarea></div>
-                                        <button type="submit" class="fr-btn fr-icon-check-line fr-btn--icon-left">Enregistrer</button>
+                                        <div class="fr-select-group"><label class="fr-label">Statut
+                                                initial</label><select class="fr-select" id="new-mob-statut" required>
+                                                <option value="en_service" selected>En service</option>
+                                                <option value="dispo_reemploi">Disponible pour réemploi</option>
+                                            </select></div>
+                                        <div class="fr-input-group"><label class="fr-label">Remarques</label><textarea
+                                                class="fr-input" id="new-mob-remarques" rows="2"></textarea></div>
+                                        <button type="submit"
+                                            class="fr-btn fr-icon-check-line fr-btn--icon-left">Enregistrer</button>
                                     </form>
                                 </div>
                             </div>
@@ -183,59 +254,106 @@
                     </div>
 
                     <div id="view-mobilier-detail" class="sub-view">
-                        <button class="fr-btn fr-btn--secondary fr-btn--icon-left fr-icon-arrow-left-line fr-mb-4w no-print" onclick="showSubView('view-mobilier-list', 'panel-mobilier')">Retour</button>
+                        <button
+                            class="fr-btn fr-btn--secondary fr-btn--icon-left fr-icon-arrow-left-line fr-mb-4w no-print"
+                            onclick="showSubView('view-mobilier-list', 'panel-mobilier')">Retour</button>
                         <div class="fr-grid-row fr-grid-row--gutters">
                             <div class="fr-col-12 fr-col-md-8 no-print">
                                 <div class="trace-card">
                                     <h3>Fiche de l'équipement</h3>
                                     <form onsubmit="saveMobilier(event, 'EDIT')">
                                         <input type="hidden" id="edit-mob-uuid">
-                                        <div class="fr-input-group"><label class="fr-label">Identifiant</label><input class="fr-input" type="text" id="edit-mob-id" readonly style="font-family: monospace;"></div>
-                                        <div class="fr-select-group"><label class="fr-label">Modèle</label><select class="fr-select" id="edit-mob-gabarit" required></select></div>
+                                        <div class="fr-input-group"><label class="fr-label">Identifiant</label><input
+                                                class="fr-input" type="text" id="edit-mob-id" readonly
+                                                style="font-family: monospace;"></div>
+                                        <div class="fr-select-group"><label class="fr-label">Modèle</label><select
+                                                class="fr-select" id="edit-mob-gabarit" required></select></div>
                                         <div class="fr-grid-row fr-grid-row--gutters">
-                                            <div class="fr-col-12 fr-col-md-6"><div class="fr-select-group"><label class="fr-label">Affectation</label><select class="fr-select" id="edit-mob-ua" required></select></div></div>
-                                            <div class="fr-col-12 fr-col-md-6"><div class="fr-select-group"><label class="fr-label">Localisation</label><select class="fr-select" id="edit-mob-lieu" required></select></div></div>
+                                            <div class="fr-col-12 fr-col-md-6">
+                                                <div class="fr-select-group"><label
+                                                        class="fr-label">Affectation</label><select class="fr-select"
+                                                        id="edit-mob-ua" required></select></div>
+                                            </div>
+                                            <div class="fr-col-12 fr-col-md-6">
+                                                <div class="fr-select-group"><label
+                                                        class="fr-label">Localisation</label><select class="fr-select"
+                                                        id="edit-mob-lieu" required></select></div>
+                                            </div>
                                         </div>
-                                        <div class="fr-select-group"><label class="fr-label">Statut</label><select class="fr-select" id="edit-mob-statut" required><option value="en_service">En service</option><option value="dispo_reemploi">Disponible pour réemploi</option><option value="en_maintenance">En maintenance</option><option value="au_rebut">Au rebut</option></select></div>
-                                        <div class="fr-input-group"><label class="fr-label">Remarques</label><textarea class="fr-input" id="edit-mob-remarques" rows="2"></textarea></div>
-                                        
+                                        <div class="fr-select-group"><label class="fr-label">Statut</label><select
+                                                class="fr-select" id="edit-mob-statut" required>
+                                                <option value="en_service">En service</option>
+                                                <option value="dispo_reemploi">Disponible pour réemploi</option>
+                                                <option value="en_maintenance">En maintenance</option>
+                                                <option value="au_rebut">Au rebut</option>
+                                            </select></div>
+                                        <div class="fr-input-group"><label class="fr-label">Remarques</label><textarea
+                                                class="fr-input" id="edit-mob-remarques" rows="2"></textarea></div>
+
                                         <div class="fr-mt-4w" style="display: flex; justify-content: space-between;">
-                                            <button type="submit" class="fr-btn fr-icon-save-line fr-btn--icon-left">Sauvegarder</button>
-                                            <button type="button" class="fr-btn fr-btn--secondary fr-icon-delete-line fr-btn--icon-left" style="color: var(--text-default-error); box-shadow: inset 0 0 0 1px var(--text-default-error);" onclick="deleteMobilier()">Supprimer</button>
+                                            <button type="submit"
+                                                class="fr-btn fr-icon-save-line fr-btn--icon-left">Sauvegarder</button>
+                                            <button type="button"
+                                                class="fr-btn fr-btn--secondary fr-icon-delete-line fr-btn--icon-left"
+                                                style="color: var(--text-default-error); box-shadow: inset 0 0 0 1px var(--text-default-error);"
+                                                onclick="deleteMobilier()">Supprimer</button>
                                         </div>
                                     </form>
                                 </div>
                             </div>
                             <div class="fr-col-12 fr-col-md-4">
-                     
+
                             </div>
                         </div>
                     </div>
-                                   
+
                     <div id="view-mobilier-scanner" class="sub-view">
-                        <button class="fr-btn fr-btn--secondary fr-btn--icon-left fr-icon-arrow-left-line fr-mb-4w no-print" onclick="showSubView('view-mobilier-list', 'panel-mobilier')">Retour</button>
+                        <button
+                            class="fr-btn fr-btn--secondary fr-btn--icon-left fr-icon-arrow-left-line fr-mb-4w no-print"
+                            onclick="showSubView('view-mobilier-list', 'panel-mobilier')">Retour</button>
                         <div class="fr-grid-row fr-grid-row--gutters">
                             <div class="fr-col-12 fr-col-md-8">
                                 <div class="trace-card">
                                     <h3>Réaffectation à la volée (Mode Scan)</h3>
-                                    <p class="fr-text--sm">Définissez la nouvelle affectation, puis scannez les QR codes à la chaîne avec une douchette pour mettre à jour les équipements.</p>
-                                    
-                                    <div class="fr-grid-row fr-grid-row--gutters fr-mb-2w" style="background: var(--background-alt-blue-france); padding: 1rem; border-radius: 4px;">
-                                        <div class="fr-col-12 fr-col-md-4"><div class="fr-select-group"><label class="fr-label">Nouveau Service</label><select class="fr-select" id="scan-target-ua"></select></div></div>
-                                        <div class="fr-col-12 fr-col-md-4"><div class="fr-select-group"><label class="fr-label">Nouveau Lieu</label><select class="fr-select" id="scan-target-lieu"></select></div></div>
-                                        <div class="fr-col-12 fr-col-md-4"><div class="fr-select-group"><label class="fr-label">Nouveau Statut</label><select class="fr-select" id="scan-target-statut"><option value="en_service" selected>En service</option><option value="dispo_reemploi">Disponible pour réemploi</option><option value="en_maintenance">En maintenance</option><option value="au_rebut">Au rebut</option></select></div></div>
+                                    <p class="fr-text--sm">Définissez la nouvelle affectation, puis scannez les QR codes
+                                        à la chaîne avec une douchette pour mettre à jour les équipements.</p>
+
+                                    <div class="fr-grid-row fr-grid-row--gutters fr-mb-2w"
+                                        style="background: var(--background-alt-blue-france); padding: 1rem; border-radius: 4px;">
+                                        <div class="fr-col-12 fr-col-md-4">
+                                            <div class="fr-select-group"><label class="fr-label">Nouveau
+                                                    Service</label><select class="fr-select"
+                                                    id="scan-target-ua"></select></div>
+                                        </div>
+                                        <div class="fr-col-12 fr-col-md-4">
+                                            <div class="fr-select-group"><label class="fr-label">Nouveau
+                                                    Lieu</label><select class="fr-select"
+                                                    id="scan-target-lieu"></select></div>
+                                        </div>
+                                        <div class="fr-col-12 fr-col-md-4">
+                                            <div class="fr-select-group"><label class="fr-label">Nouveau
+                                                    Statut</label><select class="fr-select" id="scan-target-statut">
+                                                    <option value="en_service" selected>En service</option>
+                                                    <option value="dispo_reemploi">Disponible pour réemploi</option>
+                                                    <option value="en_maintenance">En maintenance</option>
+                                                    <option value="au_rebut">Au rebut</option>
+                                                </select></div>
+                                        </div>
                                     </div>
 
                                     <div class="fr-input-group fr-mt-4w">
                                         <label class="fr-label fr-text--lg">Scanner le QR Code ou saisir l'ID :</label>
-                                        <input class="fr-input fr-input--lg" type="text" id="scanner-input" placeholder="Ex: MOB-000123 puis tapez Entrée" onkeypress="processScan(event)" autocomplete="off">
+                                        <input class="fr-input fr-input--lg" type="text" id="scanner-input"
+                                            placeholder="Ex: MOB-000123 puis tapez Entrée"
+                                            onkeypress="processScan(event)" autocomplete="off">
                                     </div>
                                 </div>
                             </div>
                             <div class="fr-col-12 fr-col-md-4">
                                 <div class="trace-card">
                                     <h4 class="fr-h6">Historique des scans</h4>
-                                    <ul id="scan-log" class="fr-badge-group" style="list-style: none; padding: 0; max-height: 400px; overflow-y: auto;">
+                                    <ul id="scan-log" class="fr-badge-group"
+                                        style="list-style: none; padding: 0; max-height: 400px; overflow-y: auto;">
                                         <!-- Les logs d'intervention s'afficheront ici -->
                                     </ul>
                                 </div>
@@ -243,165 +361,248 @@
                         </div>
                     </div>
                     <div id="view-mobilier-import" class="sub-view">
-    <button class="fr-btn fr-btn--secondary fr-btn--icon-left fr-icon-arrow-left-line fr-mb-4w no-print" onclick="showSubView('view-mobilier-list', 'panel-mobilier')">Retour</button>
-    <div class="fr-grid-row fr-grid-row--gutters">
-        <div class="fr-col-12 fr-col-md-8">
-            <div class="trace-card">
-                <h3>Réaffectation en masse (.txt)</h3>
-                <p class="fr-text--sm">Importez un fichier contenant une liste d'identifiants (un par ligne) pour les mettre à jour simultanément[cite: 25, 27].</p>
-                
-                <div class="fr-grid-row fr-grid-row--gutters fr-mb-3w" style="background: var(--background-alt-blue-france); padding: 1rem; border-radius: 4px;">
-                    <div class="fr-col-12 fr-col-md-4"><div class="fr-select-group"><label class="fr-label">Nouvelle Affectation</label><select class="fr-select" id="import-target-ua"></select></div></div>
-                    <div class="fr-col-12 fr-col-md-4"><div class="fr-select-group"><label class="fr-label">Nouveau Lieu</label><select class="fr-select" id="import-target-lieu"></select></div></div>
-                    <div class="fr-col-12 fr-col-md-4"><div class="fr-select-group"><label class="fr-label">Nouveau Statut</label><select class="fr-select" id="import-target-statut">
-                        <option value="en_service" selected>En service</option>
-                        <option value="dispo_reemploi">Disponible pour réemploi</option>
-                        <option value="en_maintenance">En maintenance</option>
-                        <option value="au_rebut">Au rebut</option>
-                    </select></div></div>
+                        <button
+                            class="fr-btn fr-btn--secondary fr-btn--icon-left fr-icon-arrow-left-line fr-mb-4w no-print"
+                            onclick="showSubView('view-mobilier-list', 'panel-mobilier')">Retour</button>
+                        <div class="fr-grid-row fr-grid-row--gutters">
+                            <div class="fr-col-12 fr-col-md-8">
+                                <div class="trace-card">
+                                    <h3>Réaffectation en masse (.txt)</h3>
+                                    <p class="fr-text--sm">Importez un fichier contenant une liste d'identifiants (un
+                                        par ligne) pour les mettre à jour simultanément[cite: 25, 27].</p>
+
+                                    <div class="fr-grid-row fr-grid-row--gutters fr-mb-3w"
+                                        style="background: var(--background-alt-blue-france); padding: 1rem; border-radius: 4px;">
+                                        <div class="fr-col-12 fr-col-md-4">
+                                            <div class="fr-select-group"><label class="fr-label">Nouvelle
+                                                    Affectation</label><select class="fr-select"
+                                                    id="import-target-ua"></select></div>
+                                        </div>
+                                        <div class="fr-col-12 fr-col-md-4">
+                                            <div class="fr-select-group"><label class="fr-label">Nouveau
+                                                    Lieu</label><select class="fr-select"
+                                                    id="import-target-lieu"></select></div>
+                                        </div>
+                                        <div class="fr-col-12 fr-col-md-4">
+                                            <div class="fr-select-group"><label class="fr-label">Nouveau
+                                                    Statut</label><select class="fr-select" id="import-target-statut">
+                                                    <option value="en_service" selected>En service</option>
+                                                    <option value="dispo_reemploi">Disponible pour réemploi</option>
+                                                    <option value="en_maintenance">En maintenance</option>
+                                                    <option value="au_rebut">Au rebut</option>
+                                                </select></div>
+                                        </div>
+                                    </div>
+
+                                    <div class="fr-upload-group fr-mb-3w">
+                                        <label class="fr-label" for="file-upload">Sélectionner le fichier TRACE_SCAN
+                                            (.txt)</label>
+                                        <input class="fr-upload" type="file" id="file-upload" accept=".txt">
+                                    </div>
+
+                                    <button class="fr-btn fr-icon-upload-line fr-btn--icon-left"
+                                        onclick="processFileImport()">Lancer la mise à jour</button>
+                                </div>
+                            </div>
+                            <div class="fr-col-12 fr-col-md-4">
+                                <div class="trace-card">
+                                    <h4 class="fr-h6">Rapport d'importation</h4>
+                                    <div id="import-progress" class="fr-mb-2w" style="display:none;">
+                                        <p class="fr-text--xs fr-mb-1v">Progression...</p>
+                                        <progress value="0" max="100" style="width:100%;"></progress>
+                                    </div>
+                                    <ul id="import-log" class="fr-badge-group"
+                                        style="list-style: none; padding: 0; max-height: 400px; overflow-y: auto;"></ul>
+                                </div>
+                            </div>
+                        </div>
+
+
+                    </div>
+
+
                 </div>
 
-                <div class="fr-upload-group fr-mb-3w">
-                    <label class="fr-label" for="file-upload">Sélectionner le fichier TRACE_SCAN (.txt)</label>
-                    <input class="fr-upload" type="file" id="file-upload" accept=".txt">
-                </div>
-                
-                <button class="fr-btn fr-icon-upload-line fr-btn--icon-left" onclick="processFileImport()">Lancer la mise à jour</button>
-            </div>
-        </div>
-        <div class="fr-col-12 fr-col-md-4">
-            <div class="trace-card">
-                <h4 class="fr-h6">Rapport d'importation</h4>
-                <div id="import-progress" class="fr-mb-2w" style="display:none;">
-                    <p class="fr-text--xs fr-mb-1v">Progression...</p>
-                    <progress value="0" max="100" style="width:100%;"></progress>
-                </div>
-                <ul id="import-log" class="fr-badge-group" style="list-style: none; padding: 0; max-height: 400px; overflow-y: auto;"></ul>
-            </div>
-        </div>
-    </div>
 
+                <div id="panel-gabarits" class="fr-tabs__panel fr-container-fluid fr-px-2w fr-px-md-6w" role="tabpanel"
+                    aria-labelledby="tab-gabarits" tabindex="0">
 
-</div>
-
-
-                </div>
-                
- 
-                <div id="panel-gabarits" class="fr-tabs__panel fr-container-fluid fr-px-2w fr-px-md-6w" role="tabpanel" aria-labelledby="tab-gabarits" tabindex="0">
-                    
                     <div id="view-gabarits-list" class="sub-view active">
                         <div class="fr-grid-row fr-grid-row--middle fr-mb-4w">
-                            <div class="fr-col-12 fr-col-md-6"><h2 class="fr-m-0">Catalogue National</h2></div>
+                            <div class="fr-col-12 fr-col-md-6">
+                                <h2 class="fr-m-0">Catalogue National</h2>
+                            </div>
                             <div class="fr-col-12 fr-col-md-6 fr-text-md-right fr-mt-2w fr-mt-md-0">
-                                <button class="fr-btn fr-icon-add-circle-line fr-btn--icon-left" onclick="openCreateGabarit()">Créer un modèle</button>
+                                <button class="fr-btn fr-icon-add-circle-line fr-btn--icon-left"
+                                    onclick="openCreateGabarit()">Créer un modèle</button>
                             </div>
                         </div>
                         <div class="trace-card">
-    <div class="fr-grid-row fr-grid-row--gutters fr-mb-3w">
-        <div class="fr-col-12 fr-col-md-6">
-            <div class="fr-search-bar" id="search-gab" role="search">
-                <label class="fr-label" for="search-gab-input">Recherche modèle</label>
-                <input class="fr-input" placeholder="Ex: Bureau, Gris, Metal..." type="search" id="search-gab-input" oninput="updateGabFilters('gabQuery', this.value)">
-                <button class="fr-btn" title="Rechercher">Rechercher</button>
-            </div>
-        </div>
-        <div class="fr-col-12 fr-col-md-6">
-            <select class="fr-select" id="filter-gab-cat" onchange="updateGabFilters('gabFilterCat', this.value)">
-                <option value="" selected>Toutes les catégories</option>
-                <option value="Bureau">Bureau / Table</option>
-                <option value="Assise">Assise</option>
-                <option value="Rangement">Rangement</option>
-                <option value="Autre">Autre équipement</option>
-            </select>
-        </div>
-    </div>
+                            <div class="fr-grid-row fr-grid-row--gutters fr-mb-3w">
+                                <div class="fr-col-12 fr-col-md-6">
+                                    <div class="fr-search-bar" id="search-gab" role="search">
+                                        <label class="fr-label" for="search-gab-input">Recherche modèle</label>
+                                        <input class="fr-input" placeholder="Ex: Bureau, Gris, Metal..." type="search"
+                                            id="search-gab-input" oninput="updateGabFilters('gabQuery', this.value)">
+                                        <button class="fr-btn" title="Rechercher">Rechercher</button>
+                                    </div>
+                                </div>
+                                <div class="fr-col-12 fr-col-md-6">
+                                    <select class="fr-select" id="filter-gab-cat"
+                                        onchange="updateGabFilters('gabFilterCat', this.value)">
+                                        <option value="" selected>Toutes les catégories</option>
+                                        <option value="Bureau">Bureau / Table</option>
+                                        <option value="Assise">Assise</option>
+                                        <option value="Rangement">Rangement</option>
+                                        <option value="Autre">Autre équipement</option>
+                                    </select>
+                                </div>
+                            </div>
 
-						<div class="fr-table fr-table--bordered">
-							<table>
-								<thead>
-									<tr>
-										<th class="sortable-header" onclick="toggleGabSort('reference_catalogue')" style="width:15%">Référence <span id="icon-sort-gab-reference_catalogue" class="fr-icon-arrow-down-s-line sort-icon" style="opacity: 0;"></span></th>
-										<th class="sortable-header" onclick="toggleGabSort('categorie')" style="width:15%">Catégorie <span id="icon-sort-gab-categorie" class="fr-icon-arrow-down-s-line sort-icon" style="opacity: 0;"></span></th>
-										<th class="sortable-header" onclick="toggleGabSort('nom_descriptif')" style="width:25%">Nom descriptif <span id="icon-sort-gab-nom_descriptif" class="fr-icon-arrow-down-s-line sort-icon" style="opacity: 0;"></span></th>
-										<th style="width:35%">Attributs (JSON)</th>
-										<th style="width:10%">Actions</th>
-									</tr>
-								</thead>
-								<tbody id="table-gabarits-body"></tbody>
-							</table>
-						</div>
-						</div>
+                            <div class="fr-table fr-table--bordered">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th class="sortable-header" onclick="toggleGabSort('reference_catalogue')"
+                                                style="width:15%">Référence <span id="icon-sort-gab-reference_catalogue"
+                                                    class="fr-icon-arrow-down-s-line sort-icon"
+                                                    style="opacity: 0;"></span></th>
+                                            <th class="sortable-header" onclick="toggleGabSort('categorie')"
+                                                style="width:15%">Catégorie <span id="icon-sort-gab-categorie"
+                                                    class="fr-icon-arrow-down-s-line sort-icon"
+                                                    style="opacity: 0;"></span></th>
+                                            <th class="sortable-header" onclick="toggleGabSort('nom_descriptif')"
+                                                style="width:25%">Nom descriptif <span id="icon-sort-gab-nom_descriptif"
+                                                    class="fr-icon-arrow-down-s-line sort-icon"
+                                                    style="opacity: 0;"></span></th>
+                                            <th style="width:35%">Attributs (JSON)</th>
+                                            <th style="width:10%">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="table-gabarits-body"></tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
 
                     <div id="view-gabarits-form" class="sub-view">
-                        <button class="fr-btn fr-btn--secondary fr-btn--icon-left fr-icon-arrow-left-line fr-mb-4w" onclick="showSubView('view-gabarits-list', 'panel-gabarits')">Retour</button>
+                        <button class="fr-btn fr-btn--secondary fr-btn--icon-left fr-icon-arrow-left-line fr-mb-4w"
+                            onclick="showSubView('view-gabarits-list', 'panel-gabarits')">Retour</button>
                         <div class="trace-card">
                             <h3 class="fr-mb-4w" id="gab-form-title">Créer un nouveau Modèle</h3>
                             <form onsubmit="saveGabarit(event)">
                                 <input type="hidden" id="edit-gab-id">
                                 <div class="fr-grid-row fr-grid-row--gutters fr-mb-4w">
-                                    <div class="fr-col-12 fr-col-md-4"><div class="fr-input-group"><label class="fr-label">Référence</label><input class="fr-input" type="text" id="new-gab-ref" required></div></div>
-                                    <div class="fr-col-12 fr-col-md-4"><div class="fr-select-group"><label class="fr-label">Catégorie</label><select class="fr-select" id="new-gab-cat" required><option value="" selected disabled hidden>Sélectionner...</option><option value="Bureau">Bureau / Table</option><option value="Assise">Assise</option><option value="Rangement">Rangement</option><option value="Autre">Autre équipement</option></select></div></div>
-                                    <div class="fr-col-12 fr-col-md-4"><div class="fr-input-group"><label class="fr-label">Désignation</label><input class="fr-input" type="text" id="new-gab-nom" required></div></div>
+                                    <div class="fr-col-12 fr-col-md-4">
+                                        <div class="fr-input-group"><label class="fr-label">Référence</label><input
+                                                class="fr-input" type="text" id="new-gab-ref" required></div>
+                                    </div>
+                                    <div class="fr-col-12 fr-col-md-4">
+                                        <div class="fr-select-group"><label class="fr-label">Catégorie</label><select
+                                                class="fr-select" id="new-gab-cat" required>
+                                                <option value="" selected disabled hidden>Sélectionner...</option>
+                                                <option value="Bureau">Bureau / Table</option>
+                                                <option value="Assise">Assise</option>
+                                                <option value="Rangement">Rangement</option>
+                                                <option value="Autre">Autre équipement</option>
+                                            </select></div>
+                                    </div>
+                                    <div class="fr-col-12 fr-col-md-4">
+                                        <div class="fr-input-group"><label class="fr-label">Désignation</label><input
+                                                class="fr-input" type="text" id="new-gab-nom" required></div>
+                                    </div>
                                 </div>
-                                <hr class="fr-pb-2w"><h4 class="fr-h6">Caractéristiques Techniques (Dynamiques)</h4>
+                                <hr class="fr-pb-2w">
+                                <h4 class="fr-h6">Caractéristiques Techniques (Dynamiques)</h4>
                                 <div id="json-builder"></div>
-                                <button type="button" class="fr-btn fr-btn--secondary fr-btn--sm fr-icon-add-line fr-btn--icon-left fr-mb-4w" onclick="addJsonRow('','')">Ajouter un attribut</button>
-                                
-                                <div class="fr-mt-4w" style="display: flex; justify-content: space-between; border-top: 1px solid var(--border-default-grey); padding-top: 1rem;">
-                                    <button type="submit" class="fr-btn fr-icon-check-line fr-btn--icon-left">Enregistrer le modèle</button>
-                                    <button type="button" id="btn-delete-gab" class="fr-btn fr-btn--secondary fr-icon-delete-line fr-btn--icon-left" style="color: var(--text-default-error); box-shadow: inset 0 0 0 1px var(--text-default-error); display:none;" onclick="deleteGabarit()">Supprimer</button>
+                                <button type="button"
+                                    class="fr-btn fr-btn--secondary fr-btn--sm fr-icon-add-line fr-btn--icon-left fr-mb-4w"
+                                    onclick="addJsonRow('','')">Ajouter un attribut</button>
+
+                                <div class="fr-mt-4w"
+                                    style="display: flex; justify-content: space-between; border-top: 1px solid var(--border-default-grey); padding-top: 1rem;">
+                                    <button type="submit"
+                                        class="fr-btn fr-icon-check-line fr-btn--icon-left">Enregistrer le
+                                        modèle</button>
+                                    <button type="button" id="btn-delete-gab"
+                                        class="fr-btn fr-btn--secondary fr-icon-delete-line fr-btn--icon-left"
+                                        style="color: var(--text-default-error); box-shadow: inset 0 0 0 1px var(--text-default-error); display:none;"
+                                        onclick="deleteGabarit()">Supprimer</button>
                                 </div>
                             </form>
                         </div>
                     </div>
                 </div>
 
-<div id="panel-admin" class="fr-tabs__panel fr-container-fluid fr-px-2w fr-px-md-6w" role="tabpanel" aria-labelledby="tab-admin" tabindex="0">
-    
-    <div class="fr-grid-row fr-grid-row--gutters fr-mb-4w no-print">
-        <div class="fr-col-12">
-            <ul class="fr-btns-group fr-btns-group--inline fr-btns-group--sm">
-                <li><button class="fr-btn fr-btn--secondary" onclick="showSubView('view-users-list', 'panel-admin')">Utilisateurs</button></li>
-                <li><button class="fr-btn fr-btn--secondary" onclick="showSubView('view-ua-list', 'panel-admin')">Services (UA)</button></li>
-                <li><button class="fr-btn fr-btn--secondary" onclick="showSubView('view-lieux-list', 'panel-admin')">Lieux physiques</button></li>
-                <li><button class="fr-btn fr-btn--secondary" onclick="window.open('./utils/qrcode-generator.html', '_blank')">Édition étiquettes</button></li>
-                <li><button class="fr-btn fr-btn--secondary fr-icon-delete-bin-line fr-btn--icon-left" onclick="showSubView('view-admin-rebut', 'panel-admin')">Mise au rebut (Massive)</button></li>
-                <li><button class="fr-btn fr-btn--secondary fr-icon-history-line fr-btn--icon-left" onclick="loadAuditLogs().then(() => showSubView('view-audit-list', 'panel-admin'))">Journal d'audit</button></li>
-            </ul>
-        </div>
-    </div>
+                <div id="panel-admin" class="fr-tabs__panel fr-container-fluid fr-px-2w fr-px-md-6w" role="tabpanel"
+                    aria-labelledby="tab-admin" tabindex="0">
 
-    <div id="view-users-list" class="sub-view active">
-        <div class="fr-grid-row fr-grid-row--middle fr-mb-2w">
-            <div class="fr-col-6"><h3 class="fr-m-0">Comptes Accès</h3></div>
-            <div class="fr-col-6 fr-text-right"><button class="fr-btn fr-icon-user-add-line fr-btn--icon-left" onclick="openCreateUser()">Nouveau</button></div>
-        </div>
-        <div class="trace-card">
-            <div class="fr-table fr-table--bordered">
-                <table>
-                    <thead>
-                        <tr>
-                            <th class="sortable-header" onclick="toggleUserSort('email')">Mél <span id="icon-sort-user-email" class="sort-icon" style="opacity: 0;"></span></th>
-                            <th class="sortable-header" onclick="toggleUserSort('role')">Rôle <span id="icon-sort-user-role" class="sort-icon" style="opacity: 0;"></span></th>
-                            <th>Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="table-users-body">
-                    </tbody>
-                </table>
-                <div class="pagination-controls">
-            <div><button id="btn-prev-user" class="fr-btn fr-btn--secondary fr-btn--sm fr-icon-arrow-left-s-line fr-btn--icon-left" onclick="changeAdminPage('user', -1)">Précédent</button></div>
-            <div class="fr-text--sm fr-text--bold" id="page-info-user"></div>
-            <div><button id="btn-next-user" class="fr-btn fr-btn--secondary fr-btn--sm fr-icon-arrow-right-s-line fr-btn--icon-right" onclick="changeAdminPage('user', 1)">Suivant</button></div>
-			</div>
-            </div>
-        </div>
-    </div>
+                    <div class="fr-grid-row fr-grid-row--gutters fr-mb-4w no-print">
+                        <div class="fr-col-12">
+                            <ul class="fr-btns-group fr-btns-group--inline fr-btns-group--sm">
+                                <li><button class="fr-btn fr-btn--secondary"
+                                        onclick="showSubView('view-users-list', 'panel-admin')">Utilisateurs</button>
+                                </li>
+                                <li><button class="fr-btn fr-btn--secondary"
+                                        onclick="showSubView('view-ua-list', 'panel-admin')">Services (UA)</button></li>
+                                <li><button class="fr-btn fr-btn--secondary"
+                                        onclick="showSubView('view-lieux-list', 'panel-admin')">Lieux physiques</button>
+                                </li>
+                                <li><button class="fr-btn fr-btn--secondary"
+                                        onclick="window.open('./utils/qrcode-generator.html', '_blank')">Édition
+                                        étiquettes</button></li>
+                                <li><button class="fr-btn fr-btn--secondary fr-icon-delete-bin-line fr-btn--icon-left"
+                                        onclick="showSubView('view-admin-rebut', 'panel-admin')">Mise au rebut
+                                        (Massive)</button></li>
+                                <li><button class="fr-btn fr-btn--secondary fr-icon-history-line fr-btn--icon-left"
+                                        onclick="loadAuditLogs().then(() => showSubView('view-audit-list', 'panel-admin'))">Journal
+                                        d'audit</button></li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div id="view-users-list" class="sub-view active">
+                        <div class="fr-grid-row fr-grid-row--middle fr-mb-2w">
+                            <div class="fr-col-6">
+                                <h3 class="fr-m-0">Comptes Accès</h3>
+                            </div>
+                            <div class="fr-col-6 fr-text-right"><button
+                                    class="fr-btn fr-icon-user-add-line fr-btn--icon-left"
+                                    onclick="openCreateUser()">Nouveau</button></div>
+                        </div>
+                        <div class="trace-card">
+                            <div class="fr-table fr-table--bordered">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th class="sortable-header" onclick="toggleUserSort('email')">Mél <span
+                                                    id="icon-sort-user-email" class="sort-icon"
+                                                    style="opacity: 0;"></span></th>
+                                            <th class="sortable-header" onclick="toggleUserSort('role')">Rôle <span
+                                                    id="icon-sort-user-role" class="sort-icon"
+                                                    style="opacity: 0;"></span></th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="table-users-body">
+                                    </tbody>
+                                </table>
+                                <div class="pagination-controls">
+                                    <div><button id="btn-prev-user"
+                                            class="fr-btn fr-btn--secondary fr-btn--sm fr-icon-arrow-left-s-line fr-btn--icon-left"
+                                            onclick="changeAdminPage('user', -1)">Précédent</button></div>
+                                    <div class="fr-text--sm fr-text--bold" id="page-info-user"></div>
+                                    <div><button id="btn-next-user"
+                                            class="fr-btn fr-btn--secondary fr-btn--sm fr-icon-arrow-right-s-line fr-btn--icon-right"
+                                            onclick="changeAdminPage('user', 1)">Suivant</button></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
                     <div id="view-users-form" class="sub-view">
-                        <button class="fr-btn fr-btn--secondary fr-btn--icon-left fr-icon-arrow-left-line fr-mb-4w" onclick="showSubView('view-users-list', 'panel-admin')">Retour</button>
+                        <button class="fr-btn fr-btn--secondary fr-btn--icon-left fr-icon-arrow-left-line fr-mb-4w"
+                            onclick="showSubView('view-users-list', 'panel-admin')">Retour</button>
                         <div class="trace-card">
                             <h3 class="fr-mb-4w">Créer un profil Administrateur / Agent</h3>
                             <form onsubmit="saveUser(event)">
@@ -409,7 +610,8 @@
                                     <div class="fr-col-12 fr-col-md-6">
                                         <div class="fr-input-group">
                                             <label class="fr-label">Adresse mél (Identifiant)</label>
-                                            <input class="fr-input" type="email" id="new-user-email" required placeholder="nom@dgfip.finances.gouv.fr">
+                                            <input class="fr-input" type="email" id="new-user-email" required
+                                                placeholder="nom@dgfip.finances.gouv.fr">
                                         </div>
                                     </div>
                                     <div class="fr-col-12 fr-col-md-6">
@@ -418,7 +620,8 @@
                                             <select class="fr-select" id="new-user-role" required>
                                                 <option value="" selected disabled hidden>Sélectionner...</option>
                                                 <option value="agent">Agent (Lecture/Écriture inventaire)</option>
-                                                <option value="administrateur">Administrateur (Gestion complète)</option>
+                                                <option value="administrateur">Administrateur (Gestion complète)
+                                                </option>
                                             </select>
                                         </div>
                                     </div>
@@ -427,159 +630,204 @@
                                     <label class="fr-label">Mot de passe temporaire</label>
                                     <input class="fr-input" type="text" id="new-user-pwd" required minlength="8">
                                 </div>
-                                
+
                                 <div style="border-top: 1px solid var(--border-default-grey); padding-top: 1rem;">
-                                    <button type="submit" class="fr-btn fr-icon-check-line fr-btn--icon-left">Créer le compte</button>
+                                    <button type="submit" class="fr-btn fr-icon-check-line fr-btn--icon-left">Créer le
+                                        compte</button>
                                 </div>
                             </form>
                         </div>
                     </div>
 
-    <div id="view-ua-list" class="sub-view">
-        <div class="fr-grid-row fr-grid-row--middle fr-mb-2w">
-            <div class="fr-col-6"><h3 class="fr-m-0">Services (Structures)</h3></div>
-            <div class="fr-col-6 fr-text-right"><button class="fr-btn fr-icon-add-line fr-btn--icon-left" onclick="openEditUA(null)">Ajouter UA</button></div>
-        </div>
-       <div class="trace-card">
-            <div class="fr-table fr-table--bordered">
-                <table>
-                    <thead>
-                        <tr>
-                            <th class="sortable-header" onclick="toggleUASort('code_sages')" style="width:20%">Code Sages <span id="icon-sort-ua-code_sages" class="sort-icon" style="opacity: 0;"></span></th>
-                            <th class="sortable-header" onclick="toggleUASort('libelle')" style="width:60%">Libellé du service <span id="icon-sort-ua-libelle" class="sort-icon" style="opacity: 0;"></span></th>
-                            <th style="width:20%">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="table-ua-body">
-                        </tbody>
-                </table>
-                <div class="pagination-controls">
-            <div><button id="btn-prev-ua" class="fr-btn fr-btn--secondary fr-btn--sm fr-icon-arrow-left-s-line fr-btn--icon-left" onclick="changeAdminPage('ua', -1)">Précédent</button></div>
-            <div class="fr-text--sm fr-text--bold" id="page-info-ua"></div>
-            <div><button id="btn-next-ua" class="fr-btn fr-btn--secondary fr-btn--sm fr-icon-arrow-right-s-line fr-btn--icon-right" onclick="changeAdminPage('ua', 1)">Suivant</button></div>
-        </div>
-            </div>
-        </div>
-    </div>
+                    <div id="view-ua-list" class="sub-view">
+                        <div class="fr-grid-row fr-grid-row--middle fr-mb-2w">
+                            <div class="fr-col-6">
+                                <h3 class="fr-m-0">Services (Structures)</h3>
+                            </div>
+                            <div class="fr-col-6 fr-text-right"><button
+                                    class="fr-btn fr-icon-add-line fr-btn--icon-left" onclick="openEditUA(null)">Ajouter
+                                    UA</button></div>
+                        </div>
+                        <div class="trace-card">
+                            <div class="fr-table fr-table--bordered">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th class="sortable-header" onclick="toggleUASort('code_sages')"
+                                                style="width:20%">Code Sages <span id="icon-sort-ua-code_sages"
+                                                    class="sort-icon" style="opacity: 0;"></span></th>
+                                            <th class="sortable-header" onclick="toggleUASort('libelle')"
+                                                style="width:60%">Libellé du service <span id="icon-sort-ua-libelle"
+                                                    class="sort-icon" style="opacity: 0;"></span></th>
+                                            <th style="width:20%">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="table-ua-body">
+                                    </tbody>
+                                </table>
+                                <div class="pagination-controls">
+                                    <div><button id="btn-prev-ua"
+                                            class="fr-btn fr-btn--secondary fr-btn--sm fr-icon-arrow-left-s-line fr-btn--icon-left"
+                                            onclick="changeAdminPage('ua', -1)">Précédent</button></div>
+                                    <div class="fr-text--sm fr-text--bold" id="page-info-ua"></div>
+                                    <div><button id="btn-next-ua"
+                                            class="fr-btn fr-btn--secondary fr-btn--sm fr-icon-arrow-right-s-line fr-btn--icon-right"
+                                            onclick="changeAdminPage('ua', 1)">Suivant</button></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
-    <div id="view-lieux-list" class="sub-view">
-        <div class="fr-grid-row fr-grid-row--middle fr-mb-2w">
-            <div class="fr-col-6"><h3 class="fr-m-0">Lieux Physiques</h3></div>
-            <div class="fr-col-6 fr-text-right"><button class="fr-btn fr-icon-add-line fr-btn--icon-left" onclick="openEditLieu(null)">Ajouter Lieu</button></div>
-        </div>
-        <div class="trace-card">
-            <div class="fr-table fr-table--bordered">
-                <table>
-                    <thead>
-                        <tr>
-                            <th class="sortable-header" onclick="toggleLieuSort('nom')" style="width:80%">Nom du bâtiment / bureau <span id="icon-sort-lieu-nom" class="sort-icon" style="opacity: 0;"></span></th>
-                            <th style="width:20%">Actions</th>
-                        </tr>
-                    </thead>
-                    <tbody id="table-lieux-body">
-                        </tbody>
-                </table>
-                <div class="pagination-controls">
-            <div><button id="btn-prev-lieu" class="fr-btn fr-btn--secondary fr-btn--sm fr-icon-arrow-left-s-line fr-btn--icon-left" onclick="changeAdminPage('lieu', -1)">Précédent</button></div>
-            <div class="fr-text--sm fr-text--bold" id="page-info-lieu"></div>
-            <div><button id="btn-next-lieu" class="fr-btn fr-btn--secondary fr-btn--sm fr-icon-arrow-right-s-line fr-btn--icon-right" onclick="changeAdminPage('lieu', 1)">Suivant</button></div>
-        </div>
-            </div>
-        </div>
-    </div>
+                    <div id="view-lieux-list" class="sub-view">
+                        <div class="fr-grid-row fr-grid-row--middle fr-mb-2w">
+                            <div class="fr-col-6">
+                                <h3 class="fr-m-0">Lieux Physiques</h3>
+                            </div>
+                            <div class="fr-col-6 fr-text-right"><button
+                                    class="fr-btn fr-icon-add-line fr-btn--icon-left"
+                                    onclick="openEditLieu(null)">Ajouter Lieu</button></div>
+                        </div>
+                        <div class="trace-card">
+                            <div class="fr-table fr-table--bordered">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th class="sortable-header" onclick="toggleLieuSort('nom')"
+                                                style="width:80%">Nom du bâtiment / bureau <span id="icon-sort-lieu-nom"
+                                                    class="sort-icon" style="opacity: 0;"></span></th>
+                                            <th style="width:20%">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="table-lieux-body">
+                                    </tbody>
+                                </table>
+                                <div class="pagination-controls">
+                                    <div><button id="btn-prev-lieu"
+                                            class="fr-btn fr-btn--secondary fr-btn--sm fr-icon-arrow-left-s-line fr-btn--icon-left"
+                                            onclick="changeAdminPage('lieu', -1)">Précédent</button></div>
+                                    <div class="fr-text--sm fr-text--bold" id="page-info-lieu"></div>
+                                    <div><button id="btn-next-lieu"
+                                            class="fr-btn fr-btn--secondary fr-btn--sm fr-icon-arrow-right-s-line fr-btn--icon-right"
+                                            onclick="changeAdminPage('lieu', 1)">Suivant</button></div>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
 
-    <div id="view-ua-form" class="sub-view">
-        <button class="fr-btn fr-btn--secondary fr-icon-arrow-left-line fr-btn--icon-left fr-mb-2w" onclick="showSubView('view-ua-list', 'panel-admin')">Retour</button>
-        <div class="trace-card">
-            <h4 id="ua-form-title">Modifier le Service</h4>
-            <form onsubmit="saveUA(event)">
-                <input type="hidden" id="ua-is-new">
-                <div class="fr-input-group"><label class="fr-label">Code SAGES</label><input class="fr-input" id="ua-code" required></div>
-                <div class="fr-input-group"><label class="fr-label">Libellé complet</label><input class="fr-input" id="ua-libelle" required></div>
-                <button type="submit" class="fr-btn">Enregistrer</button>
-                <button type="button" id="btn-del-ua" class="fr-btn fr-btn--secondary" onclick="deleteUA()">Supprimer</button>
-            </form>
-        </div>
-    </div>
-    
-    <div id="view-lieu-form" class="sub-view">
-        <button class="fr-btn fr-btn--secondary fr-icon-arrow-left-line fr-btn--icon-left fr-mb-2w" onclick="showSubView('view-lieux-list', 'panel-admin')">Retour</button>
-        <div class="trace-card">
-            <h4 id="lieu-form-title">Modifier le Lieu</h4>
-            <form onsubmit="saveLieu(event)">
-                <input type="hidden" id="lieu-id">
-                <div class="fr-input-group">
-                    <label class="fr-label">Désignation du lieu</label>
-                    <input class="fr-input" id="lieu-nom" required placeholder="Ex: Bâtiment A - Bureau 102">
+                    <div id="view-ua-form" class="sub-view">
+                        <button class="fr-btn fr-btn--secondary fr-icon-arrow-left-line fr-btn--icon-left fr-mb-2w"
+                            onclick="showSubView('view-ua-list', 'panel-admin')">Retour</button>
+                        <div class="trace-card">
+                            <h4 id="ua-form-title">Modifier le Service</h4>
+                            <form onsubmit="saveUA(event)">
+                                <input type="hidden" id="ua-is-new">
+                                <div class="fr-input-group"><label class="fr-label">Code SAGES</label><input
+                                        class="fr-input" id="ua-code" required></div>
+                                <div class="fr-input-group"><label class="fr-label">Libellé complet</label><input
+                                        class="fr-input" id="ua-libelle" required></div>
+                                <button type="submit" class="fr-btn">Enregistrer</button>
+                                <button type="button" id="btn-del-ua" class="fr-btn fr-btn--secondary"
+                                    onclick="deleteUA()">Supprimer</button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <div id="view-lieu-form" class="sub-view">
+                        <button class="fr-btn fr-btn--secondary fr-icon-arrow-left-line fr-btn--icon-left fr-mb-2w"
+                            onclick="showSubView('view-lieux-list', 'panel-admin')">Retour</button>
+                        <div class="trace-card">
+                            <h4 id="lieu-form-title">Modifier le Lieu</h4>
+                            <form onsubmit="saveLieu(event)">
+                                <input type="hidden" id="lieu-id">
+                                <div class="fr-input-group">
+                                    <label class="fr-label">Désignation du lieu</label>
+                                    <input class="fr-input" id="lieu-nom" required
+                                        placeholder="Ex: Bâtiment A - Bureau 102">
+                                </div>
+                                <div class="fr-mt-2w">
+                                    <button type="submit"
+                                        class="fr-btn fr-icon-check-line fr-btn--icon-left">Enregistrer</button>
+                                    <button type="button" id="btn-del-lieu"
+                                        class="fr-btn fr-btn--secondary fr-icon-delete-line fr-btn--icon-left"
+                                        style="color: var(--text-default-error); box-shadow: inset 0 0 0 1px var(--text-default-error);"
+                                        onclick="deleteLieu()">Supprimer</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <div id="view-admin-rebut" class="sub-view">
+                        <button class="fr-btn fr-btn--secondary fr-icon-arrow-left-line fr-btn--icon-left fr-mb-4w"
+                            onclick="showSubView('view-users-list', 'panel-admin')">Retour</button>
+                        <div class="fr-grid-row fr-grid-row--gutters">
+                            <div class="fr-col-12 fr-col-md-8">
+                                <div class="trace-card">
+                                    <h3 class="fr-text--default-error">Sortie définitive du parc (Mise au rebut)</h3>
+                                    <p class="fr-text--sm">Cette opération supprimera définitivement les équipements de
+                                        la base de données. <strong>Un Procès-verbal de mise au rebut sera
+                                            automatiquement généré.</strong></p>
+
+                                    <div class="fr-upload-group fr-my-3w">
+                                        <label class="fr-label" for="rebut-file-upload">Sélectionner le fichier des
+                                            identifiants (.txt)</label>
+                                        <input class="fr-upload" type="file" id="rebut-file-upload" accept=".txt">
+                                    </div>
+
+                                    <button class="fr-btn fr-btn--error fr-icon-delete-line fr-btn--icon-left"
+                                        onclick="processMassDelete()">Confirmer la suppression et générer le PV</button>
+                                </div>
+                            </div>
+                            <div class="fr-col-12 fr-col-md-4">
+                                <div class="trace-card">
+                                    <h4 class="fr-h6">Instructions</h4>
+                                    <ul class="fr-text--xs">
+                                        <li>Le fichier doit être au format .txt</li>
+                                        <li>Un identifiant (ex: MOB-000001) par ligne.</li>
+                                        <li>Seuls les équipements existants seront supprimés.</li>
+                                    </ul>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="view-audit-list" class="sub-view">
+                        <div class="fr-grid-row fr-grid-row--middle fr-mb-2w">
+                            <div class="fr-col-12">
+                                <h3 class="fr-m-0">Journal des actions (Audit Trail)</h3>
+                            </div>
+                        </div>
+                        <div class="trace-card">
+                            <p class="fr-text--sm fr-mb-2w text-[#000091]">Historique des 500 dernières opérations
+                                (Lecture seule).</p>
+                            <div class="fr-table fr-table--bordered">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th style="width: 15%">Date</th>
+                                            <th style="width: 25%">Agent (Mél)</th>
+                                            <th style="width: 15%">Action</th>
+                                            <th style="width: 15%">Équipement</th>
+                                            <th style="width: 30%">Détails</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="table-audit-body">
+                                    </tbody>
+                                </table>
+                            </div>
+                            <div class="pagination-controls">
+                                <div><button id="btn-prev-audit"
+                                        class="fr-btn fr-btn--secondary fr-btn--sm fr-icon-arrow-left-s-line fr-btn--icon-left"
+                                        onclick="changeAdminPage('audit', -1)">Précédent</button></div>
+                                <div class="fr-text--sm fr-text--bold" id="page-info-audit"></div>
+                                <div><button id="btn-next-audit"
+                                        class="fr-btn fr-btn--secondary fr-btn--sm fr-icon-arrow-right-s-line fr-btn--icon-right"
+                                        onclick="changeAdminPage('audit', 1)">Suivant</button></div>
+                            </div>
+                        </div>
+                    </div>
+
                 </div>
-                <div class="fr-mt-2w">
-                    <button type="submit" class="fr-btn fr-icon-check-line fr-btn--icon-left">Enregistrer</button>
-                    <button type="button" id="btn-del-lieu" class="fr-btn fr-btn--secondary fr-icon-delete-line fr-btn--icon-left" style="color: var(--text-default-error); box-shadow: inset 0 0 0 1px var(--text-default-error);" onclick="deleteLieu()">Supprimer</button>
-                </div>
-            </form>
-        </div>
-    </div>
-
-	<div id="view-admin-rebut" class="sub-view">
-    <button class="fr-btn fr-btn--secondary fr-icon-arrow-left-line fr-btn--icon-left fr-mb-4w" onclick="showSubView('view-users-list', 'panel-admin')">Retour</button>
-    <div class="fr-grid-row fr-grid-row--gutters">
-        <div class="fr-col-12 fr-col-md-8">
-            <div class="trace-card">
-                <h3 class="fr-text--default-error">Sortie définitive du parc (Mise au rebut)</h3>
-                <p class="fr-text--sm">Cette opération supprimera définitivement les équipements de la base de données. <strong>Un Procès-verbal de mise au rebut sera automatiquement généré.</strong></p>
-                
-                <div class="fr-upload-group fr-my-3w">
-                    <label class="fr-label" for="rebut-file-upload">Sélectionner le fichier des identifiants (.txt)</label>
-                    <input class="fr-upload" type="file" id="rebut-file-upload" accept=".txt">
-                </div>
-                
-                <button class="fr-btn fr-btn--error fr-icon-delete-line fr-btn--icon-left" onclick="processMassDelete()">Confirmer la suppression et générer le PV</button>
             </div>
-        </div>
-        <div class="fr-col-12 fr-col-md-4">
-            <div class="trace-card">
-                <h4 class="fr-h6">Instructions</h4>
-                <ul class="fr-text--xs">
-                    <li>Le fichier doit être au format .txt</li>
-                    <li>Un identifiant (ex: MOB-000001) par ligne.</li>
-                    <li>Seuls les équipements existants seront supprimés.</li>
-                </ul>
-            </div>
-        </div>
-    </div>
-</div>
-
-<div id="view-audit-list" class="sub-view">
-        <div class="fr-grid-row fr-grid-row--middle fr-mb-2w">
-            <div class="fr-col-12"><h3 class="fr-m-0">Journal des actions (Audit Trail)</h3></div>
-        </div>
-        <div class="trace-card">
-            <p class="fr-text--sm fr-mb-2w text-[#000091]">Historique des 500 dernières opérations (Lecture seule).</p>
-            <div class="fr-table fr-table--bordered">
-                <table>
-                    <thead>
-                        <tr>
-                            <th style="width: 15%">Date</th>
-                            <th style="width: 25%">Agent (Mél)</th>
-                            <th style="width: 15%">Action</th>
-                            <th style="width: 15%">Équipement</th>
-                            <th style="width: 30%">Détails</th>
-                        </tr>
-                    </thead>
-                    <tbody id="table-audit-body">
-                        </tbody>
-                </table>
-            </div>
-            <div class="pagination-controls">
-                <div><button id="btn-prev-audit" class="fr-btn fr-btn--secondary fr-btn--sm fr-icon-arrow-left-s-line fr-btn--icon-left" onclick="changeAdminPage('audit', -1)">Précédent</button></div>
-                <div class="fr-text--sm fr-text--bold" id="page-info-audit"></div>
-                <div><button id="btn-next-audit" class="fr-btn fr-btn--secondary fr-btn--sm fr-icon-arrow-right-s-line fr-btn--icon-right" onclick="changeAdminPage('audit', 1)">Suivant</button></div>
-            </div>
-        </div>
-    </div>
-
-</div> 
-</div>
         </div>
     </main>
 
@@ -590,4 +838,5 @@
     <!-- Script de l'application (logique métier) -->
     <script src="app.js"></script>
 </body>
+
 </html>
