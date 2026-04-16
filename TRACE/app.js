@@ -397,9 +397,25 @@ function editMobilier(uuid) {
     fillSelect('edit-mob-lieu', state.lieux, 'id', 'nom', { selected: mob.lieu_id });
     document.getElementById('edit-mob-statut').value = mob.statut;
     document.getElementById('edit-mob-remarques').value = mob.remarques || '';
+    // --- NOUVEAU : Écouteur pour la mise à jour automatique du lieu ---
+    const uaSelect = document.getElementById('edit-mob-ua');
+    
+    // On retire d'abord un éventuel ancien écouteur pour éviter les doublons
+    uaSelect.removeEventListener('change', handleEditUaChange);
+    // On attache le nouvel écouteur
+    uaSelect.addEventListener('change', handleEditUaChange);
 
     // Affichage de la vue
     showSubView('view-mobilier-detail', 'panel-mobilier');
+}
+
+function handleEditUaChange() {
+    const selectedSages = this.value;
+    const ua = state.maps.s.get(selectedSages);
+    
+    if (ua && ua.lieu_id) {
+        document.getElementById('edit-mob-lieu').value = ua.lieu_id;
+    }
 }
 
 async function saveMobilier(e, mode) {
@@ -519,6 +535,12 @@ function openScanner() {
     document.getElementById('scan-target-statut').value = 'en_service';
     document.getElementById('scanner-input').value = '';
     document.getElementById('scan-log').innerHTML = '';
+    // --- NOUVEAU : Écouteur pour la mise à jour automatique du lieu (Scan) ---
+    const scanUaSelect = document.getElementById('scan-target-ua');
+    scanUaSelect.removeEventListener('change', handleScanUaChange);
+    scanUaSelect.addEventListener('change', handleScanUaChange);
+
+    
     showSubView('view-mobilier-scanner', 'panel-mobilier');
 
     // On met le focus automatiquement pour que la douchette puisse écrire direct
@@ -616,6 +638,16 @@ async function processScan(event) {
     }
 }
 
+function handleScanUaChange() {
+    const selectedSages = this.value;
+    const ua = state.maps.s.get(selectedSages);
+    
+    if (ua && ua.lieu_id) {
+        document.getElementById('scan-target-lieu').value = ua.lieu_id;
+    }
+}
+
+
 // ============================================================================
 // RÉAFFECTATION PAR SCAN (FICHIER PLAT)
 // ============================================================================
@@ -627,6 +659,10 @@ function openImportFile() {
     document.getElementById('import-log').innerHTML = '';
     document.querySelector('#import-progress p').innerText = "Progression...";
     document.getElementById('import-progress').style.display = 'none';
+    // --- NOUVEAU : Écouteur pour la mise à jour automatique du lieu (Import) ---
+    const importUaSelect = document.getElementById('import-target-ua');
+    importUaSelect.removeEventListener('change', handleImportUaChange);
+    importUaSelect.addEventListener('change', handleImportUaChange);
     showSubView('view-mobilier-import', 'panel-mobilier');
 }
 
@@ -655,11 +691,10 @@ async function processFileImport() {
     const reader = new FileReader();
 
     reader.onload = async (e) => {
-        // Extraction et nettoyage des IDs
         const content = e.target.result;
         const rawIds = content.split(/\r?\n/).map(id => id.trim().toUpperCase());
-
-        // On enlève les lignes vides et on supprime les doublons éventuels dans le fichier
+        
+        // Nettoyage et suppression des doublons
         const ids = [...new Set(rawIds.filter(id => id.length > 0))];
 
         if (ids.length === 0) {
@@ -667,7 +702,7 @@ async function processFileImport() {
             return;
         }
 
-        // --- VALIDATION SÉCURITÉ : Format des IDs ---
+        // Validation du format des identifiants
         const invalidIds = ids.filter(id => !/^MOB-\d{6}$/.test(id));
         if (invalidIds.length > 0) {
             showAlert("Erreur de format", `Le fichier contient des identifiants invalides (ex: ${escapeHTML(invalidIds[0])}). L'import est annulé.`, "error");
@@ -677,54 +712,61 @@ async function processFileImport() {
         logArea.innerHTML = '';
         progressDiv.style.display = 'block';
         progressText.innerText = `Préparation de l'import de ${ids.length} équipements...`;
-        progressBar.value = 50;
+        progressBar.value = 10;
 
-        // Construction du Bulk Payload (Un tableau avec tous les équipements à mettre à jour)
-        const bulkPayload = ids.map(idMetier => ({
-            id_metier: idMetier, // Clé d'identification
+        // CORRECTION 1 : Un seul objet JSON pour toutes les lignes à modifier
+        const updatePayload = {
             code_sages: ua,
             lieu_id: lieu,
             statut: statut
-        }));
+        };
 
         try {
-            // Requête unique (Bulk Update) vers PostgREST
-            // L'astuce est de spécifier ?columns=id_metier pour dire à PostgREST quelle est la clé primaire à utiliser pour la mise à jour
-            const res = await apiFetch(`${API_URL}/mobiliers?columns=id_metier`, {
-                method: 'PATCH',
-                headers: {
-                    ...getHeaders(),
-                    'Prefer': 'return=representation' // Demande à l'API de renvoyer les lignes effectivement modifiées
-                },
-                body: JSON.stringify(bulkPayload)
-            });
+            // CORRECTION 2 : Découpage par lots (100) pour éviter de crasher Nginx (URI Too Long)
+            const CHUNK_SIZE = 100;
+            let updatedItems = [];
 
-            if (!res.ok) throw new Error("Erreur lors de la mise à jour en masse sur le serveur.");
+            for (let i = 0; i < ids.length; i += CHUNK_SIZE) {
+                const chunk = ids.slice(i, i + CHUNK_SIZE);
+                // Construction du filtre d'URL : in.(MOB-123, MOB-456...)
+                const idList = `(${chunk.join(',')})`;
 
-            // On récupère la liste des équipements qui ont *vraiment* été modifiés
-            const updatedItems = await res.json();
+                const res = await apiFetch(`${API_URL}/mobiliers?id_metier=in.${idList}`, {
+                    method: 'PATCH',
+                    headers: {
+                        ...getHeaders(),
+                        'Prefer': 'return=representation'
+                    },
+                    body: JSON.stringify(updatePayload) // On applique le même objet à tout le lot
+                });
+
+                if (!res.ok) throw new Error("Erreur serveur lors de la mise à jour d'un lot.");
+
+                const chunkUpdated = await res.json();
+                updatedItems = updatedItems.concat(chunkUpdated);
+
+                // Progression fluide de la barre
+                progressBar.value = 10 + (90 * Math.min(1, (i + CHUNK_SIZE) / ids.length));
+            }
+
             const successCount = updatedItems.length;
             const notFoundCount = ids.length - successCount;
 
             progressBar.value = 100;
             progressText.innerText = "Import terminé";
 
-            // Affichage du résumé
+            // Bilan visuel pour l'agent
             if (notFoundCount === 0) {
                 showAlert("Succès total", `Les ${successCount} équipements ont été réaffectés.`, "success");
             } else {
                 showAlert("Succès partiel", `${successCount} réaffectés. ${notFoundCount} identifiants étaient inconnus en base.`, "warning");
 
-                // On crée un Set des IDs mis à jour pour trouver facilement ceux qui ont échoué
                 const updatedIdsSet = new Set(updatedItems.map(item => item.id_metier));
-
-                // On affiche ceux qui n'ont pas été trouvés dans le log
                 ids.filter(id => !updatedIdsSet.has(id)).forEach(failedId => {
                     logArea.insertAdjacentHTML('afterbegin', `<li class="fr-mb-1v"><span class="fr-badge fr-badge--error">${escapeHTML(failedId)}</span> Introuvable en base</li>`);
                 });
             }
 
-            // Rafraîchit l'inventaire principal pour refléter les changements
             applyFiltersAndSort();
 
         } catch (err) {
@@ -737,7 +779,14 @@ async function processFileImport() {
     reader.readAsText(file);
 }
 
-
+function handleImportUaChange() {
+    const selectedSages = this.value;
+    const ua = state.maps.s.get(selectedSages);
+    
+    if (ua && ua.lieu_id) {
+        document.getElementById('import-target-lieu').value = ua.lieu_id;
+    }
+}
 
 // ============================================================================
 // CRUD GABARITS (CATALOGUE)
