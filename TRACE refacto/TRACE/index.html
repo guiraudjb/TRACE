@@ -1,0 +1,453 @@
+<!DOCTYPE html>
+<html lang="fr" data-fr-theme="light">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>TRACE - Direction Générale des Finances Publiques</title>
+
+    <link rel="apple-touch-icon" href="dsfr-v1.14.3/dist/favicon/apple-touch-icon.png">
+    <link rel="icon" href="dsfr-v1.14.3/dist/favicon/favicon.svg" type="image/svg+xml">
+    <link rel="shortcut icon" href="dsfr-v1.14.3/dist/favicon/favicon.ico" type="image/x-icon">
+
+    <link rel="stylesheet" href="dsfr-v1.14.3/dist/dsfr.min.css">
+    <link rel="stylesheet" href="dsfr-v1.14.3/dist/utility/utility.main.min.css">
+
+    <link rel="stylesheet" href="styles.css">
+
+    <script src="./utils/jspdf.umd.min.js" defer></script>
+    <script src="./utils/jspdf.plugin.autotable.min.js" defer></script>
+</head>
+
+<body>
+    <header role="banner" class="fr-header no-print">
+        <div class="fr-header__body">
+            <div class="fr-container-fluid fr-px-2w fr-px-md-6w">
+                <div class="fr-header__body-row">
+                    <div class="fr-header__brand fr-enlarge-link">
+                        <div class="fr-header__brand-top">
+                            <div class="fr-header__logo">
+                                <p class="fr-logo">République<br>Française</p>
+                            </div>
+                        </div>
+                        <div class="fr-header__service">
+                            <a href="/" title="Accueil - TRACE">
+                                <p class="fr-header__service-title">TRACE</p>
+                            </a>
+                            <p class="fr-header__service-tagline">Traçabilité, Réemploi et Affectation Circulaire des Équipements</p>
+                        </div>
+                    </div>
+                    <div class="fr-header__tools">
+                        <div class="trace-header-tools">
+                            <div class="no-print" style="display: flex; align-items: center; text-align: right; margin-right: 1.5rem;">
+                                <p class="fr-text--sm fr-mb-0 fr-mr-1w" style="line-height: 1.2;">
+                                    <strong>Appli mobile</strong><br>
+                                    TraceScan
+                                </p>
+                                <img src="./images/TRACE-SCAN.png" alt="Scanner pour télécharger TraceScan" style="width: 96px; height: 96px; border-radius: 4px; border: 1px solid var(--border-default-grey);">
+                            </div>
+                            <ul class="fr-btns-group">
+                                <li id="logout-btn-container" style="display: none;">
+                                    <button id="btn-logout" class="fr-btn fr-btn--secondary fr-icon-logout-box-r-line">Déconnexion</button>
+                                </li>
+                            </ul>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main role="main">
+        <div id="alert-container" class="fr-container-fluid fr-px-2w fr-px-md-6w fr-mt-2w no-print"></div>
+
+        <section id="view-login" class="app-view active fr-container fr-mt-6w">
+            <div class="fr-grid-row fr-grid-row--center">
+                <div class="fr-col-12 fr-col-md-6 fr-col-lg-5">
+                    <div class="trace-card">
+                        <h2 class="fr-h4 fr-mb-3v">Authentification TRACE</h2>
+                        <form id="form-login">
+                            <div class="fr-input-group">
+                                <label class="fr-label" for="login-email">Mél professionnel</label>
+                                <input class="fr-input" type="email" id="login-email" required placeholder="nom@dgfip.finances.gouv.fr">
+                            </div>
+                            <div class="fr-input-group">
+                                <label class="fr-label" for="login-password">Mot de passe</label>
+                                <input class="fr-input" type="password" id="login-password" required>
+                            </div>
+                            <button class="fr-btn fr-mt-2v fr-icon-lock-fill fr-btn--icon-left" type="submit" style="width: 100%;">Se connecter</button>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <section id="view-app" class="app-view">
+            <div class="fr-tabs">
+                <ul class="fr-tabs__list no-print fr-container-fluid fr-px-2w fr-px-md-6w" role="tablist">
+                    <li role="presentation"><button id="tab-mobilier" class="fr-tabs__tab" tabindex="0" role="tab" aria-selected="true" aria-controls="panel-mobilier">1. Gestion du Mobilier</button></li>
+                    <li role="presentation"><button id="tab-gabarits" class="fr-tabs__tab" tabindex="-1" role="tab" aria-selected="false" aria-controls="panel-gabarits">2. Catalogue National</button></li>
+                    <li role="presentation"><button id="tab-admin" class="fr-tabs__tab" tabindex="-1" role="tab" aria-selected="false" aria-controls="panel-admin" style="display: none;">3. Administration</button></li>
+                </ul>
+
+                <div id="panel-mobilier" class="fr-tabs__panel fr-tabs__panel--selected fr-container-fluid fr-px-2w fr-px-md-6w" role="tabpanel" aria-labelledby="tab-mobilier">
+                    
+                    <div id="view-mobilier-list" class="sub-view active">
+                        <div class="fr-grid-row fr-grid-row--middle fr-mb-4w">
+                            <div class="fr-col-12 fr-col-md-4"><h2 class="fr-m-0">Inventaire du parc</h2></div>
+                            <div class="fr-col-12 fr-col-md-8 fr-text-md-right fr-mt-2w fr-mt-md-0">
+                                <button id="btn-export-csv" class="fr-btn fr-btn--secondary fr-icon-file-line fr-btn--icon-left fr-mr-2w">Exporter CSV</button>
+                                <button id="btn-nav-scan" class="fr-btn fr-btn--secondary fr-icon-qr-code-line fr-btn--icon-left fr-mr-2w">Mode Scan</button>
+                                <button id="btn-nav-import" class="fr-btn fr-btn--secondary fr-icon-file-download-line fr-btn--icon-left fr-mr-2w">Import Fichier</button>
+                                <button id="btn-nav-create-mob" class="fr-btn fr-icon-add-circle-line fr-btn--icon-left">Nouveau</button>
+                            </div>
+                        </div>
+
+                        <div class="trace-card">
+                            <div class="fr-grid-row fr-grid-row--gutters fr-mb-2w">
+                                <div class="fr-col-12 fr-col-md-3">
+                                    <div class="fr-search-bar" role="search">
+                                        <input class="fr-input" placeholder="Recherche globale..." type="search" id="search-input">
+                                        <button class="fr-btn" title="Rechercher">Rechercher</button>
+                                    </div>
+                                </div>
+                                <div class="fr-col-12 fr-col-md-3"><select class="fr-select" id="filter-gabarit"></select></div>
+                                <div class="fr-col-12 fr-col-md-2"><select class="fr-select" id="filter-lieu"></select></div>
+                                <div class="fr-col-12 fr-col-md-3"><select class="fr-select" id="filter-ua"></select></div>
+                                <div class="fr-col-12 fr-col-md-3">
+                                    <select class="fr-select" id="filter-statut">
+                                        <option value="">Tous les statuts</option>
+                                        <option value="en_service">En service</option>
+                                        <option value="dispo_reemploi">Disponible réemploi</option>
+                                        <option value="en_maintenance">En maintenance</option>
+                                        <option value="au_rebut">Au rebut</option>
+                                    </select>
+                                </div>
+                            </div>
+                            <div class="fr-mb-2w fr-text--sm fr-text--bold" style="display:flex; justify-content: space-between;">
+                                <span id="results-count">Chargement...</span>
+                                <button type="button" id="btn-reset-filters" class="fr-btn fr-btn--tertiary-no-outline fr-btn--sm fr-icon-refresh-line fr-btn--icon-left">Réinitialiser</button>
+                            </div>
+                            <div class="fr-table fr-table--bordered">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th class="sortable-header" data-sort="id_metier">ID Métier <span id="icon-sort-id_metier" class="sort-icon"></span></th>
+                                            <th class="sortable-header" data-sort="gabarit_nom">Modèle <span id="icon-sort-gabarit_nom" class="sort-icon"></span></th>
+                                            <th class="sortable-header" data-sort="structure_libelle">Affectation <span id="icon-sort-structure_libelle" class="sort-icon"></span></th>
+                                            <th class="sortable-header" data-sort="statut">Statut <span id="icon-sort-statut" class="sort-icon"></span></th>
+                                            <th style="width: 15%">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="table-mobilier-body"></tbody>
+                                </table>
+                            </div>
+                            <div class="pagination-controls">
+                                <button id="btn-prev" class="fr-btn fr-btn--secondary fr-btn--sm fr-icon-arrow-left-s-line fr-btn--icon-left">Précédent</button>
+                                <span class="fr-text--sm fr-text--bold" id="page-info"></span>
+                                <button id="btn-next" class="fr-btn fr-btn--secondary fr-btn--sm fr-icon-arrow-right-s-line fr-btn--icon-right">Suivant</button>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="view-mobilier-create" class="sub-view">
+                        <button class="fr-btn fr-btn--secondary fr-btn--icon-left fr-icon-arrow-left-line fr-mb-4w btn-back-to-list">Retour</button>
+                        <div class="trace-card">
+                            <h3>Ajouter des équipements</h3>
+                            <form id="form-mob-create">
+                                <div class="fr-grid-row fr-grid-row--gutters">
+                                    <div class="fr-col-12 fr-col-md-8">
+                                        <div class="fr-input-group">
+                                            <label class="fr-label">Identifiant (Séquence)</label>
+                                            <input class="fr-input" type="text" id="new-mob-id" readonly value="Auto-généré">
+                                        </div>
+                                    </div>
+                                    <div class="fr-col-12 fr-col-md-4">
+                                        <div class="fr-input-group">
+                                            <label class="fr-label">Quantité à créer</label>
+                                            <input class="fr-input" type="number" id="new-mob-quantite" min="1" max="1000" value="1" required>
+                                        </div>
+                                    </div>
+                                </div>
+                                <div class="fr-select-group"><label class="fr-label">Modèle (Catalogue)</label><select class="fr-select" id="new-mob-gabarit" required></select></div>
+                                <div class="fr-grid-row fr-grid-row--gutters">
+                                    <div class="fr-col-12 fr-col-md-6"><div class="fr-select-group"><label class="fr-label">Service d'affectation</label><select class="fr-select" id="new-mob-ua" required></select></div></div>
+                                    <div class="fr-col-12 fr-col-md-6"><div class="fr-select-group"><label class="fr-label">Localisation physique</label><select class="fr-select" id="new-mob-lieu" required></select></div></div>
+                                </div>
+                                <div class="fr-select-group"><label class="fr-label">Statut initial</label><select class="fr-select" id="new-mob-statut" required><option value="en_service">En service</option><option value="dispo_reemploi">Disponible réemploi</option></select></div>
+                                <div class="fr-input-group"><label class="fr-label">Remarques</label><textarea class="fr-input" id="new-mob-remarques" rows="2"></textarea></div>
+                                <button type="submit" class="fr-btn fr-icon-check-line fr-btn--icon-left">Enregistrer le lot</button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <div id="view-mobilier-detail" class="sub-view">
+                        <button class="fr-btn fr-btn--secondary fr-btn--icon-left fr-icon-arrow-left-line fr-mb-4w btn-back-to-list">Retour</button>
+                        <div class="trace-card">
+                            <h3>Fiche de l'équipement</h3>
+                            <form id="form-mob-edit">
+                                <input type="hidden" id="edit-mob-uuid">
+                                <div class="fr-input-group"><label class="fr-label">Identifiant métier</label><input class="fr-input" type="text" id="edit-mob-id" readonly></div>
+                                <div class="fr-select-group"><label class="fr-label">Modèle</label><select class="fr-select" id="edit-mob-gabarit" required></select></div>
+                                <div class="fr-grid-row fr-grid-row--gutters">
+                                    <div class="fr-col-12 fr-col-md-6"><div class="fr-select-group"><label class="fr-label">Affectation</label><select class="fr-select" id="edit-mob-ua" required></select></div></div>
+                                    <div class="fr-col-12 fr-col-md-6"><div class="fr-select-group"><label class="fr-label">Localisation</label><select class="fr-select" id="edit-mob-lieu" required></select></div></div>
+                                </div>
+                                <div class="fr-select-group">
+                                    <label class="fr-label">Statut</label>
+                                    <select class="fr-select" id="edit-mob-statut" required>
+                                        <option value="en_service">En service</option>
+                                        <option value="dispo_reemploi">Disponible réemploi</option>
+                                        <option value="en_maintenance">En maintenance</option>
+                                        <option value="au_rebut">Au rebut</option>
+                                    </select>
+                                </div>
+                                <div class="fr-input-group"><label class="fr-label">Remarques</label><textarea class="fr-input" id="edit-mob-remarques" rows="2"></textarea></div>
+                                <div class="fr-mt-4w" style="display: flex; justify-content: space-between;">
+                                    <button type="submit" class="fr-btn fr-icon-save-line fr-btn--icon-left">Sauvegarder</button>
+                                    <button type="button" id="btn-delete-mob" class="fr-btn fr-btn--secondary fr-icon-delete-line" style="color: var(--text-default-error);">Supprimer</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <div id="view-mobilier-scanner" class="sub-view">
+                        <button class="fr-btn fr-btn--secondary fr-btn--icon-left fr-icon-arrow-left-line fr-mb-4w btn-back-to-list">Retour</button>
+                        <div class="fr-grid-row fr-grid-row--gutters">
+                            <div class="fr-col-12 fr-col-md-8">
+                                <div class="trace-card">
+                                    <h3>Réaffectation par Scan</h3>
+                                    <div class="fr-grid-row fr-grid-row--gutters fr-mb-2w" style="background: var(--background-alt-blue-france); padding: 1rem; border-radius: 4px;">
+                                        <div class="fr-col-12 fr-col-md-4"><select class="fr-select" id="scan-target-ua" label="Destination"></select></div>
+                                        <div class="fr-col-12 fr-col-md-4"><select class="fr-select" id="scan-target-lieu"></select></div>
+                                        <div class="fr-col-12 fr-col-md-4"><select class="fr-select" id="scan-target-statut">
+                                            <option value="en_service" selected>En service</option>
+                                            <option value="dispo_reemploi">Disponible réemploi</option>
+                                            <option value="en_maintenance">En maintenance</option>
+                                            <option value="au_rebut">Au rebut</option>
+                                            </select></div>
+                                    </div>
+                                    <div class="fr-input-group fr-mt-4w">
+                                        <label class="fr-label fr-text--lg">Scanner l'identifiant (MOB-XXXXXX) :</label>
+                                        <input class="fr-input fr-input--lg" type="text" id="scanner-input" placeholder="Saisie ou Douchette..." autocomplete="off">
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="fr-col-12 fr-col-md-4">
+                                <div class="trace-card"><h4>Journal des scans</h4><ul id="scan-log" class="fr-badge-group" style="list-style:none; padding:0; max-height:400px; overflow-y:auto;"></ul></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <div id="view-mobilier-import" class="sub-view">
+                        <button class="fr-btn fr-btn--secondary fr-btn--icon-left fr-icon-arrow-left-line fr-mb-4w btn-back-to-list">Retour</button>
+                        <div class="trace-card">
+                            <h3>Mise à jour par fichier</h3>
+                            <div class="fr-grid-row fr-grid-row--gutters fr-mb-3w" style="background: var(--background-alt-blue-france); padding: 1rem; border-radius: 4px;">
+                                <div class="fr-col-12 fr-col-md-4"><select class="fr-select" id="import-target-ua"></select></div>
+                                <div class="fr-col-12 fr-col-md-4"><select class="fr-select" id="import-target-lieu"></select></div>
+                                <div class="fr-col-12 fr-col-md-4"><select class="fr-select" id="import-target-statut">
+                                    <option value="en_service" selected>En service</option>
+                                    <option value="dispo_reemploi">Disponible réemploi</option>
+                                    <option value="en_maintenance">En maintenance</option>
+                                    <option value="au_rebut">Au rebut</option>
+                                    </select></div>
+                            </div>
+                            <div class="fr-upload-group fr-mb-3w">
+                                <label class="fr-label" for="file-upload">Fichier d'identifiants (.txt)</label>
+                                <input class="fr-upload" type="file" id="file-upload" accept=".txt">
+                            </div>
+                            <button id="btn-exec-import" class="fr-btn fr-icon-upload-line fr-btn--icon-left">Lancer l'import</button>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="panel-gabarits" class="fr-tabs__panel fr-container-fluid fr-px-2w fr-px-md-6w" role="tabpanel" aria-labelledby="tab-gabarits">
+                    <div id="view-gabarits-list" class="sub-view active">
+                        <div class="fr-grid-row fr-grid-row--middle fr-mb-4w">
+                            <div class="fr-col-12 fr-col-md-6"><h2 class="fr-m-0">Catalogue des modèles</h2></div>
+                            <div class="fr-col-12 fr-col-md-6 fr-text-md-right"><button id="btn-nav-create-gab" class="fr-btn fr-icon-add-circle-line fr-btn--icon-left">Nouveau modèle</button></div>
+                        </div>
+                        <div class="trace-card">
+                            <div class="fr-grid-row fr-grid-row--gutters fr-mb-3w">
+                                <div class="fr-col-12 fr-col-md-6">
+                                    <div class="fr-search-bar" role="search">
+                                        <input class="fr-input" placeholder="Référence ou nom..." type="search" id="search-gab-input">
+                                        <button class="fr-btn">Rechercher</button>
+                                    </div>
+                                </div>
+                                <div class="fr-col-12 fr-col-md-6"><select class="fr-select" id="filter-gab-cat"><option value="">Toutes les catégories</option><option value="Bureau">Bureau</option><option value="Assise">Assise</option><option value="Rangement">Rangement</option></select></div>
+                            </div>
+                            <div class="fr-table fr-table--bordered">
+                                <table>
+                                    <thead><tr><th>Référence</th><th>Catégorie</th><th>Désignation</th><th>Attributs</th><th>Actions</th></tr></thead>
+                                    <tbody id="table-gabarits-body"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
+                    <div id="view-gabarits-form" class="sub-view">
+                        <button class="fr-btn fr-btn--secondary fr-icon-arrow-left-line fr-btn--icon-left fr-mb-4w btn-back-to-gab-list">Retour</button>
+                        <div class="trace-card">
+                            <h3 id="gab-form-title">Gestion du modèle</h3>
+                            <form id="form-gab-edit">
+                                <input type="hidden" id="edit-gab-id">
+                                <div class="fr-grid-row fr-grid-row--gutters fr-mb-4w">
+                                    <div class="fr-col-12 fr-col-md-4"><div class="fr-input-group"><label class="fr-label">Référence (AAA-000)</label><input class="fr-input" type="text" id="edit-gab-ref" required></div></div>
+                                    <div class="fr-col-12 fr-col-md-4"><div class="fr-select-group"><label class="fr-label">Catégorie</label><select class="fr-select" id="edit-gab-cat" required><option value="Bureau">Bureau</option><option value="Assise">Assise</option><option value="Rangement">Rangement</option><option value="Autre">Autre</option></select></div></div>
+                                    <div class="fr-col-12 fr-col-md-4"><div class="fr-input-group"><label class="fr-label">Nom descriptif</label><input class="fr-input" type="text" id="edit-gab-nom" required></div></div>
+                                </div>
+                                <h5>Caractéristiques techniques (JSON)</h5>
+                                <div id="json-builder" class="fr-mb-4w"></div>
+                                <button type="button" id="btn-add-json-row" class="fr-btn fr-btn--secondary fr-btn--sm fr-icon-add-line fr-btn--icon-left">Ajouter un attribut</button>
+                                <hr class="fr-mt-4w">
+                                <div style="display:flex; justify-content: space-between;">
+                                    <button type="submit" class="fr-btn fr-icon-check-line fr-btn--icon-left">Enregistrer</button>
+                                    <button type="button" id="btn-delete-gab" class="fr-btn fr-btn--secondary fr-icon-delete-line" style="color:var(--text-default-error); display:none;">Supprimer</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+                </div>
+
+                <div id="panel-admin" class="fr-tabs__panel fr-container-fluid fr-px-2w fr-px-md-6w" role="tabpanel" aria-labelledby="tab-admin">
+                    <div class="fr-grid-row fr-grid-row--gutters fr-mb-4w no-print">
+                        <div class="fr-col-12">
+                            <ul class="fr-btns-group fr-btns-group--inline fr-btns-group--sm">
+                                <li><button class="fr-btn fr-btn--secondary" id="nav-admin-users">Utilisateurs</button></li>
+                                <li><button class="fr-btn fr-btn--secondary" id="nav-admin-ua">Services (UA)</button></li>
+                                <li><button class="fr-btn fr-btn--secondary" id="nav-admin-lieux">Lieux physiques</button></li>
+                                <li><button class="fr-btn fr-btn--secondary" onclick="window.open('./utils/qrcode-generator.html', '_blank')">Édition étiquettes</button></li>
+                                <li><button class="fr-btn fr-btn--secondary fr-icon-delete-bin-line fr-btn--icon-left" id="nav-admin-rebut">Mise au rebut</button></li>
+                                <li><button class="fr-btn fr-btn--secondary fr-icon-history-line fr-btn--icon-left" id="nav-admin-audit">Audit</button></li>
+                            </ul>
+                        </div>
+                    </div>
+
+                    <div id="view-users-list" class="sub-view active">
+                        <div class="fr-grid-row fr-grid-row--middle fr-mb-2w">
+                            <div class="fr-col-6"><h3 class="fr-m-0">Comptes Accès</h3></div>
+                            <div class="fr-col-6 fr-text-md-right"><button id="btn-nav-create-user" class="fr-btn fr-icon-add-circle-line fr-btn--icon-left">Nouvel utilisateur</button></div>
+                        </div>
+                        <div class="trace-card"><div class="fr-table fr-table--bordered"><table><thead><tr><th>Mél</th><th>Rôle</th><th>Actions</th></tr></thead><tbody id="table-users-body"></tbody></table></div></div>
+                    </div>
+                    
+                    <div id="view-users-form" class="sub-view">
+                        <button class="fr-btn fr-btn--secondary fr-icon-arrow-left-line fr-mb-4w btn-back-to-users">Retour</button>
+                        <div class="trace-card">
+                            <h3>Créer un compte d'accès</h3>
+                            <form id="form-user-create">
+                                <div class="fr-input-group"><label class="fr-label">Mél professionnel</label><input class="fr-input" type="email" id="new-user-email" required></div>
+                                <div class="fr-select-group">
+                                    <label class="fr-label">Rôle</label>
+                                    <select class="fr-select" id="new-user-role" required>
+                                        <option value="agent">Gestionnaire (Standard)</option>
+                                        <option value="administrateur">Administrateur (Tous droits)</option>
+                                    </select>
+                                </div>
+                                <button type="submit" class="fr-btn fr-icon-check-line fr-btn--icon-left fr-mt-2w">Enregistrer l'utilisateur</button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <div id="view-ua-list" class="sub-view">
+                        <div class="fr-grid-row fr-grid-row--middle fr-mb-2w">
+                            <div class="fr-col-6"><h3 class="fr-m-0">Référentiel Services</h3></div>
+                            <div class="fr-col-6 fr-text-md-right"><button id="btn-nav-create-ua" class="fr-btn fr-icon-add-circle-line fr-btn--icon-left">Nouveau service</button></div>
+                        </div>
+                        <div class="trace-card"><div class="fr-table fr-table--bordered"><table><thead><tr><th>Code Sages</th><th>Libellé</th><th>Actions</th></tr></thead><tbody id="table-ua-body"></tbody></table></div></div>
+                    </div>
+
+                    <div id="view-ua-form" class="sub-view">
+                        <button class="fr-btn fr-btn--secondary fr-icon-arrow-left-line fr-mb-4w btn-back-to-ua">Retour</button>
+                        <div class="trace-card">
+                            <h3>Ajouter un Service (Unité d'Affectation)</h3>
+                            <form id="form-ua-create">
+                                <div class="fr-input-group"><label class="fr-label">Code SAGES</label><input class="fr-input" type="text" id="new-ua-code" required></div>
+                                <div class="fr-input-group"><label class="fr-label">Libellé complet</label><input class="fr-input" type="text" id="new-ua-libelle" required></div>
+                                <div class="fr-select-group"><label class="fr-label">Lieu de rattachement principal</label><select class="fr-select" id="new-ua-lieu" required></select></div>
+                                <button type="submit" class="fr-btn fr-icon-check-line fr-btn--icon-left fr-mt-2w">Enregistrer le service</button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <div id="view-ua-edit" class="sub-view">
+                        <button class="fr-btn fr-btn--secondary fr-icon-arrow-left-line fr-mb-4w btn-back-to-ua">Retour</button>
+                        <div class="trace-card">
+                            <h3>Modifier le Service</h3>
+                            <form id="form-ua-edit">
+                                <div class="fr-input-group"><label class="fr-label">Code SAGES</label><input class="fr-input" type="text" id="edit-ua-code" readonly></div>
+                                <div class="fr-input-group"><label class="fr-label">Libellé complet</label><input class="fr-input" type="text" id="edit-ua-libelle" required></div>
+                                <div class="fr-select-group"><label class="fr-label">Lieu de rattachement</label><select class="fr-select" id="edit-ua-lieu" required></select></div>
+                                <div class="fr-mt-4w" style="display: flex; justify-content: space-between;">
+                                    <button type="submit" class="fr-btn fr-icon-check-line fr-btn--icon-left">Mettre à jour</button>
+                                    <button type="button" id="btn-delete-ua" class="fr-btn fr-btn--secondary fr-icon-delete-line" style="color: var(--text-default-error);">Supprimer</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <div id="view-lieux-list" class="sub-view">
+                        <div class="fr-grid-row fr-grid-row--middle fr-mb-2w">
+                            <div class="fr-col-6"><h3 class="fr-m-0">Référentiel Lieux</h3></div>
+                            <div class="fr-col-6 fr-text-md-right"><button id="btn-nav-create-lieu" class="fr-btn fr-icon-add-circle-line fr-btn--icon-left">Nouveau lieu</button></div>
+                        </div>
+                        <div class="trace-card"><div class="fr-table fr-table--bordered"><table><thead><tr><th>Désignation du bâtiment / site</th><th>Actions</th></tr></thead><tbody id="table-lieux-body"></tbody></table></div></div>
+                    </div>
+
+                    <div id="view-lieux-form" class="sub-view">
+                        <button class="fr-btn fr-btn--secondary fr-icon-arrow-left-line fr-mb-4w btn-back-to-lieux">Retour</button>
+                        <div class="trace-card">
+                            <h3>Ajouter une localisation physique</h3>
+                            <form id="form-lieu-create">
+                                <div class="fr-input-group"><label class="fr-label">Nom du site ou du bâtiment</label><input class="fr-input" type="text" id="new-lieu-nom" required></div>
+                                <button type="submit" class="fr-btn fr-icon-check-line fr-btn--icon-left fr-mt-2w">Enregistrer le lieu</button>
+                            </form>
+                        </div>
+                    </div>
+
+                    <div id="view-lieux-edit" class="sub-view">
+                        <button class="fr-btn fr-btn--secondary fr-icon-arrow-left-line fr-mb-4w btn-back-to-lieux">Retour</button>
+                        <div class="trace-card">
+                            <h3>Modifier le Lieu</h3>
+                            <form id="form-lieu-edit">
+                                <input type="hidden" id="edit-lieu-id">
+                                <div class="fr-input-group"><label class="fr-label">Nom du site ou du bâtiment</label><input class="fr-input" type="text" id="edit-lieu-nom" required></div>
+                                <div class="fr-mt-4w" style="display: flex; justify-content: space-between;">
+                                    <button type="submit" class="fr-btn fr-icon-check-line fr-btn--icon-left">Mettre à jour</button>
+                                    <button type="button" id="btn-delete-lieu" class="fr-btn fr-btn--secondary fr-icon-delete-line" style="color: var(--text-default-error);">Supprimer</button>
+                                </div>
+                            </form>
+                        </div>
+                    </div>
+
+                    <div id="view-admin-rebut" class="sub-view">
+                        <div class="trace-card">
+                            <h3 class="fr-text--default-error">Sortie définitive du parc</h3>
+                            <p>Suppression massive et génération de Procès-verbal de mise au rebut.</p>
+                            <div class="fr-upload-group fr-my-3w">
+                                <label class="fr-label">Fichier des identifiants (.txt)</label>
+                                <input class="fr-upload" type="file" id="rebut-file-upload" accept=".txt">
+                            </div>
+                            <button id="btn-exec-rebut" class="fr-btn fr-btn--error fr-icon-delete-line fr-btn--icon-left">Confirmer et Générer le PV</button>
+                        </div>
+                    </div>
+
+                    <div id="view-audit-list" class="sub-view">
+                        <div class="trace-card">
+                            <h3>Journal d'Audit</h3>
+                            <div class="fr-table fr-table--bordered"><table><thead><tr><th>Date</th><th>Agent</th><th>Action</th><th>Cible</th><th>Détails</th></tr></thead><tbody id="table-audit-body"></tbody></table></div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+    </main>
+
+    <script type="module" src="dsfr-v1.14.3/dist/dsfr.module.min.js"></script>
+    <script nomodule src="dsfr-v1.14.3/dist/dsfr.nomodule.min.js"></script>
+
+    <script src="app.js" defer></script>
+</body>
+
+</html>
