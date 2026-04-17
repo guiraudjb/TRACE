@@ -1,0 +1,1138 @@
+/**
+ * TRACE - Application Front-End (Vanilla JS)
+ * Architecture Modulaire MVC-Lite
+ * Version: 2.1 (Intégration totale + Corrections filtres)
+ */
+
+// ============================================================================
+// 1. CONFIGURATION & ÉTAT GLOBAL (STATE)
+// ============================================================================
+const CONFIG = {
+    API_URL: '/api',
+    ITEMS_PER_PAGE: 50
+};
+
+const State = {
+    jwt: sessionStorage.getItem('trace_jwt') || null,
+    user: null,
+    appConfig: {
+        administration: "DIRECTION GÉNÉRALE DES FINANCES PUBLIQUES",
+        direction: "DIRECTION RÉGIONALE DES FINANCES PUBLIQUES DE PARIS"
+    },
+    
+    // Référentiels mis en cache
+    referentiels: { gabarits: [], structures: [], lieux: [] },
+    maps: { g: new Map(), s: new Map(), l: new Map() },
+    
+    // États paginés et filtrés par module
+    mobilier: {
+        data: [], total: 0, page: 1, sortBy: 'id_metier', sortAsc: true,
+        filters: { query: '', gabarit: '', ua: '', lieu: '', statut: '' }
+    },
+    gabarit: {
+        data: [], page: 1, sortBy: 'reference_catalogue', sortAsc: true,
+        filters: { query: '', categorie: '' }
+    },
+    admin: {
+        users: [], usersPage: 1, usersSortBy: 'email', usersSortAsc: true,
+        ua: [], uaPage: 1, uaSortBy: 'code_sages', uaSortAsc: true,
+        lieux: [], lieuxPage: 1, lieuxSortBy: 'nom', lieuxSortAsc: true,
+        audit: [], auditPage: 1
+    },
+
+    initUser() {
+        if (!this.jwt) return false;
+        try {
+            const base64Url = this.jwt.split('.')[1];
+            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
+            const payload = JSON.parse(decodeURIComponent(atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join('')));
+            
+            if (payload.exp < Math.floor(Date.now() / 1000)) throw new Error("Expiré");
+            this.user = payload;
+            return true;
+        } catch (e) {
+            this.jwt = null;
+            sessionStorage.removeItem('trace_jwt');
+            return false;
+        }
+    }
+};
+
+// ============================================================================
+// 2. COUCHE ACCÈS AUX DONNÉES (API)
+// ============================================================================
+const API = {
+    getHeaders(customHeaders = {}) {
+        if (!State.initUser()) {
+            AuthCtrl.logout("Votre session a expiré.");
+            throw new Error("Session invalide");
+        }
+        return {
+            'Content-Type': 'application/json',
+            'Authorization': `Bearer ${State.jwt}`,
+            'Prefer': 'return=representation',
+            ...customHeaders
+        };
+    },
+
+    async fetch(endpoint, options = {}) {
+        const res = await fetch(`${CONFIG.API_URL}${endpoint}`, options);
+        if (res.status === 401) {
+            AuthCtrl.logout("Accès non autorisé ou session expirée.");
+            throw new Error("Non autorisé");
+        }
+        return res;
+    },
+
+    async loadConfig() {
+        try {
+            const res = await fetch('./config.ini?nocache=' + new Date().getTime());
+            if (res.ok) {
+                const text = await res.text();
+                text.split(/\r?\n/).forEach(line => {
+                    if (line.includes('=') && !line.startsWith(';') && !line.startsWith('[')) {
+                        const parts = line.split('=');
+                        const key = parts[0].trim();
+                        const value = parts.slice(1).join('=').trim().replace(/(^"|"$)/g, '');
+                        if (key === 'nom_administration') State.appConfig.administration = value;
+                        if (key === 'nom_direction') State.appConfig.direction = value;
+                    }
+                });
+            }
+        } catch (e) { console.warn("config.ini ignoré, valeurs par défaut appliquées."); }
+    },
+
+    async loadReferentiels() {
+        const [gRes, sRes, lRes] = await Promise.all([
+            this.fetch('/gabarits', { headers: this.getHeaders() }),
+            this.fetch('/structures', { headers: this.getHeaders() }),
+            this.fetch('/lieux', { headers: this.getHeaders() })
+        ]);
+
+        State.referentiels.gabarits = await gRes.json();
+        State.referentiels.structures = await sRes.json();
+        State.referentiels.lieux = await lRes.json();
+
+        State.maps.g.clear(); State.referentiels.gabarits.forEach(g => State.maps.g.set(g.id, g));
+        State.maps.s.clear(); State.referentiels.structures.forEach(s => State.maps.s.set(s.code_sages, s));
+        State.maps.l.clear(); State.referentiels.lieux.forEach(l => State.maps.l.set(l.id, l));
+    }
+};
+
+// ============================================================================
+// 3. COUCHE UTILITAIRE UI (RENDU & SÉCURITÉ)
+// ============================================================================
+const UI = {
+    escape(str) {
+        if (str === null || str === undefined) return "";
+        const div = document.createElement('div');
+        div.textContent = str;
+        return div.innerHTML;
+    },
+
+    showAlert(titre, message, type) {
+        const c = document.getElementById('alert-container');
+        c.innerHTML = `<div class="fr-alert fr-alert--${type} fr-mb-2w"><h3 class="fr-alert__title">${this.escape(titre)}</h3><p>${this.escape(message)}</p></div>`;
+        setTimeout(() => c.innerHTML = '', 5000);
+    },
+
+    showView(viewId, parentId) {
+        document.querySelectorAll(`#${parentId} .sub-view`).forEach(v => v.classList.remove('active'));
+        document.getElementById(viewId).classList.add('active');
+        window.scrollTo({ top: 0, behavior: 'smooth' });
+    },
+
+    fillSelect(selectId, dataArray, valueKey, labelKey, options = {}) {
+        const select = document.getElementById(selectId);
+        if (!select) return;
+        const selected = options.selected || null;
+        const placeholder = options.placeholder || "Sélectionnez...";
+        
+        let html = `<option value="" ${!selected ? 'selected' : ''} ${options.disablePlaceholder !== false ? 'disabled hidden' : ''}>${placeholder}</option>`;
+        html += dataArray.map(item => `<option value="${item[valueKey]}" ${item[valueKey] == selected ? 'selected' : ''}>${this.escape(item[labelKey])}</option>`).join('');
+        select.innerHTML = html;
+    },
+
+    formatJsonToText(obj) {
+        if (!obj || Object.keys(obj).length === 0) return '';
+        return Object.entries(obj).map(([k, v]) => `<span style="color:var(--text-action-high-blue-france)">"${this.escape(k)}"</span>: "${this.escape(v)}"`).join(',<br>');
+    },
+
+    updateSortUI(prefix, sortBy, isAsc) {
+        document.querySelectorAll(`[id^="icon-sort-${prefix}"]`).forEach(icon => {
+            icon.style.opacity = '0';
+            icon.className = 'sort-icon fr-icon-arrow-down-s-line';
+        });
+        const activeIcon = document.getElementById(`icon-sort-${prefix === 'mob' ? sortBy : prefix + '-' + sortBy}`);
+        if (activeIcon) {
+            activeIcon.style.opacity = '1';
+            activeIcon.className = isAsc ? "sort-icon fr-icon-arrow-up-s-line" : "sort-icon fr-icon-arrow-down-s-line";
+        }
+    }
+};
+
+// ============================================================================
+// 4. CONTRÔLEURS DE DOMAINE
+// ============================================================================
+
+// --- AUTHENTIFICATION ---
+const AuthCtrl = {
+    async login(e) {
+        e.preventDefault();
+        try {
+            const email = document.getElementById('login-email').value;
+            const password = document.getElementById('login-password').value;
+            
+            const res = await fetch(`${CONFIG.API_URL}/rpc/login`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({ email, password })
+            });
+            
+            if (!res.ok) throw new Error("Identifiants incorrects ou serveur injoignable");
+            const data = await res.json();
+            
+            State.jwt = data.token;
+            sessionStorage.setItem('trace_jwt', data.token);
+            App.start(); 
+        } catch (err) { UI.showAlert("Erreur", err.message, "error"); }
+    },
+
+    logout(msg) {
+        State.jwt = null;
+        State.user = null;
+        sessionStorage.removeItem('trace_jwt');
+        if (msg) alert(msg);
+        location.reload();
+    }
+};
+
+// --- GESTION DU MOBILIER ---
+const MobilierCtrl = {
+    searchTimeout: null,
+
+    async init() {
+        UI.fillSelect('filter-gabarit', State.referentiels.gabarits, 'id', 'nom_descriptif', { disablePlaceholder: false, placeholder: 'Tous les modèles' });
+        UI.fillSelect('filter-ua', State.referentiels.structures, 'code_sages', 'libelle', { disablePlaceholder: false, placeholder: 'Toutes les affectations' });
+        UI.fillSelect('filter-lieu', State.referentiels.lieux, 'id', 'nom', { disablePlaceholder: false, placeholder: 'Tous les lieux' });
+        
+        await this.loadData();
+    },
+
+    updateFilter(key, value) {
+        State.mobilier.filters[key] = value.trim();
+        State.mobilier.page = 1;
+        clearTimeout(this.searchTimeout);
+        this.searchTimeout = setTimeout(() => this.loadData(), 300);
+    },
+
+    toggleSort(columnName) {
+        if (State.mobilier.sortBy === columnName) {
+            State.mobilier.sortAsc = !State.mobilier.sortAsc;
+        } else {
+            State.mobilier.sortBy = columnName;
+            State.mobilier.sortAsc = true;
+        }
+        this.loadData();
+    },
+
+    changePage(direction) {
+        const totalPages = Math.ceil(State.mobilier.total / CONFIG.ITEMS_PER_PAGE);
+        const newPage = State.mobilier.page + direction;
+        if (newPage >= 1 && newPage <= totalPages) {
+            State.mobilier.page = newPage;
+            this.loadData();
+        }
+    },
+
+    resetFilters() {
+        
+        clearTimeout(this.searchTimeout);
+
+        
+        const champs = ['search-input', 'filter-gabarit', 'filter-ua', 'filter-lieu', 'filter-statut'];
+        champs.forEach(id => {
+            const element = document.getElementById(id);
+            if (element) element.value = ''; // Ne vide que si l'élément existe bien
+        });
+
+        
+        State.mobilier.filters = { query: '', gabarit: '', ua: '', lieu: '', statut: '' };
+        State.mobilier.page = 1;
+        
+        
+        this.loadData();
+    },
+
+    async loadData() {
+        const { page, sortBy, sortAsc, filters } = State.mobilier;
+        const startIndex = (page - 1) * CONFIG.ITEMS_PER_PAGE;
+        const endIndex = startIndex + CONFIG.ITEMS_PER_PAGE - 1;
+
+        let params = new URLSearchParams();
+        if (filters.gabarit) params.append('gabarit_id', `eq.${filters.gabarit}`);
+        if (filters.ua) params.append('code_sages', `eq.${filters.ua}`);
+        if (filters.lieu) params.append('lieu_id', `eq.${filters.lieu}`);
+        if (filters.statut) params.append('statut', `eq.${filters.statut}`);
+
+        if (filters.query) {
+            params.append('or', `(id_metier.ilike.*${filters.query}*,remarques.ilike.*${filters.query}*,gabarit_nom.ilike.*${filters.query}*,structure_libelle.ilike.*${filters.query}*,lieu_nom.ilike.*${filters.query}*,gabarit_json_txt.ilike.*${filters.query}*)`);
+        }
+        params.append('order', `${sortBy}.${sortAsc ? 'asc' : 'desc'}`);
+
+        try {
+            const res = await API.fetch(`/vue_mobiliers_recherche?${params.toString()}`, {
+                headers: API.getHeaders({ 'Range': `${startIndex}-${endIndex}`, 'Prefer': 'count=exact' })
+            });
+            if (!res.ok) throw new Error("Erreur de recherche");
+            
+            State.mobilier.data = await res.json();
+            const contentRange = res.headers.get('Content-Range');
+            if (contentRange) State.mobilier.total = parseInt(contentRange.split('/')[1]);
+            
+            this.renderTable();
+        } catch (e) { UI.showAlert("Erreur", "La recherche a échoué.", "error"); }
+    },
+
+    renderTable() {
+        const tbody = document.getElementById('table-mobilier-body');
+        tbody.innerHTML = ''; 
+
+        State.mobilier.data.forEach(mob => {
+            const gab = State.maps.g.get(mob.gabarit_id) || { nom_descriptif: 'Inconnu' };
+            const lieu = State.maps.l.get(mob.lieu_id) || { nom: 'Inconnu' };
+            const ua = State.maps.s.get(mob.code_sages) || { libelle: 'Inconnu' };
+
+            const jsonText = UI.formatJsonToText(gab.caracteristiques);
+            const jsonHtml = jsonText ? `<br><span class="fr-text--xs" style="color: var(--text-mention-grey); font-family: monospace;">{<br>${jsonText}<br>}</span>` : '';
+
+            const badges = { 'en_service': 'new', 'dispo_reemploi': 'success', 'en_maintenance': 'warning', 'au_rebut': 'error' };
+            const badgeClass = badges[mob.statut] || 'info';
+
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td><span class="uuid-badge" style="cursor:copy" title="Copier" data-uuid="${UI.escape(mob.id_metier)}">${UI.escape(mob.id_metier)}</span></td>
+                <td><span class="fr-text--bold">${UI.escape(gab.nom_descriptif)}</span>${jsonHtml}</td>
+                <td class="fr-text--sm">${UI.escape(ua.libelle)}<br><span class="fr-text--light">${UI.escape(lieu.nom)}</span></td>
+                <td><p class="fr-badge fr-badge--${badgeClass} fr-badge--sm fr-mb-0">${UI.escape(mob.statut)}</p></td>
+                <td><button class="fr-btn fr-btn--secondary fr-btn--sm btn-edit">Fiche</button></td>
+            `;
+            
+            tr.querySelector('.uuid-badge').addEventListener('click', (e) => navigator.clipboard.writeText(e.target.dataset.uuid));
+            tr.querySelector('.btn-edit').addEventListener('click', () => this.openEditForm(mob.uuid));
+            tbody.appendChild(tr);
+        });
+
+        UI.updateSortUI('mob', State.mobilier.sortBy, State.mobilier.sortAsc);
+        const totalPages = Math.ceil(State.mobilier.total / CONFIG.ITEMS_PER_PAGE) || 1;
+        document.getElementById('results-count').innerText = `${State.mobilier.total} équipement(s)`;
+        document.getElementById('page-info').innerText = `Page ${State.mobilier.page} sur ${totalPages}`;
+        document.getElementById('btn-prev').disabled = (State.mobilier.page === 1);
+        document.getElementById('btn-next').disabled = (State.mobilier.page >= totalPages);
+    },
+
+    openCreateForm() {
+        document.getElementById('form-mob-create').reset();
+        document.getElementById('new-mob-id').value = "Auto-généré";
+        UI.fillSelect('new-mob-gabarit', State.referentiels.gabarits, 'id', 'nom_descriptif');
+        UI.fillSelect('new-mob-ua', State.referentiels.structures, 'code_sages', 'libelle');
+        UI.fillSelect('new-mob-lieu', State.referentiels.lieux, 'id', 'nom');
+        UI.showView('view-mobilier-create', 'panel-mobilier');
+    },
+
+    openEditForm(uuid) {
+        const mob = State.mobilier.data.find(m => m.uuid === uuid);
+        if (!mob) return;
+        document.getElementById('edit-mob-uuid').value = mob.uuid;
+        document.getElementById('edit-mob-id').value = mob.id_metier;
+        UI.fillSelect('edit-mob-gabarit', State.referentiels.gabarits, 'id', 'nom_descriptif', { selected: mob.gabarit_id });
+        UI.fillSelect('edit-mob-ua', State.referentiels.structures, 'code_sages', 'libelle', { selected: mob.code_sages });
+        UI.fillSelect('edit-mob-lieu', State.referentiels.lieux, 'id', 'nom', { selected: mob.lieu_id });
+        document.getElementById('edit-mob-statut').value = mob.statut;
+        document.getElementById('edit-mob-remarques').value = mob.remarques || '';
+        UI.showView('view-mobilier-detail', 'panel-mobilier');
+    },
+
+    handleCreateUaChange() {
+        const ua = State.maps.s.get(document.getElementById('new-mob-ua').value);
+        if (ua && ua.lieu_id) {
+            document.getElementById('new-mob-lieu').value = ua.lieu_id;
+        }
+    },
+
+
+    handleEditUaChange() {
+        const ua = State.maps.s.get(document.getElementById('edit-mob-ua').value);
+        if (ua && ua.lieu_id) {
+            document.getElementById('edit-mob-lieu').value = ua.lieu_id;
+        }
+    },
+
+    async handleCreate(e) {
+        e.preventDefault();
+        const payload = {
+            gabarit_id: parseInt(document.getElementById('new-mob-gabarit').value),
+            code_sages: document.getElementById('new-mob-ua').value,
+            lieu_id: parseInt(document.getElementById('new-mob-lieu').value),
+            statut: document.getElementById('new-mob-statut').value,
+            remarques: document.getElementById('new-mob-remarques').value
+        };
+        const quantite = parseInt(document.getElementById('new-mob-quantite').value) || 1;
+
+        if (quantite > 100 && !confirm(`Créer ${quantite} équipements identiques ?`)) return;
+
+        try {
+            const payloads = Array(quantite).fill(payload);
+            const res = await API.fetch(`/mobiliers`, { method: 'POST', headers: API.getHeaders(), body: JSON.stringify(payloads) });
+            if (!res.ok) throw new Error("Erreur création.");
+            
+            UI.showAlert("Succès", `${quantite} équipement(s) créé(s).`, "success");
+            await this.loadData();
+            UI.showView('view-mobilier-list', 'panel-mobilier');
+        } catch (err) { UI.showAlert("Erreur", err.message, "error"); }
+    },
+
+    async handleEdit(e) {
+        e.preventDefault();
+        const uuid = document.getElementById('edit-mob-uuid').value;
+        const idMetier = document.getElementById('edit-mob-id').value;
+        if (!/^MOB-\d{6}$/.test(idMetier)) { UI.showAlert("Erreur", "ID métier mal formé.", "error"); return; }
+
+        const payload = {
+            gabarit_id: parseInt(document.getElementById('edit-mob-gabarit').value),
+            code_sages: document.getElementById('edit-mob-ua').value,
+            lieu_id: parseInt(document.getElementById('edit-mob-lieu').value),
+            statut: document.getElementById('edit-mob-statut').value,
+            remarques: document.getElementById('edit-mob-remarques').value
+        };
+
+        try {
+            const res = await API.fetch(`/mobiliers?uuid=eq.${uuid}`, { method: 'PATCH', headers: API.getHeaders(), body: JSON.stringify(payload) });
+            if (!res.ok) throw new Error("Erreur mise à jour.");
+            UI.showAlert("Succès", "Équipement mis à jour.", "success");
+            await this.loadData();
+            UI.showView('view-mobilier-list', 'panel-mobilier');
+        } catch (err) { UI.showAlert("Erreur", err.message, "error"); }
+    },
+
+    async handleDelete() {
+        const uuid = document.getElementById('edit-mob-uuid').value;
+        if (!confirm("Supprimer définitivement cet équipement ?")) return;
+        try {
+            const res = await API.fetch(`/mobiliers?uuid=eq.${uuid}`, { method: 'DELETE', headers: API.getHeaders() });
+            if (!res.ok) throw new Error("Échec de la suppression");
+            UI.showAlert("Succès", "Équipement supprimé", "success");
+            await this.loadData();
+            UI.showView('view-mobilier-list', 'panel-mobilier');
+        } catch (err) { UI.showAlert("Erreur", err.message, "error"); }
+    },
+
+    async exportCSV() {
+        let params = new URLSearchParams();
+        if (State.mobilier.filters.gabarit) params.append('gabarit_id', `eq.${State.mobilier.filters.gabarit}`);
+        if (State.mobilier.filters.ua) params.append('code_sages', `eq.${State.mobilier.filters.ua}`);
+        if (State.mobilier.filters.lieu) params.append('lieu_id', `eq.${State.mobilier.filters.lieu}`);
+        if (State.mobilier.filters.statut) params.append('statut', `eq.${State.mobilier.filters.statut}`);
+        if (State.mobilier.filters.query) {
+            params.append('or', `(id_metier.ilike.*${State.mobilier.filters.query}*,remarques.ilike.*${State.mobilier.filters.query}*)`);
+        }
+        params.append('order', `${State.mobilier.sortBy}.${State.mobilier.sortAsc ? 'asc' : 'desc'}`);
+
+        try {
+            UI.showAlert("Export", "Récupération des données...", "info");
+            const res = await API.fetch(`/mobiliers?${params.toString()}`, { headers: API.getHeaders() });
+            if (!res.ok) throw new Error("Erreur récupération données.");
+            const allData = await res.json();
+            if (allData.length === 0) { UI.showAlert("Export", "Aucune donnée.", "warning"); return; }
+
+            const headers = ["ID Métier", "Modèle", "Catégorie", "Affectation", "Lieu", "Statut", "Remarques"];
+            const rows = allData.map(mob => {
+                const gab = State.maps.g.get(mob.gabarit_id) || {};
+                const ua = State.maps.s.get(mob.code_sages) || {};
+                const lieu = State.maps.l.get(mob.lieu_id) || {};
+                return [
+                    mob.id_metier, gab.nom_descriptif || 'Inconnu', gab.categorie || 'Autre',
+                    ua.libelle || mob.code_sages, lieu.nom || 'Inconnu', mob.statut,
+                    (mob.remarques || '').replace(/(\r\n|\n|\r|;)/gm, " ")
+                ];
+            });
+
+            let csvContent = "\ufeff" + headers.join(";") + "\n";
+            rows.forEach(row => { csvContent += row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(";") + "\n"; });
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = `TRACE_Export_${new Date().toISOString().split('T')[0]}.csv`;
+            link.click();
+            URL.revokeObjectURL(url);
+            UI.showAlert("Succès", "Export terminé.", "success");
+        } catch (err) { UI.showAlert("Erreur Export", err.message, "error"); }
+    },
+
+    // --- DOUCHETTE ---
+    openScan() {
+        UI.fillSelect('scan-target-ua', State.referentiels.structures, 'code_sages', 'libelle');
+        UI.fillSelect('scan-target-lieu', State.referentiels.lieux, 'id', 'nom');
+        document.getElementById('scanner-input').value = '';
+        document.getElementById('scan-log').innerHTML = '';
+        UI.showView('view-mobilier-scanner', 'panel-mobilier');
+        setTimeout(() => document.getElementById('scanner-input').focus(), 100);
+    },
+
+    handleScanUaChange() {
+        const ua = State.maps.s.get(document.getElementById('scan-target-ua').value);
+        if (ua && ua.lieu_id) document.getElementById('scan-target-lieu').value = ua.lieu_id;
+    },
+
+    async processScan(event) {
+        if (event.key !== 'Enter') return;
+        event.preventDefault();
+        const input = document.getElementById('scanner-input');
+        const logArea = document.getElementById('scan-log');
+        const idMetier = input.value.trim().toUpperCase();
+        
+        if (idMetier === '') return;
+
+        if (!/^MOB-\d{6}$/.test(idMetier)) {
+            UI.showAlert("Format", "Format attendu: MOB-000000", "warning");
+            input.value = ''; return;
+        }
+
+        const payload = {
+            code_sages: document.getElementById('scan-target-ua').value,
+            lieu_id: parseInt(document.getElementById('scan-target-lieu').value),
+            statut: document.getElementById('scan-target-statut').value
+        };
+
+        if (!payload.code_sages || !payload.lieu_id || !payload.statut) {
+            UI.showAlert("Erreur", "Veuillez définir la destination cible.", "error"); return;
+        }
+
+        input.value = ''; input.focus();
+
+        try {
+            const searchRes = await API.fetch(`/mobiliers?id_metier=eq.${idMetier}`, { headers: API.getHeaders() });
+            const results = await searchRes.json();
+
+            if (results.length === 0) {
+                logArea.insertAdjacentHTML('afterbegin', `<li class="fr-mb-1v"><span class="fr-badge fr-badge--error">${UI.escape(idMetier)}</span> Introuvable</li>`);
+                return;
+            }
+
+            const updateRes = await API.fetch(`/mobiliers?uuid=eq.${results[0].uuid}`, {
+                method: 'PATCH', headers: API.getHeaders(), body: JSON.stringify(payload)
+            });
+
+            if (!updateRes.ok) throw new Error("Erreur serveur");
+            const uaLabel = State.maps.s.get(payload.code_sages)?.libelle || payload.code_sages;
+            logArea.insertAdjacentHTML('afterbegin', `<li class="fr-mb-1v"><span class="fr-badge fr-badge--success">${UI.escape(idMetier)}</span> Affecté vers ${UI.escape(uaLabel)}</li>`);
+            this.loadData(); // Refresh background list
+        } catch (err) {
+            logArea.insertAdjacentHTML('afterbegin', `<li class="fr-mb-1v"><span class="fr-badge fr-badge--error">${UI.escape(idMetier)}</span> Échec réseau</li>`);
+        }
+    },
+
+    // --- IMPORT MASSIF ---
+    openImport() {
+        UI.fillSelect('import-target-ua', State.referentiels.structures, 'code_sages', 'libelle');
+        UI.fillSelect('import-target-lieu', State.referentiels.lieux, 'id', 'nom');
+        document.getElementById('file-upload').value = '';
+        UI.showView('view-mobilier-import', 'panel-mobilier');
+    },
+
+    handleImportUaChange() {
+        const ua = State.maps.s.get(document.getElementById('import-target-ua').value);
+        if (ua && ua.lieu_id) document.getElementById('import-target-lieu').value = ua.lieu_id;
+    },
+
+    processImport() {
+        const fileInput = document.getElementById('file-upload');
+        if (!fileInput.files[0]) { UI.showAlert("Attention", "Sélectionnez un fichier .txt", "warning"); return; }
+
+        const payload = {
+            code_sages: document.getElementById('import-target-ua').value,
+            lieu_id: parseInt(document.getElementById('import-target-lieu').value),
+            statut: document.getElementById('import-target-statut').value
+        };
+
+        if (!payload.code_sages || !payload.lieu_id) { UI.showAlert("Erreur", "Destination incomplète.", "error"); return; }
+
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            const ids = [...new Set(e.target.result.split(/\r?\n/).map(id => id.trim().toUpperCase()).filter(id => /^MOB-\d{6}$/.test(id)))];
+            if (ids.length === 0) { UI.showAlert("Erreur", "Aucun ID valide.", "error"); return; }
+
+            try {
+                UI.showAlert("Import", `Traitement de ${ids.length} équipements...`, "info");
+                const CHUNK_SIZE = 100;
+                let successCount = 0;
+
+                for (let i = 0; i < ids.length; i += CHUNK_SIZE) {
+                    const chunk = ids.slice(i, i + CHUNK_SIZE);
+                    const res = await API.fetch(`/mobiliers?id_metier=in.(${chunk.join(',')})`, {
+                        method: 'PATCH', headers: API.getHeaders({ 'Prefer': 'return=representation' }), body: JSON.stringify(payload)
+                    });
+                    if (!res.ok) throw new Error("Erreur lot.");
+                    const data = await res.json();
+                    successCount += data.length;
+                }
+                
+                if (successCount === ids.length) UI.showAlert("Succès total", `${successCount} réaffectés.`, "success");
+                else UI.showAlert("Succès partiel", `${successCount} réaffectés sur ${ids.length} (Certains étaient inconnus).`, "warning");
+                
+                this.loadData();
+            } catch (err) { UI.showAlert("Erreur Import", err.message, "error"); }
+        };
+        reader.readAsText(fileInput.files[0]);
+    }
+};
+
+// --- CATALOGUE NATIONAL ---
+const GabaritCtrl = {
+    searchTimeout: null,
+
+    init() { this.renderTable(); },
+
+    updateFilter(key, value) {
+        State.gabarit.filters[key] = value.trim();
+        clearTimeout(this.searchTimeout);
+        this.searchTimeout = setTimeout(() => this.renderTable(), 200);
+    },
+
+    toggleSort(columnName) {
+        if (State.gabarit.sortBy === columnName) State.gabarit.sortAsc = !State.gabarit.sortAsc;
+        else { State.gabarit.sortBy = columnName; State.gabarit.sortAsc = true; }
+        this.renderTable();
+    },
+
+    renderTable() {
+        const tbody = document.getElementById('table-gabarits-body');
+        tbody.innerHTML = '';
+        
+        const { query, categorie } = State.gabarit.filters;
+        const q = query.toLowerCase();
+        
+        let filtered = State.referentiels.gabarits.filter(g => {
+            const matchCat = !categorie || g.categorie === categorie;
+            const matchQuery = !q || (g.reference_catalogue || '').toLowerCase().includes(q) || (g.nom_descriptif || '').toLowerCase().includes(q) || (g.caracteristiques ? JSON.stringify(g.caracteristiques).toLowerCase() : '').includes(q);
+            return matchCat && matchQuery;
+        });
+
+        filtered.sort((a, b) => {
+            let vA = (a[State.gabarit.sortBy] || '').toString().toLowerCase();
+            let vB = (b[State.gabarit.sortBy] || '').toString().toLowerCase();
+            if (vA < vB) return State.gabarit.sortAsc ? -1 : 1;
+            if (vA > vB) return State.gabarit.sortAsc ? 1 : -1;
+            return 0;
+        });
+
+        filtered.forEach(gab => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td class="fr-text--bold">${UI.escape(gab.reference_catalogue)}</td>
+                <td><p class="fr-badge fr-badge--info fr-badge--sm fr-mb-0">${UI.escape(gab.categorie)}</p></td>
+                <td>${UI.escape(gab.nom_descriptif)}</td>
+                <td class="fr-text--xs" style="font-family: monospace;">{<br>${UI.formatJsonToText(gab.caracteristiques)}<br>}</td>
+                <td><button class="fr-btn fr-btn--secondary fr-btn--sm btn-edit-gab">Éditer</button></td>
+            `;
+            tr.querySelector('.btn-edit-gab').addEventListener('click', () => this.openEditForm(gab.id));
+            tbody.appendChild(tr);
+        });
+        
+        UI.updateSortUI('gab', State.gabarit.sortBy, State.gabarit.sortAsc);
+    },
+
+    addJsonRow(key = "", val = "") {
+        const row = document.createElement('div');
+        row.className = 'json-builder-row';
+        row.innerHTML = `<div class="fr-input-group"><label class="fr-label">Attribut</label><input class="fr-input json-key" type="text" placeholder="couleur" value="${UI.escape(key)}"></div><div class="fr-input-group"><label class="fr-label">Valeur</label><input class="fr-input json-val" type="text" placeholder="noir" value="${UI.escape(val)}"></div><button type="button" class="fr-btn fr-btn--tertiary-no-outline fr-icon-delete-line btn-del-row"></button>`;
+        row.querySelector('.btn-del-row').addEventListener('click', () => row.remove());
+        document.getElementById('json-builder').appendChild(row);
+    },
+
+    suggestNextReference() {
+        const isEdit = document.getElementById('edit-gab-id').value !== "";
+        if (isEdit) return;
+
+        const catValue = document.getElementById('edit-gab-cat').value;
+        const refInput = document.getElementById('edit-gab-ref');
+        if (!catValue) return;
+
+        let prefix = "AUT";
+        if (catValue === 'Bureau') prefix = "BUR";
+        if (catValue === 'Assise') prefix = "ASS";
+        if (catValue === 'Rangement') prefix = "RAN";
+
+        let maxNum = 0;
+        State.referentiels.gabarits.forEach(g => {
+            if (g.reference_catalogue && g.reference_catalogue.startsWith(prefix + '-')) {
+                const num = parseInt(g.reference_catalogue.split('-')[1], 10);
+                if (!isNaN(num) && num > maxNum) maxNum = num;
+            }
+        });
+        refInput.value = `${prefix}-${String(maxNum + 1).padStart(3, '0')}`;
+    },
+
+    openCreateForm() {
+        document.getElementById('form-gab-edit').reset();
+        document.getElementById('edit-gab-id').value = "";
+        document.getElementById('json-builder').innerHTML = "";
+        this.addJsonRow("reference_marche", "null");
+        this.addJsonRow("reference_ugap", "null");
+        this.addJsonRow("annee_acquisition", new Date().getFullYear().toString());
+        document.getElementById('gab-form-title').innerText = "Créer un Modèle";
+        document.getElementById('btn-delete-gab').style.display = 'none';
+        UI.showView('view-gabarits-form', 'panel-gabarits');
+    },
+
+    openEditForm(id) {
+        const gab = State.maps.g.get(id);
+        if (!gab) return;
+        document.getElementById('edit-gab-id').value = gab.id;
+        document.getElementById('edit-gab-ref').value = gab.reference_catalogue;
+        document.getElementById('edit-gab-cat').value = gab.categorie;
+        document.getElementById('edit-gab-nom').value = gab.nom_descriptif;
+        
+        document.getElementById('json-builder').innerHTML = '';
+        let caracs = gab.caracteristiques || {};
+        this.addJsonRow('reference_marche', caracs.hasOwnProperty('reference_marche') ? caracs.reference_marche : "null");
+        this.addJsonRow('reference_ugap', caracs.hasOwnProperty('reference_ugap') ? caracs.reference_ugap : "null");
+        this.addJsonRow('annee_acquisition', caracs.hasOwnProperty('annee_acquisition') ? caracs.annee_acquisition : new Date().getFullYear().toString());
+        
+        const obligations = ['reference_marche', 'reference_ugap', 'annee_acquisition'];
+        Object.entries(caracs).forEach(([k, v]) => { if (!obligations.includes(k)) this.addJsonRow(k, v === null ? "null" : v); });
+
+        document.getElementById('gab-form-title').innerText = "Modifier le Modèle";
+        document.getElementById('btn-delete-gab').style.display = 'inline-flex';
+        UI.showView('view-gabarits-form', 'panel-gabarits');
+    },
+
+    async handleSave(e) {
+        e.preventDefault();
+        const ref = document.getElementById('edit-gab-ref').value.trim().toUpperCase();
+        if (!/^[A-Z]{3}-\d{3}$/.test(ref)) { UI.showAlert("Format", "Référence invalide (ex: BUR-001).", "error"); return; }
+
+        const id = document.getElementById('edit-gab-id').value;
+        const caracs = {};
+        document.querySelectorAll('.json-builder-row').forEach(row => {
+            const key = row.querySelector('.json-key').value.trim();
+            const val = row.querySelector('.json-val').value.trim();
+            if (key && val !== "") {
+                const safeKey = key.normalize("NFD").replace(/[\u0300-\u036f]/g, "").replace(/\s+/g, '_').toLowerCase();
+                caracs[safeKey] = (val.toLowerCase() === 'null') ? null : (val.toLowerCase() === 'true' ? true : (val.toLowerCase() === 'false' ? false : val));
+            }
+        });
+
+        const rawNom = document.getElementById('edit-gab-nom').value.trim();
+        const payload = {
+            reference_catalogue: ref, categorie: document.getElementById('edit-gab-cat').value,
+            nom_descriptif: rawNom.charAt(0).toUpperCase() + rawNom.slice(1), caracteristiques: caracs
+        };
+
+        try {
+            const url = id ? `/gabarits?id=eq.${id}` : `/gabarits`;
+            const method = id ? 'PATCH' : 'POST';
+            await API.fetch(url, { method, headers: API.getHeaders(), body: JSON.stringify(payload) });
+            UI.showAlert("Succès", "Modèle sauvegardé", "success");
+            await API.loadReferentiels();
+            this.renderTable();
+            UI.showView('view-gabarits-list', 'panel-gabarits');
+        } catch (err) { UI.showAlert("Erreur", "Référence déjà existante ou erreur serveur.", "error"); }
+    },
+
+    async handleDelete() {
+        const id = document.getElementById('edit-gab-id').value;
+        if (!confirm("Voulez-vous supprimer ce modèle ?")) return;
+        try {
+            const res = await API.fetch(`/gabarits?id=eq.${id}`, { method: 'DELETE', headers: API.getHeaders() });
+            if (!res.ok) throw new Error("Ce modèle est utilisé par des équipements.");
+            UI.showAlert("Succès", "Modèle retiré", "success");
+            await API.loadReferentiels();
+            this.renderTable();
+            UI.showView('view-gabarits-list', 'panel-gabarits');
+        } catch (err) { UI.showAlert("Erreur", err.message, "error"); }
+    }
+};
+
+// --- ADMINISTRATION ---
+const AdminCtrl = {
+    async init() {
+        if (State.user.role !== 'administrateur') return;
+        await this.loadUsers();
+        this.renderUA();
+        this.renderLieux();
+    },
+
+    // Utilisateurs
+    async loadUsers() {
+        try {
+            const res = await API.fetch('/utilisateurs', { headers: API.getHeaders() });
+            State.admin.users = await res.json();
+            this.renderUsers();
+        } catch (e) { console.error(e); }
+    },
+
+    renderUsers() {
+        const tbody = document.getElementById('table-users-body');
+        tbody.innerHTML = '';
+        State.admin.users.forEach(u => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td class="fr-text--bold">${UI.escape(u.email)}</td>
+                <td><span class="fr-badge fr-badge--${u.role === 'administrateur' ? 'error' : 'info'}">${UI.escape(u.role)}</span></td>
+                <td>
+                    <button class="fr-btn fr-btn--secondary fr-btn--sm fr-icon-lock-unlock-line fr-mr-1w btn-reset-pwd" title="Réinitialiser"></button>
+                    <button class="fr-btn fr-btn--tertiary-no-outline fr-btn--sm fr-icon-delete-line btn-del-user" style="color:var(--text-default-error);"></button>
+                </td>
+            `;
+            tr.querySelector('.btn-reset-pwd').addEventListener('click', () => this.resetUserPwd(u.email));
+            tr.querySelector('.btn-del-user').addEventListener('click', () => this.deleteUser(u.email));
+            tbody.appendChild(tr);
+        });
+    },
+
+openCreateUser() {
+        document.getElementById('form-user-create').reset();
+        UI.showView('view-users-form', 'panel-admin');
+    },
+
+    async handleCreateUser(e) {
+        e.preventDefault();
+        const email = document.getElementById('new-user-email').value.trim();
+        const role = document.getElementById('new-user-role').value;
+        const pwd = prompt(`Veuillez définir un mot de passe initial pour ${email} :`);
+        
+        if (!pwd) return;
+
+        try {
+            const res = await API.fetch(`/rpc/creer_utilisateur`, { 
+                method: 'POST', 
+                headers: API.getHeaders(), 
+                body: JSON.stringify({ _email: email, _password: pwd, _role: role }) 
+            });
+            
+            // NOUVEAU : On lit et on affiche l'erreur exacte de la base de données
+            if (!res.ok) {
+                const errorData = await res.json().catch(() => ({}));
+                const serverMsg = errorData.message || errorData.details || "Erreur serveur HTTP " + res.status;
+                throw new Error(serverMsg);
+            }
+            
+            UI.showAlert("Succès", "Compte créé.", "success");
+            this.loadUsers();
+            UI.showView('view-users-list', 'panel-admin');
+        } catch (err) { 
+            UI.showAlert("Erreur API/SQL", err.message, "error"); 
+        }
+    },
+
+    async deleteUser(email) {
+        if (!confirm(`Révoquer l'accès pour ${email} ?`)) return;
+        try {
+            await API.fetch(`/utilisateurs?email=eq.${email}`, { method: 'DELETE', headers: API.getHeaders() });
+            UI.showAlert("Succès", "Compte supprimé.", "success");
+            this.loadUsers();
+        } catch (err) { UI.showAlert("Erreur", "Suppression impossible.", "error"); }
+    },
+
+    async resetUserPwd(email) {
+        const nouveauMdp = prompt(`Nouveau mot de passe pour ${email} :`);
+        if (!nouveauMdp) return;
+        try {
+            await API.fetch(`/rpc/reinitialiser_mdp`, { method: 'POST', headers: API.getHeaders(), body: JSON.stringify({ _email: email, _new_password: nouveauMdp }) });
+            UI.showAlert("Succès", "Mot de passe mis à jour.", "success");
+        } catch (err) { UI.showAlert("Erreur", "Réinitialisation impossible.", "error"); }
+    },
+
+    // UA & Lieux
+    renderUA() {
+        const tbody = document.getElementById('table-ua-body');
+        tbody.innerHTML = '';
+        State.referentiels.structures.forEach(ua => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td class="fr-text--bold">${UI.escape(ua.code_sages)}</td><td>${UI.escape(ua.libelle)}</td><td><button class="fr-btn fr-btn--secondary fr-btn--sm fr-icon-edit-line btn-edit-ua"></button></td>`;
+            tr.querySelector('.btn-edit-ua').addEventListener('click', () => alert("Édition UA à implémenter si besoin"));
+            tbody.appendChild(tr);
+        });
+    },
+
+openCreateUa() {
+        document.getElementById('form-ua-create').reset();
+        UI.fillSelect('new-ua-lieu', State.referentiels.lieux, 'id', 'nom');
+        UI.showView('view-ua-form', 'panel-admin');
+    },
+
+    async handleCreateUa(e) {
+        e.preventDefault();
+        const payload = {
+            code_sages: document.getElementById('new-ua-code').value.trim().toUpperCase(),
+            libelle: document.getElementById('new-ua-libelle').value.trim(),
+            lieu_id: parseInt(document.getElementById('new-ua-lieu').value)
+        };
+        try {
+            const res = await API.fetch(`/structures`, { method: 'POST', headers: API.getHeaders(), body: JSON.stringify(payload) });
+            if (!res.ok) throw new Error("Erreur de création (Code SAGES existant ?)");
+            UI.showAlert("Succès", "Service ajouté.", "success");
+            
+            await API.loadReferentiels(); // Met à jour le cache global
+            this.renderUA();
+            MobilierCtrl.init(); // Rafraîchit les filtres
+            UI.showView('view-ua-list', 'panel-admin');
+        } catch (err) { UI.showAlert("Erreur", err.message, "error"); }
+    },
+
+    renderLieux() {
+        const tbody = document.getElementById('table-lieux-body');
+        tbody.innerHTML = '';
+        State.referentiels.lieux.forEach(l => {
+            const tr = document.createElement('tr');
+            tr.innerHTML = `<td class="fr-text--bold">${UI.escape(l.nom)}</td><td><button class="fr-btn fr-btn--secondary fr-btn--sm fr-icon-edit-line btn-edit-lieu"></button></td>`;
+            tr.querySelector('.btn-edit-lieu').addEventListener('click', () => alert("Édition Lieu à implémenter si besoin"));
+            tbody.appendChild(tr);
+        });
+    },
+
+openCreateLieu() {
+        document.getElementById('form-lieu-create').reset();
+        UI.showView('view-lieux-form', 'panel-admin');
+    },
+
+    async handleCreateLieu(e) {
+        e.preventDefault();
+        const payload = { nom: document.getElementById('new-lieu-nom').value.trim() };
+        try {
+            const res = await API.fetch(`/lieux`, { method: 'POST', headers: API.getHeaders(), body: JSON.stringify(payload) });
+            if (!res.ok) throw new Error("Erreur de création.");
+            UI.showAlert("Succès", "Nouveau lieu enregistré.", "success");
+            
+            await API.loadReferentiels(); // Met à jour le cache global
+            this.renderLieux();
+            MobilierCtrl.init(); // Rafraîchit les filtres
+            UI.showView('view-lieux-list', 'panel-admin');
+        } catch (err) { UI.showAlert("Erreur", err.message, "error"); }
+    },
+
+    // Audit
+    async loadAudit() {
+        try {
+            const res = await API.fetch('/audit_logs?order=date_action.desc&limit=500', { headers: API.getHeaders() });
+            State.admin.audit = await res.json();
+            const tbody = document.getElementById('table-audit-body');
+            tbody.innerHTML = '';
+            State.admin.audit.forEach(log => {
+                const tr = document.createElement('tr');
+                const badge = log.action === 'CRÉATION' ? 'success' : (log.action === 'SUPPRESSION' ? 'error' : 'info');
+                tr.innerHTML = `
+                    <td class="fr-text--sm">${new Date(log.date_action).toLocaleString('fr-FR')}</td>
+                    <td class="fr-text--sm fr-text--bold">${UI.escape(log.utilisateur)}</td>
+                    <td><span class="fr-badge fr-badge--${badge} fr-badge--sm">${UI.escape(log.action)}</span></td>
+                    <td class="fr-text--sm" style="font-family: monospace;">${UI.escape(log.id_metier)}</td>
+                    <td class="fr-text--xs">${UI.escape(log.details)}</td>
+                `;
+                tbody.appendChild(tr);
+            });
+            UI.showView('view-audit-list', 'panel-admin');
+        } catch (e) { UI.showAlert("Erreur", "Accès refusé au journal.", "error"); }
+    },
+
+    // Mise au rebut (Massive + PDF)
+    processRebut() {
+        const fileInput = document.getElementById('rebut-file-upload');
+        if (!fileInput.files[0]) { UI.showAlert("Attention", "Sélectionnez un fichier .txt", "warning"); return; }
+        if (!confirm("ATTENTION : Cette action est irréversible. Générer le PV et supprimer ?")) return;
+
+        const reader = new FileReader();
+        reader.onload = async (e) => {
+            const ids = e.target.result.split(/\r?\n/).map(id => id.trim().toUpperCase()).filter(id => /^MOB-\d{6}$/.test(id));
+            if (ids.length === 0) { UI.showAlert("Erreur", "Aucun identifiant valide.", "error"); return; }
+
+            try {
+                UI.showAlert("Traitement", `Analyse et suppression de ${ids.length} équipements...`, "info");
+                const CHUNK_SIZE = 100;
+                let itemsToRebut = [];
+
+                // 1. Récupération des données intégrales pour le PV
+                for (let i = 0; i < ids.length; i += CHUNK_SIZE) {
+                    const chunk = ids.slice(i, i + CHUNK_SIZE);
+                    const res = await API.fetch(`/vue_mobiliers_recherche?id_metier=in.(${chunk.join(',')})`, { headers: API.getHeaders() });
+                    if (res.ok) itemsToRebut = itemsToRebut.concat(await res.json());
+                }
+
+                if (itemsToRebut.length === 0) { UI.showAlert("Erreur", "Aucun équipement trouvé en base.", "error"); return; }
+                const validIds = itemsToRebut.map(item => item.id_metier);
+
+                // 2. Suppression physique par lots
+                for (let i = 0; i < validIds.length; i += CHUNK_SIZE) {
+                    const chunk = validIds.slice(i, i + CHUNK_SIZE);
+                    await API.fetch(`/mobiliers?id_metier=in.(${chunk.join(',')})`, { method: 'DELETE', headers: API.getHeaders() });
+                }
+
+                // 3. Génération PDF
+                this.generateRebutPDF(itemsToRebut);
+                UI.showAlert("Succès", `${validIds.length} supprimés. PV généré.`, "success");
+                MobilierCtrl.loadData();
+            } catch (err) { UI.showAlert("Erreur critique", err.message, "error"); }
+        };
+        reader.readAsText(fileInput.files[0]);
+    },
+
+    async generateRebutPDF(data) {
+        const { jsPDF } = window.jspdf;
+        const doc = new jsPDF();
+        const dateToday = new Date().toLocaleDateString('fr-FR');
+        const filenameDate = new Date().toISOString().split('T')[0].replace(/-/g, '');
+
+        try {
+            const img = new Image();
+            img.src = 'dsfr-v1.14.3/dist/favicon/apple-touch-icon.png';
+            await new Promise((resolve, reject) => { img.onload = resolve; img.onerror = reject; });
+            const canvas = document.createElement('canvas');
+            canvas.width = img.width; canvas.height = img.height;
+            canvas.getContext('2d').drawImage(img, 0, 0);
+            doc.addImage(canvas.toDataURL('image/png'), 'PNG', 20, 15, 14, 14);
+        } catch (e) { console.warn("Logo absent."); }
+
+        doc.setFont("helvetica", "bold"); doc.setFontSize(11); doc.text("RÉPUBLIQUE\nFRANÇAISE", 38, 20);
+        doc.setFont("helvetica", "italic"); doc.setFontSize(8); doc.text("Liberté\nÉgalité\nFraternité", 38, 31);
+        
+        doc.setFont("helvetica", "bold"); doc.setFontSize(12); doc.text(State.appConfig.administration.toUpperCase(), 75, 20, { maxWidth: 120 });
+        doc.setFont("helvetica", "normal"); doc.setFontSize(10); doc.text(State.appConfig.direction, 75, 28, { maxWidth: 120 });
+        
+        doc.setDrawColor(0, 0, 145); doc.setLineWidth(0.5); doc.line(20, 45, 190, 45);
+
+        doc.setFontSize(16); doc.setFont("helvetica", "bold"); doc.setTextColor(0, 0, 145);
+        doc.text("ANNEXE PROCÈS-VERBAL CESSION", 105, 56, { align: 'center' });
+
+        doc.setTextColor(0, 0, 0); doc.setFontSize(10); doc.setFont("helvetica", "normal");
+        doc.text(`Référence document : TRACE-REBUT-${filenameDate}`, 20, 70);
+        doc.text(`Date d'édition : ${dateToday}`, 20, 76);
+        doc.text(`Équipements traités : ${data.length} unité(s)`, 20, 82);
+
+        const tableBody = data.map(item => [item.id_metier, item.gabarit_nom, item.structure_libelle, item.lieu_nom, (item.remarques || '').substring(0, 50)]);
+        doc.autoTable({
+            startY: 90, head: [['ID Métier', 'Modèle', 'Service Affectation', 'Lieu', 'Observations']], body: tableBody,
+            theme: 'grid', headStyles: { fillColor: [0, 0, 145], textColor: [255, 255, 255], fontStyle: 'bold' },
+            styles: { fontSize: 8, font: 'helvetica' }, alternateRowStyles: { fillColor: [246, 246, 246] }
+        });
+
+        const finalY = doc.lastAutoTable.finalY + 20;
+        doc.setFontSize(10); doc.setFont("helvetica", "bold"); doc.text("Cachet du service et signature :", 100, finalY);
+        doc.setDrawColor(0, 0, 0); doc.setLineWidth(0.2); doc.rect(100, finalY + 5, 90, 35);
+
+        doc.save(`PVSORTIETRACE_${filenameDate}.pdf`);
+    }
+};
+
+// ============================================================================
+// 5. BOOTSTRAP DE L'APPLICATION
+// ============================================================================
+const App = {
+    eventsBound: false,
+
+    async start() {
+        // 2. AJOUT DE LA CONDITION ICI :
+        if (!this.eventsBound) {
+            this.bindEvents();
+            this.eventsBound = true;
+        }
+        
+        await API.loadConfig();
+
+        if (!State.initUser()) {
+            document.getElementById('view-login').classList.add('active');
+            document.getElementById('view-app').classList.remove('active');
+            return; 
+        }
+
+        document.getElementById('view-login').classList.remove('active');
+        document.getElementById('view-app').classList.add('active');
+        document.getElementById('logout-btn-container').style.display = 'block';
+
+        if (State.user.role === 'administrateur') {
+            document.getElementById('tab-admin').style.display = 'block';
+        }
+
+        try {
+            await API.loadReferentiels();
+            await MobilierCtrl.init();
+            GabaritCtrl.init();
+            if (State.user.role === 'administrateur') await AdminCtrl.init();
+        } catch (e) { UI.showAlert("Critique", "Erreur réseau d'initialisation.", "error"); }
+    },
+
+    bindEvents() {
+        // Auth
+        const loginForm = document.getElementById('form-login');
+        if (loginForm) {
+            loginForm.replaceWith(loginForm.cloneNode(true));
+            document.getElementById('form-login').addEventListener('submit', (e) => AuthCtrl.login(e));
+        }
+        document.getElementById('btn-logout')?.addEventListener('click', () => AuthCtrl.logout());
+
+        // Mobilier: Navigation & Filtres
+        document.getElementById('btn-reset-filters')?.addEventListener('click', () => MobilierCtrl.resetFilters());
+        document.getElementById('search-input')?.addEventListener('input', (e) => MobilierCtrl.updateFilter('query', e.target.value));
+        document.getElementById('filter-gabarit')?.addEventListener('change', (e) => MobilierCtrl.updateFilter('gabarit', e.target.value));
+        document.getElementById('filter-ua')?.addEventListener('change', (e) => MobilierCtrl.updateFilter('ua', e.target.value));
+        document.getElementById('filter-lieu')?.addEventListener('change', (e) => MobilierCtrl.updateFilter('lieu', e.target.value));
+        document.getElementById('filter-statut')?.addEventListener('change', (e) => MobilierCtrl.updateFilter('statut', e.target.value));
+        
+        document.querySelectorAll('#table-mobilier-body').forEach(el => el.closest('table').querySelectorAll('th.sortable-header').forEach(th => th.addEventListener('click', () => MobilierCtrl.toggleSort(th.dataset.sort))));
+        document.getElementById('btn-prev')?.addEventListener('click', () => MobilierCtrl.changePage(-1));
+        document.getElementById('btn-next')?.addEventListener('click', () => MobilierCtrl.changePage(1));
+        document.getElementById('btn-export-csv')?.addEventListener('click', () => MobilierCtrl.exportCSV());
+        
+        // Mobilier: Vues
+        document.querySelectorAll('.btn-back-to-list').forEach(btn => btn.addEventListener('click', () => UI.showView('view-mobilier-list', 'panel-mobilier')));
+        document.getElementById('btn-nav-create-mob')?.addEventListener('click', () => MobilierCtrl.openCreateForm());
+        document.getElementById('btn-nav-scan')?.addEventListener('click', () => MobilierCtrl.openScan());
+        document.getElementById('btn-nav-import')?.addEventListener('click', () => MobilierCtrl.openImport());
+
+        // Mobilier: Actions
+        document.getElementById('form-mob-create')?.addEventListener('submit', (e) => MobilierCtrl.handleCreate(e));
+        document.getElementById('form-mob-edit')?.addEventListener('submit', (e) => MobilierCtrl.handleEdit(e));
+        document.getElementById('btn-delete-mob')?.addEventListener('click', () => MobilierCtrl.handleDelete());
+        document.getElementById('new-mob-ua')?.addEventListener('change', () => MobilierCtrl.handleCreateUaChange());
+        document.getElementById('edit-mob-ua')?.addEventListener('change', () => MobilierCtrl.handleEditUaChange());
+        document.getElementById('scan-target-ua')?.addEventListener('change', () => MobilierCtrl.handleScanUaChange());
+        document.getElementById('scanner-input')?.addEventListener('keypress', (e) => MobilierCtrl.processScan(e));
+        document.getElementById('import-target-ua')?.addEventListener('change', () => MobilierCtrl.handleImportUaChange());
+        document.getElementById('btn-exec-import')?.addEventListener('click', () => MobilierCtrl.processImport());
+
+        // Gabarits
+        document.getElementById('search-gab-input')?.addEventListener('input', (e) => GabaritCtrl.updateFilter('query', e.target.value));
+        document.getElementById('filter-gab-cat')?.addEventListener('change', (e) => GabaritCtrl.updateFilter('categorie', e.target.value));
+        document.querySelectorAll('.btn-back-to-gab-list').forEach(btn => btn.addEventListener('click', () => UI.showView('view-gabarits-list', 'panel-gabarits')));
+        document.getElementById('btn-nav-create-gab')?.addEventListener('click', () => GabaritCtrl.openCreateForm());
+        document.getElementById('edit-gab-cat')?.addEventListener('change', () => GabaritCtrl.suggestNextReference());
+        document.getElementById('btn-add-json-row')?.addEventListener('click', () => GabaritCtrl.addJsonRow());
+        document.getElementById('form-gab-edit')?.addEventListener('submit', (e) => GabaritCtrl.handleSave(e));
+        document.getElementById('btn-delete-gab')?.addEventListener('click', () => GabaritCtrl.handleDelete());
+
+        // Admin
+        document.getElementById('nav-admin-users')?.addEventListener('click', () => UI.showView('view-users-list', 'panel-admin'));
+        document.getElementById('nav-admin-ua')?.addEventListener('click', () => UI.showView('view-ua-list', 'panel-admin'));
+        document.getElementById('nav-admin-lieux')?.addEventListener('click', () => UI.showView('view-lieux-list', 'panel-admin'));
+        document.getElementById('nav-admin-rebut')?.addEventListener('click', () => UI.showView('view-admin-rebut', 'panel-admin'));
+        document.getElementById('nav-admin-audit')?.addEventListener('click', () => AdminCtrl.loadAudit());
+        document.getElementById('btn-exec-rebut')?.addEventListener('click', () => AdminCtrl.processRebut());
+        // Admin: Vues de création et soumissions
+        document.getElementById('btn-nav-create-user')?.addEventListener('click', () => AdminCtrl.openCreateUser());
+        document.querySelectorAll('.btn-back-to-users').forEach(btn => btn.addEventListener('click', () => UI.showView('view-users-list', 'panel-admin')));
+        document.getElementById('form-user-create')?.addEventListener('submit', (e) => AdminCtrl.handleCreateUser(e));
+
+        document.getElementById('btn-nav-create-ua')?.addEventListener('click', () => AdminCtrl.openCreateUa());
+        document.querySelectorAll('.btn-back-to-ua').forEach(btn => btn.addEventListener('click', () => UI.showView('view-ua-list', 'panel-admin')));
+        document.getElementById('form-ua-create')?.addEventListener('submit', (e) => AdminCtrl.handleCreateUa(e));
+
+        document.getElementById('btn-nav-create-lieu')?.addEventListener('click', () => AdminCtrl.openCreateLieu());
+        document.querySelectorAll('.btn-back-to-lieux').forEach(btn => btn.addEventListener('click', () => UI.showView('view-lieux-list', 'panel-admin')));
+        document.getElementById('form-lieu-create')?.addEventListener('submit', (e) => AdminCtrl.handleCreateLieu(e));
+        
+        
+    }
+};
+
+document.addEventListener('DOMContentLoaded', () => App.start()); 
