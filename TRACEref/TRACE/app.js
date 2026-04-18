@@ -149,7 +149,25 @@ const UI = {
         const placeholder = options.placeholder || "Sélectionnez...";
         
         let html = `<option value="" ${!selected ? 'selected' : ''} ${options.disablePlaceholder !== false ? 'disabled hidden' : ''}>${placeholder}</option>`;
-        html += dataArray.map(item => `<option value="${item[valueKey]}" ${item[valueKey] == selected ? 'selected' : ''}>${this.escape(item[labelKey])}</option>`).join('');
+        if (typeof options.isPrimary === 'function') {
+            const primaryItems = dataArray.filter(options.isPrimary);
+            const secondaryItems = dataArray.filter(item => !options.isPrimary(item));
+
+            if (primaryItems.length > 0) {
+                html += `<optgroup label="${options.primaryGroupLabel || 'Sélection recommandée'}">`;
+                html += primaryItems.map(item => `<option value="${item[valueKey]}" ${item[valueKey] == selected ? 'selected' : ''}>${this.escape(item[labelKey])}</option>`).join('');
+                html += `</optgroup>`;
+            }
+
+            if (secondaryItems.length > 0) {
+                html += `<optgroup label="${options.secondaryGroupLabel || 'Autres options'}">`;
+                html += secondaryItems.map(item => `<option value="${item[valueKey]}" ${item[valueKey] == selected ? 'selected' : ''}>${this.escape(item[labelKey])}</option>`).join('');
+                html += `</optgroup>`;
+            }
+        } else {
+            // Rendu classique sans groupes
+            html += dataArray.map(item => `<option value="${item[valueKey]}" ${item[valueKey] == selected ? 'selected' : ''}>${this.escape(item[labelKey])}</option>`).join('');
+        }
         select.innerHTML = html;
     },
 
@@ -215,15 +233,8 @@ const MobilierCtrl = {
         UI.fillSelect('filter-gabarit', State.referentiels.gabarits, 'id', 'nom_descriptif', { disablePlaceholder: false, placeholder: 'Tous les modèles' });
         UI.fillSelect('filter-ua', State.referentiels.structures, 'code_sages', 'libelle', { disablePlaceholder: false, placeholder: 'Toutes les affectations' });
         UI.fillSelect('filter-lieu', State.referentiels.lieux, 'id', 'nom', { disablePlaceholder: false, placeholder: 'Tous les lieux' });
-        
+        await this.updateFacets();
         await this.loadData();
-    },
-
-    updateFilter(key, value) {
-        State.mobilier.filters[key] = value.trim();
-        State.mobilier.page = 1;
-        clearTimeout(this.searchTimeout);
-        this.searchTimeout = setTimeout(() => this.loadData(), 300);
     },
 
     toggleSort(columnName) {
@@ -245,6 +256,52 @@ const MobilierCtrl = {
         }
     },
 
+	async updateFacets() {
+        const { lieu, ua, gabarit } = State.mobilier.filters;
+        
+        // Préparation du payload (remplace les chaînes vides par null pour SQL)
+        const payload = {
+            p_lieu_id: lieu ? parseInt(lieu) : null,
+            p_code_sages: ua ? ua : null,
+            p_gabarit_id: gabarit ? parseInt(gabarit) : null
+        };
+
+        try {
+            const res = await API.fetch('/rpc/get_filtres_disponibles', {
+                method: 'POST',
+                headers: API.getHeaders(),
+                body: JSON.stringify(payload)
+            });
+            
+            if (!res.ok) throw new Error("Erreur lors de la récupération des facettes");
+            const facettes = await res.json();
+
+            // On repeuple les listes déroulantes avec les données filtrées par le serveur,
+            // tout en conservant la sélection actuelle si elle existe.
+            UI.fillSelect('filter-gabarit', facettes.gabarits, 'id', 'nom_descriptif', { placeholder: 'Tous les modèles', selected: gabarit, disablePlaceholder: false });
+            UI.fillSelect('filter-ua', facettes.structures, 'code_sages', 'libelle', { placeholder: 'Toutes les affectations', selected: ua, disablePlaceholder: false });
+            UI.fillSelect('filter-lieu', facettes.lieux, 'id', 'nom', { placeholder: 'Tous les lieux', selected: lieu, disablePlaceholder: false });
+
+        } catch (e) {
+            console.error("Facettes inaccessibles :", e);
+        }
+    },
+
+    // MODIFICATION : On met à jour les facettes à chaque changement de filtre
+    updateFilter(key, value) {
+        State.mobilier.filters[key] = value.trim();
+        State.mobilier.page = 1;
+        
+        // Si c'est un filtre structurel (lieu, ua, gabarit), on recalcule les facettes
+        if (['lieu', 'ua', 'gabarit'].includes(key)) {
+            this.updateFacets();
+        }
+
+        clearTimeout(this.searchTimeout);
+        this.searchTimeout = setTimeout(() => this.loadData(), 300);
+    },
+
+
     resetFilters() {
         
         clearTimeout(this.searchTimeout);
@@ -260,7 +317,7 @@ const MobilierCtrl = {
         State.mobilier.filters = { query: '', gabarit: '', ua: '', lieu: '', statut: '' };
         State.mobilier.page = 1;
         
-        
+        this.updateFacets();
         this.loadData();
     },
 
@@ -351,21 +408,7 @@ const MobilierCtrl = {
         document.getElementById('edit-mob-statut').value = mob.statut;
         document.getElementById('edit-mob-remarques').value = mob.remarques || '';
         UI.showView('view-mobilier-detail', 'panel-mobilier');
-    },
-
-    handleCreateUaChange() {
-        const ua = State.maps.s.get(document.getElementById('new-mob-ua').value);
-        if (ua && ua.lieu_id) {
-            document.getElementById('new-mob-lieu').value = ua.lieu_id;
-        }
-    },
-
-
-    handleEditUaChange() {
-        const ua = State.maps.s.get(document.getElementById('edit-mob-ua').value);
-        if (ua && ua.lieu_id) {
-            document.getElementById('edit-mob-lieu').value = ua.lieu_id;
-        }
+        this.handleEditUaChange();
     },
 
     async handleCreate(e) {
@@ -479,11 +522,7 @@ const MobilierCtrl = {
         document.getElementById('scan-log').innerHTML = '';
         UI.showView('view-mobilier-scanner', 'panel-mobilier');
         setTimeout(() => document.getElementById('scanner-input').focus(), 100);
-    },
-
-    handleScanUaChange() {
-        const ua = State.maps.s.get(document.getElementById('scan-target-ua').value);
-        if (ua && ua.lieu_id) document.getElementById('scan-target-lieu').value = ua.lieu_id;
+        this.handleScanUaChange();
     },
 
     async processScan(event) {
@@ -540,12 +579,9 @@ const MobilierCtrl = {
         UI.fillSelect('import-target-lieu', State.referentiels.lieux, 'id', 'nom');
         document.getElementById('file-upload').value = '';
         UI.showView('view-mobilier-import', 'panel-mobilier');
+        this.handleImportUaChange();
     },
 
-    handleImportUaChange() {
-        const ua = State.maps.s.get(document.getElementById('import-target-ua').value);
-        if (ua && ua.lieu_id) document.getElementById('import-target-lieu').value = ua.lieu_id;
-    },
 
     processImport() {
         const fileInput = document.getElementById('file-upload');
@@ -586,8 +622,60 @@ const MobilierCtrl = {
             } catch (err) { UI.showAlert("Erreur Import", err.message, "error"); }
         };
         reader.readAsText(fileInput.files[0]);
-    }
+    },
+    
+    // ========================================================================
+    // MOTEUR DE TRI INTELLIGENT (Facettes Optgroup)
+    // ========================================================================
+    
+    // 1. Logique Service (UA) -> Lieu
+    handleUaChange(prefix) {
+        const uaCode = document.getElementById(`${prefix}-ua`).value;
+        const ua = State.maps.s.get(uaCode);
+        const lieuSelectId = `${prefix}-lieu`;
+        
+        UI.fillSelect(lieuSelectId, State.referentiels.lieux, 'id', 'nom', {
+            // Pré-sélectionne le lieu par défaut du service
+            selected: ua ? ua.lieu_id : null,
+            // Prédicat : Le lieu évalué est-il le lieu par défaut de ce service ?
+            isPrimary: (lieu) => ua && lieu.id === ua.lieu_id,
+            primaryGroupLabel: "📍 Lieu par défaut du service",
+            secondaryGroupLabel: "🏢 Autres sites possibles"
+        });
+    },
+
+    // 2. Logique Lieu -> Service (UA)
+    handleLieuChange(prefix) {
+        const lieuIdStr = document.getElementById(`${prefix}-lieu`).value;
+        const lieuId = lieuIdStr ? parseInt(lieuIdStr) : null;
+        const uaSelectId = `${prefix}-ua`;
+        const currentUaCode = document.getElementById(uaSelectId).value;
+
+        UI.fillSelect(uaSelectId, State.referentiels.structures, 'code_sages', 'libelle', {
+            // Conserve la sélection actuelle si elle existe
+            selected: currentUaCode,
+            // Prédicat : Le service évalué est-il hébergé dans ce lieu ?
+            isPrimary: (ua) => lieuId !== null && ua.lieu_id === lieuId,
+            primaryGroupLabel: "🎯 Services hébergés sur ce site",
+            secondaryGroupLabel: "📁 Autres services"
+        });
+    },
+    
+    handleCreateUaChange() { this.handleUaChange('new-mob'); },
+    handleCreateLieuChange() { this.handleLieuChange('new-mob'); },
+
+    handleEditUaChange() { this.handleUaChange('edit-mob'); },
+    handleEditLieuChange() { this.handleLieuChange('edit-mob'); },
+
+    handleScanUaChange() { this.handleUaChange('scan-target'); },
+    handleScanLieuChange() { this.handleLieuChange('scan-target'); },
+
+    handleImportUaChange() { this.handleUaChange('import-target'); },
+    handleImportLieuChange() { this.handleLieuChange('import-target'); },
+    
 };
+
+
 
 // --- CATALOGUE NATIONAL ---
 const GabaritCtrl = {
@@ -1182,11 +1270,13 @@ const App = {
         document.getElementById('form-mob-create')?.addEventListener('submit', (e) => MobilierCtrl.handleCreate(e));
         document.getElementById('form-mob-edit')?.addEventListener('submit', (e) => MobilierCtrl.handleEdit(e));
         document.getElementById('btn-delete-mob')?.addEventListener('click', () => MobilierCtrl.handleDelete());
+        
         document.getElementById('new-mob-ua')?.addEventListener('change', () => MobilierCtrl.handleCreateUaChange());
         document.getElementById('edit-mob-ua')?.addEventListener('change', () => MobilierCtrl.handleEditUaChange());
         document.getElementById('scan-target-ua')?.addEventListener('change', () => MobilierCtrl.handleScanUaChange());
-        document.getElementById('scanner-input')?.addEventListener('keypress', (e) => MobilierCtrl.processScan(e));
         document.getElementById('import-target-ua')?.addEventListener('change', () => MobilierCtrl.handleImportUaChange());
+        
+        document.getElementById('scanner-input')?.addEventListener('keypress', (e) => MobilierCtrl.processScan(e));
         document.getElementById('btn-exec-import')?.addEventListener('click', () => MobilierCtrl.processImport());
 
         // Gabarits
@@ -1227,6 +1317,13 @@ const App = {
         document.getElementById('form-lieu-edit')?.addEventListener('submit', (e) => AdminCtrl.handleEditLieu(e));
         document.getElementById('btn-delete-lieu')?.addEventListener('click', () => AdminCtrl.deleteLieu());
         
+        // --- NOUVEAU : Écouteurs pour les Lieux ---
+        document.getElementById('new-mob-lieu')?.addEventListener('change', () => MobilierCtrl.handleCreateLieuChange());
+        document.getElementById('edit-mob-lieu')?.addEventListener('change', () => MobilierCtrl.handleEditLieuChange());
+        document.getElementById('scan-target-lieu')?.addEventListener('change', () => MobilierCtrl.handleScanLieuChange());
+        document.getElementById('import-target-lieu')?.addEventListener('change', () => MobilierCtrl.handleImportLieuChange());
+        
+      
         
     }
 };

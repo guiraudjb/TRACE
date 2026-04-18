@@ -195,6 +195,63 @@ DO \$\$BEGIN
     IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'administrateur') THEN CREATE ROLE administrateur NOLOGIN; END IF;
 END\$\$;
 
+
+-- =============================================================================
+-- MOTEUR DE FACETTES (Filtres intelligents pour le Front-End)
+-- =============================================================================
+CREATE OR REPLACE FUNCTION public.get_filtres_disponibles(
+    p_lieu_id INTEGER DEFAULT NULL,
+    p_code_sages VARCHAR DEFAULT NULL,
+    p_gabarit_id INTEGER DEFAULT NULL
+) RETURNS jsonb AS \$\$
+DECLARE
+    v_lieux jsonb;
+    v_structures jsonb;
+    v_gabarits jsonb;
+BEGIN
+    -- 1. Lieux contenant au moins un équipement correspondant aux filtres
+    SELECT jsonb_agg(DISTINCT l.*) INTO v_lieux
+    FROM public.lieux l
+    WHERE EXISTS (
+        SELECT 1 FROM public.mobiliers m
+        WHERE m.lieu_id = l.id
+        AND (p_code_sages IS NULL OR m.code_sages = p_code_sages)
+        AND (p_gabarit_id IS NULL OR m.gabarit_id = p_gabarit_id)
+    );
+
+    -- 2. Services (UA) possédant au moins un équipement correspondant
+    SELECT jsonb_agg(DISTINCT s.*) INTO v_structures
+    FROM public.structures s
+    WHERE EXISTS (
+        SELECT 1 FROM public.mobiliers m
+        WHERE m.code_sages = s.code_sages
+        AND (p_lieu_id IS NULL OR m.lieu_id = p_lieu_id)
+        AND (p_gabarit_id IS NULL OR m.gabarit_id = p_gabarit_id)
+    );
+
+    -- 3. Modèles (Gabarits) physiquement présents
+    SELECT jsonb_agg(DISTINCT g.*) INTO v_gabarits
+    FROM public.gabarits g
+    WHERE EXISTS (
+        SELECT 1 FROM public.mobiliers m
+        WHERE m.gabarit_id = g.id
+        AND (p_lieu_id IS NULL OR m.lieu_id = p_lieu_id)
+        AND (p_code_sages IS NULL OR m.code_sages = p_code_sages)
+    );
+
+    -- Retourne un JSON consolidé
+    RETURN jsonb_build_object(
+        'lieux', COALESCE(v_lieux, '[]'::jsonb),
+        'structures', COALESCE(v_structures, '[]'::jsonb),
+        'gabarits', COALESCE(v_gabarits, '[]'::jsonb)
+    );
+END;
+\$\$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Autorisation d'exécution pour les rôles de l'API
+GRANT EXECUTE ON FUNCTION public.get_filtres_disponibles(INTEGER, VARCHAR, INTEGER) TO divagil, agent, administrateur;
+
+
 -- 1. Création d'une vue qui rassemble toutes les informations textuelles
 CREATE OR REPLACE VIEW public.vue_mobiliers_recherche AS
 SELECT 
