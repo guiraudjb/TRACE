@@ -60,6 +60,7 @@
 
     <main role="main">
         <div id="alert-container" class="fr-container-fluid fr-px-2w fr-px-md-6w fr-mt-2w no-print"></div>
+        <datalist id="datalist-gabarits"></datalist>
 
         <section id="view-login" class="app-view active fr-container fr-mt-6w">
             <div class="fr-grid-row fr-grid-row--center">
@@ -169,7 +170,10 @@
                                         </div>
                                     </div>
                                 </div>
-                                <div class="fr-select-group"><label class="fr-label">Modèle (Catalogue)</label><select class="fr-select" id="new-mob-gabarit" required></select></div>
+                                <div class="fr-input-group">
+                                    <label class="fr-label">Modèle (Recherche par référence ou nom)</label>
+                                    <input class="fr-input" type="text" id="new-mob-gabarit-input" list="datalist-gabarits" placeholder="Commencez à taper..." required autocomplete="off">
+                                </div>
                                 <div class="fr-grid-row fr-grid-row--gutters">
                                     <div class="fr-col-12 fr-col-md-6"><div class="fr-select-group"><label class="fr-label">Service d'affectation</label><select class="fr-select" id="new-mob-ua" required></select></div></div>
                                     <div class="fr-col-12 fr-col-md-6"><div class="fr-select-group"><label class="fr-label">Localisation physique</label><select class="fr-select" id="new-mob-lieu" required></select></div></div>
@@ -188,7 +192,10 @@
                             <form id="form-mob-edit">
                                 <input type="hidden" id="edit-mob-uuid">
                                 <div class="fr-input-group"><label class="fr-label">Identifiant métier</label><input class="fr-input" type="text" id="edit-mob-id" readonly></div>
-                                <div class="fr-select-group"><label class="fr-label">Modèle</label><select class="fr-select" id="edit-mob-gabarit" required></select></div>
+                                <div class="fr-input-group">
+                                    <label class="fr-label">Modèle (Recherche par référence ou nom)</label>
+                                    <input class="fr-input" type="text" id="edit-mob-gabarit-input" list="datalist-gabarits" placeholder="Commencez à taper..." required autocomplete="off">
+                                </div>
                                 <div class="fr-grid-row fr-grid-row--gutters">
                                     <div class="fr-col-12 fr-col-md-6"><div class="fr-select-group"><label class="fr-label">Affectation</label><select class="fr-select" id="edit-mob-ua" required></select></div></div>
                                     <div class="fr-col-12 fr-col-md-6"><div class="fr-select-group"><label class="fr-label">Localisation</label><select class="fr-select" id="edit-mob-lieu" required></select></div></div>
@@ -264,28 +271,54 @@
 
                 <div id="panel-gabarits" class="fr-tabs__panel fr-container-fluid fr-px-2w fr-px-md-6w" role="tabpanel" aria-labelledby="tab-gabarits">
                     <div id="view-gabarits-list" class="sub-view active">
-                        <div class="fr-grid-row fr-grid-row--middle fr-mb-4w">
-                            <div class="fr-col-12 fr-col-md-6"><h2 class="fr-m-0">Catalogue des modèles</h2></div>
-                            <div class="fr-col-12 fr-col-md-6 fr-text-md-right"><button id="btn-nav-create-gab" class="fr-btn fr-icon-add-circle-line fr-btn--icon-left">Nouveau modèle</button></div>
-                        </div>
-                        <div class="trace-card">
-                            <div class="fr-grid-row fr-grid-row--gutters fr-mb-3w">
-                                <div class="fr-col-12 fr-col-md-6">
-                                    <div class="fr-search-bar" role="search">
-                                        <input class="fr-input" placeholder="Référence ou nom..." type="search" id="search-gab-input">
-                                        <button class="fr-btn">Rechercher</button>
-                                    </div>
-                                </div>
-                                <div class="fr-col-12 fr-col-md-6"><select class="fr-select" id="filter-gab-cat"><option value="">Toutes les catégories</option><option value="Bureau">Bureau</option><option value="Assise">Assise</option><option value="Rangement">Rangement</option></select></div>
-                            </div>
-                            <div class="fr-table fr-table--bordered">
-                                <table>
-                                    <thead><tr><th>Référence</th><th>Catégorie</th><th>Désignation</th><th>Attributs</th><th>Actions</th></tr></thead>
-                                    <tbody id="table-gabarits-body"></tbody>
-                                </table>
-                            </div>
-                        </div>
-                    </div>
+    <div class="fr-grid-row fr-grid-row--middle fr-mb-4w">
+        <div class="fr-col-12 fr-col-md-6"><h2 class="fr-m-0">Catalogue des modèles</h2></div>
+        <div class="fr-col-12 fr-col-md-6 fr-text-md-right"><button id="btn-nav-create-gab" class="fr-btn fr-icon-add-circle-line fr-btn--icon-left">Nouveau modèle</button></div>
+    </div>
+    
+    <div class="trace-card">
+        <div class="fr-grid-row fr-grid-row--gutters fr-mb-2w">
+            <div class="fr-col-12 fr-col-md-6">
+                <div class="fr-search-bar" role="search">
+                    <input class="fr-input" placeholder="Référence, nom ou attribut..." type="search" id="search-gab-input">
+                    <button class="fr-btn" title="Rechercher">Rechercher</button>
+                </div>
+            </div>
+            <div class="fr-col-12 fr-col-md-6">
+                <select class="fr-select" id="filter-gab-cat">
+                    <option value="">Toutes les catégories</option>
+                    <option value="Bureau">Bureau</option>
+                    <option value="Assise">Assise</option>
+                    <option value="Rangement">Rangement</option>
+                </select>
+            </div>
+        </div>
+        <div class="fr-mb-2w fr-text--sm fr-text--bold" style="display:flex; justify-content: space-between;">
+            <span id="gab-results-count">Chargement...</span>
+            <button type="button" id="btn-reset-gab-filters" class="fr-btn fr-btn--tertiary-no-outline fr-btn--sm fr-icon-refresh-line fr-btn--icon-left">Réinitialiser</button>
+        </div>
+        <div class="fr-table fr-table--bordered">
+            <table>
+                <thead>
+                    <tr>
+                        <th class="sortable-header" data-sort="reference_catalogue">Référence <span id="icon-sort-gab-reference_catalogue" class="sort-icon"></span></th>
+                        <th class="sortable-header" data-sort="categorie">Catégorie <span id="icon-sort-gab-categorie" class="sort-icon"></span></th>
+                        <th class="sortable-header" data-sort="nom_descriptif">Désignation <span id="icon-sort-gab-nom_descriptif" class="sort-icon"></span></th>
+                        <th>Attributs</th>
+                        <th style="width: 15%">Actions</th>
+                    </tr>
+                </thead>
+                <tbody id="table-gabarits-body"></tbody>
+            </table>
+        </div>
+        <div class="pagination-controls">
+            <button id="btn-gab-prev" class="fr-btn fr-btn--secondary fr-btn--sm fr-icon-arrow-left-s-line fr-btn--icon-left">Précédent</button>
+            <span class="fr-text--sm fr-text--bold" id="gab-page-info"></span>
+            <button id="btn-gab-next" class="fr-btn fr-btn--secondary fr-btn--sm fr-icon-arrow-right-s-line fr-btn--icon-right">Suivant</button>
+        </div>
+    </div>
+</div>
+
                     <div id="view-gabarits-form" class="sub-view">
                         <button class="fr-btn fr-btn--secondary fr-icon-arrow-left-line fr-btn--icon-left fr-mb-4w btn-back-to-gab-list">Retour</button>
                         <div class="trace-card">

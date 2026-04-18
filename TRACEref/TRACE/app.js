@@ -30,7 +30,7 @@ const State = {
         filters: { query: '', gabarit: '', ua: '', lieu: '', statut: '' }
     },
     gabarit: {
-        data: [], page: 1, sortBy: 'reference_catalogue', sortAsc: true,
+        data: [], total: 0, page: 1, sortBy: 'reference_catalogue', sortAsc: true,
         filters: { query: '', categorie: '' }
     },
     admin: {
@@ -104,7 +104,7 @@ const API = {
 
     async loadReferentiels() {
         const [gRes, sRes, lRes] = await Promise.all([
-            this.fetch('/gabarits', { headers: this.getHeaders() }),
+            this.fetch('/gabarits?select=id,reference_catalogue,categorie,nom_descriptif', { headers: this.getHeaders() }),
             this.fetch('/structures', { headers: this.getHeaders() }),
             this.fetch('/lieux', { headers: this.getHeaders() })
         ]);
@@ -116,6 +116,8 @@ const API = {
         State.maps.g.clear(); State.referentiels.gabarits.forEach(g => State.maps.g.set(g.id, g));
         State.maps.s.clear(); State.referentiels.structures.forEach(s => State.maps.s.set(s.code_sages, s));
         State.maps.l.clear(); State.referentiels.lieux.forEach(l => State.maps.l.set(l.id, l));
+        const dl = document.getElementById('datalist-gabarits');
+        if (dl) dl.innerHTML = State.referentiels.gabarits.map(g => `<option value="${g.reference_catalogue} - ${g.nom_descriptif}" data-id="${g.id}">`).join('');
     }
 };
 
@@ -228,6 +230,13 @@ const AuthCtrl = {
 // --- GESTION DU MOBILIER ---
 const MobilierCtrl = {
     searchTimeout: null,
+    
+    getGabaritId(inputId) {
+        const val = document.getElementById(inputId).value;
+        const safeVal = val.replace(/"/g, '\\"'); // Sécurité contre les guillemets dans les noms
+        const opt = document.querySelector(`#datalist-gabarits option[value="${safeVal}"]`);
+        return opt ? parseInt(opt.dataset.id) : null;
+    },
 
     async init() {
         UI.fillSelect('filter-gabarit', State.referentiels.gabarits, 'id', 'nom_descriptif', { disablePlaceholder: false, placeholder: 'Tous les modèles' });
@@ -391,7 +400,6 @@ const MobilierCtrl = {
     openCreateForm() {
         document.getElementById('form-mob-create').reset();
         document.getElementById('new-mob-id').value = "Auto-généré";
-        UI.fillSelect('new-mob-gabarit', State.referentiels.gabarits, 'id', 'nom_descriptif');
         UI.fillSelect('new-mob-ua', State.referentiels.structures, 'code_sages', 'libelle');
         UI.fillSelect('new-mob-lieu', State.referentiels.lieux, 'id', 'nom');
         UI.showView('view-mobilier-create', 'panel-mobilier');
@@ -402,7 +410,8 @@ const MobilierCtrl = {
         if (!mob) return;
         document.getElementById('edit-mob-uuid').value = mob.uuid;
         document.getElementById('edit-mob-id').value = mob.id_metier;
-        UI.fillSelect('edit-mob-gabarit', State.referentiels.gabarits, 'id', 'nom_descriptif', { selected: mob.gabarit_id });
+        const gab = State.maps.g.get(mob.gabarit_id);
+        document.getElementById('edit-mob-gabarit-input').value = gab ? `${gab.reference_catalogue} - ${gab.nom_descriptif}` : "";
         UI.fillSelect('edit-mob-ua', State.referentiels.structures, 'code_sages', 'libelle', { selected: mob.code_sages });
         UI.fillSelect('edit-mob-lieu', State.referentiels.lieux, 'id', 'nom', { selected: mob.lieu_id });
         document.getElementById('edit-mob-statut').value = mob.statut;
@@ -413,8 +422,10 @@ const MobilierCtrl = {
 
     async handleCreate(e) {
         e.preventDefault();
+        const gabarit_id = this.getGabaritId('new-mob-gabarit-input');
+        if (!gabarit_id) { UI.showAlert("Erreur", "Veuillez sélectionner un modèle valide dans la liste.", "error"); return; }
         const payload = {
-            gabarit_id: parseInt(document.getElementById('new-mob-gabarit').value),
+            gabarit_id: gabarit_id,
             code_sages: document.getElementById('new-mob-ua').value,
             lieu_id: parseInt(document.getElementById('new-mob-lieu').value),
             statut: document.getElementById('new-mob-statut').value,
@@ -440,9 +451,12 @@ const MobilierCtrl = {
         const uuid = document.getElementById('edit-mob-uuid').value;
         const idMetier = document.getElementById('edit-mob-id').value;
         if (!/^MOB-\d{6}$/.test(idMetier)) { UI.showAlert("Erreur", "ID métier mal formé.", "error"); return; }
+        
+        const gabarit_id = this.getGabaritId('edit-mob-gabarit-input');
+        if (!gabarit_id) { UI.showAlert("Erreur", "Veuillez sélectionner un modèle valide dans la liste.", "error"); return; }
 
         const payload = {
-            gabarit_id: parseInt(document.getElementById('edit-mob-gabarit').value),
+            gabarit_id: gabarit_id,
             code_sages: document.getElementById('edit-mob-ua').value,
             lieu_id: parseInt(document.getElementById('edit-mob-lieu').value),
             statut: document.getElementById('edit-mob-statut').value,
@@ -681,42 +695,72 @@ const MobilierCtrl = {
 const GabaritCtrl = {
     searchTimeout: null,
 
-    init() { this.renderTable(); },
+    init() { this.loadData(); },
 
     updateFilter(key, value) {
         State.gabarit.filters[key] = value.trim();
+        State.gabarit.page = 1;
         clearTimeout(this.searchTimeout);
-        this.searchTimeout = setTimeout(() => this.renderTable(), 200);
+        this.searchTimeout = setTimeout(() => this.loadData(), 300);
+    },
+
+    resetFilters() {
+        clearTimeout(this.searchTimeout);
+        document.getElementById('search-gab-input').value = '';
+        document.getElementById('filter-gab-cat').value = '';
+        State.gabarit.filters = { query: '', categorie: '' };
+        State.gabarit.page = 1;
+        this.loadData();
     },
 
     toggleSort(columnName) {
         if (State.gabarit.sortBy === columnName) State.gabarit.sortAsc = !State.gabarit.sortAsc;
         else { State.gabarit.sortBy = columnName; State.gabarit.sortAsc = true; }
-        this.renderTable();
+        this.loadData();
+    },
+
+    changePage(direction) {
+        const totalPages = Math.ceil(State.gabarit.total / CONFIG.ITEMS_PER_PAGE);
+        const newPage = State.gabarit.page + direction;
+        if (newPage >= 1 && newPage <= totalPages) {
+            State.gabarit.page = newPage;
+            this.loadData();
+        }
+    },
+
+    async loadData() {
+        const { page, sortBy, sortAsc, filters } = State.gabarit;
+        const startIndex = (page - 1) * CONFIG.ITEMS_PER_PAGE;
+        const endIndex = startIndex + CONFIG.ITEMS_PER_PAGE - 1;
+
+        let params = new URLSearchParams();
+        if (filters.categorie) params.append('categorie', `eq.${filters.categorie}`);
+        
+        if (filters.query) {
+            // Recherche textuelle avancée grâce aux index GIN de PostgreSQL
+            params.append('or', `(reference_catalogue.ilike.*${filters.query}*,nom_descriptif.ilike.*${filters.query}*,caracteristiques.ilike.*${filters.query}*)`);
+        }
+        params.append('order', `${sortBy}.${sortAsc ? 'asc' : 'desc'}`);
+
+        try {
+            const res = await API.fetch(`/gabarits?${params.toString()}`, {
+                headers: API.getHeaders({ 'Range': `${startIndex}-${endIndex}`, 'Prefer': 'count=exact' })
+            });
+            if (!res.ok) throw new Error("Erreur de recherche");
+            
+            State.gabarit.data = await res.json();
+            const contentRange = res.headers.get('Content-Range');
+            if (contentRange) State.gabarit.total = parseInt(contentRange.split('/')[1]);
+            
+            this.renderTable();
+        } catch (e) { UI.showAlert("Erreur", "Le chargement du catalogue a échoué.", "error"); }
     },
 
     renderTable() {
         const tbody = document.getElementById('table-gabarits-body');
         tbody.innerHTML = '';
         
-        const { query, categorie } = State.gabarit.filters;
-        const q = query.toLowerCase();
-        
-        let filtered = State.referentiels.gabarits.filter(g => {
-            const matchCat = !categorie || g.categorie === categorie;
-            const matchQuery = !q || (g.reference_catalogue || '').toLowerCase().includes(q) || (g.nom_descriptif || '').toLowerCase().includes(q) || (g.caracteristiques ? JSON.stringify(g.caracteristiques).toLowerCase() : '').includes(q);
-            return matchCat && matchQuery;
-        });
-
-        filtered.sort((a, b) => {
-            let vA = (a[State.gabarit.sortBy] || '').toString().toLowerCase();
-            let vB = (b[State.gabarit.sortBy] || '').toString().toLowerCase();
-            if (vA < vB) return State.gabarit.sortAsc ? -1 : 1;
-            if (vA > vB) return State.gabarit.sortAsc ? 1 : -1;
-            return 0;
-        });
-
-        filtered.forEach(gab => {
+        State.gabarit.data.forEach(gab => {
             const tr = document.createElement('tr');
             tr.innerHTML = `
                 <td class="fr-text--bold">${UI.escape(gab.reference_catalogue)}</td>
@@ -730,6 +774,13 @@ const GabaritCtrl = {
         });
         
         UI.updateSortUI('gab', State.gabarit.sortBy, State.gabarit.sortAsc);
+        
+        // Mise à jour de l'interface de pagination
+        const totalPages = Math.ceil(State.gabarit.total / CONFIG.ITEMS_PER_PAGE) || 1;
+        document.getElementById('gab-results-count').innerText = `${State.gabarit.total} modèle(s)`;
+        document.getElementById('gab-page-info').innerText = `Page ${State.gabarit.page} sur ${totalPages}`;
+        document.getElementById('btn-gab-prev').disabled = (State.gabarit.page === 1);
+        document.getElementById('btn-gab-next').disabled = (State.gabarit.page >= totalPages);
     },
 
     addJsonRow(key = "", val = "") {
@@ -1282,6 +1333,15 @@ const App = {
         // Gabarits
         document.getElementById('search-gab-input')?.addEventListener('input', (e) => GabaritCtrl.updateFilter('query', e.target.value));
         document.getElementById('filter-gab-cat')?.addEventListener('change', (e) => GabaritCtrl.updateFilter('categorie', e.target.value));
+        document.getElementById('btn-reset-gab-filters')?.addEventListener('click', () => GabaritCtrl.resetFilters());
+        document.getElementById('btn-gab-prev')?.addEventListener('click', () => GabaritCtrl.changePage(-1));
+        document.getElementById('btn-gab-next')?.addEventListener('click', () => GabaritCtrl.changePage(1));
+        document.querySelectorAll('#table-gabarits-body').forEach(el => {
+            el.closest('table').querySelectorAll('th.sortable-header').forEach(th => {
+                th.addEventListener('click', () => GabaritCtrl.toggleSort(th.dataset.sort));
+            });
+        });
+        
         document.querySelectorAll('.btn-back-to-gab-list').forEach(btn => btn.addEventListener('click', () => UI.showView('view-gabarits-list', 'panel-gabarits')));
         document.getElementById('btn-nav-create-gab')?.addEventListener('click', () => GabaritCtrl.openCreateForm());
         document.getElementById('edit-gab-cat')?.addEventListener('change', () => GabaritCtrl.suggestNextReference());
