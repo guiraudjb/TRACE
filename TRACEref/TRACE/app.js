@@ -37,7 +37,7 @@ const State = {
         users: [], usersPage: 1, usersSortBy: 'email', usersSortAsc: true,
         ua: [], uaPage: 1, uaSortBy: 'code_sages', uaSortAsc: true,
         lieux: [], lieuxPage: 1, lieuxSortBy: 'nom', lieuxSortAsc: true,
-        audit: [], auditPage: 1
+        audit: { data: [], total: 0, page: 1, filters: { query: '' } }
     },
 
     initUser() {
@@ -104,7 +104,7 @@ const API = {
 
     async loadReferentiels() {
         const [gRes, sRes, lRes] = await Promise.all([
-            this.fetch('/gabarits?select=id,reference_catalogue,categorie,nom_descriptif', { headers: this.getHeaders() }),
+            this.fetch('/gabarits?select=id,reference_catalogue,categorie,nom_descriptif,caracteristiques', { headers: this.getHeaders() }),
             this.fetch('/structures', { headers: this.getHeaders() }),
             this.fetch('/lieux', { headers: this.getHeaders() })
         ]);
@@ -265,7 +265,7 @@ const MobilierCtrl = {
         }
     },
 
-	async updateFacets() {
+    async updateFacets() {
         const { lieu, ua, gabarit } = State.mobilier.filters;
         
         // Préparation du payload (remplace les chaînes vides par null pour SQL)
@@ -342,7 +342,19 @@ const MobilierCtrl = {
         if (filters.statut) params.append('statut', `eq.${filters.statut}`);
 
         if (filters.query) {
-            params.append('or', `(id_metier.ilike.*${filters.query}*,remarques.ilike.*${filters.query}*,gabarit_nom.ilike.*${filters.query}*,structure_libelle.ilike.*${filters.query}*,lieu_nom.ilike.*${filters.query}*,gabarit_json_txt.ilike.*${filters.query}*)`);
+            // 1. On nettoie la saisie pour éviter les plantages PostgREST
+            const safeQuery = filters.query.replace(/["(),:{}\t]/g, ' ');
+
+            // 2. On découpe la recherche en mots séparés
+            const motsCles = safeQuery.trim().split(/\s+/);
+
+            // 3. On crée une condition "OR" (fouiller toutes les colonnes) pour CHAQUE mot
+            const conditionsMots = motsCles.map(mot => 
+                `or(id_metier.ilike.*${mot}*,remarques.ilike.*${mot}*,gabarit_nom.ilike.*${mot}*,structure_libelle.ilike.*${mot}*,lieu_nom.ilike.*${mot}*,gabarit_json_txt.ilike.*${mot}*)`
+            );
+
+            // 4. On exige que TOUS les mots tapés soient trouvés (condition "AND")
+            params.append('and', `(${conditionsMots.join(',')})`);
         }
         params.append('order', `${sortBy}.${sortAsc ? 'asc' : 'desc'}`);
 
@@ -689,8 +701,6 @@ const MobilierCtrl = {
     
 };
 
-
-
 // --- CATALOGUE NATIONAL ---
 const GabaritCtrl = {
     searchTimeout: null,
@@ -737,10 +747,21 @@ const GabaritCtrl = {
         if (filters.categorie) params.append('categorie', `eq.${filters.categorie}`);
         
         if (filters.query) {
-            // Recherche textuelle avancée grâce aux index GIN de PostgreSQL
-            params.append('or', `(reference_catalogue.ilike.*${filters.query}*,nom_descriptif.ilike.*${filters.query}*,caracteristiques.ilike.*${filters.query}*)`);
+            // 1. On nettoie la chaîne pour la rendre lisible par PostgREST
+            const safeQuery = filters.query.replace(/["(),:{}\t]/g, ' ');
+
+            // 2. On découpe la recherche en mots séparés (en ignorant les espaces multiples)
+            const motsCles = safeQuery.trim().split(/\s+/);
+            
+            // 3. On construit un tableau de conditions "or" pour CHAQUE mot-clé
+            const conditionsMots = motsCles.map(mot => 
+                `or(reference_catalogue.ilike.*${mot}*,nom_descriptif.ilike.*${mot}*,caracteristiques_txt.ilike.*${mot}*)`
+            );
+
+            // 4. On demande à l'API que TOUTES les conditions (ET) soient remplies
+            // PostgREST utilise des virgules pour le "ET" implicite entre plusieurs conditions
+            params.append('and', `(${conditionsMots.join(',')})`);
         }
-        params.append('order', `${sortBy}.${sortAsc ? 'asc' : 'desc'}`);
 
         try {
             const res = await API.fetch(`/gabarits?${params.toString()}`, {
@@ -876,7 +897,7 @@ const GabaritCtrl = {
             await API.fetch(url, { method, headers: API.getHeaders(), body: JSON.stringify(payload) });
             UI.showAlert("Succès", "Modèle sauvegardé", "success");
             await API.loadReferentiels();
-            this.renderTable();
+            await this.loadData();
             UI.showView('view-gabarits-list', 'panel-gabarits');
         } catch (err) { UI.showAlert("Erreur", "Référence déjà existante ou erreur serveur.", "error"); }
     },
@@ -889,7 +910,7 @@ const GabaritCtrl = {
             if (!res.ok) throw new Error("Ce modèle est utilisé par des équipements.");
             UI.showAlert("Succès", "Modèle retiré", "success");
             await API.loadReferentiels();
-            this.renderTable();
+            await this.loadData();
             UI.showView('view-gabarits-list', 'panel-gabarits');
         } catch (err) { UI.showAlert("Erreur", err.message, "error"); }
     }
@@ -932,7 +953,7 @@ const AdminCtrl = {
         });
     },
 
-openCreateUser() {
+    openCreateUser() {
         document.getElementById('form-user-create').reset();
         UI.showView('view-users-form', 'panel-admin');
     },
@@ -1142,28 +1163,135 @@ openCreateUser() {
 
 
     // Audit
-    async loadAudit() {
+// Audit
+    auditSearchTimeout: null,
+    auditPollingTimer: null,
+    latestKnownAuditId: null,
+    
+    async checkNewAuditEvents() {
+        const auditView = document.getElementById('view-audit-list');
+        
+        // Sécurité : On stoppe tout si la vue n'est pas active, si on n'est pas sur la page 1, 
+        // si une recherche est en cours, ou si l'onglet du navigateur est en arrière-plan.
+        if (!auditView || !auditView.classList.contains('active') || State.admin.audit.page !== 1 || State.admin.audit.filters.query !== '' || document.hidden) {
+            return;
+        }
+
         try {
-            const res = await API.fetch('/audit_logs?order=date_action.desc&limit=500', { headers: API.getHeaders() });
-            State.admin.audit = await res.json();
-            const tbody = document.getElementById('table-audit-body');
-            tbody.innerHTML = '';
-            State.admin.audit.forEach(log => {
-                const tr = document.createElement('tr');
-                const badge = log.action === 'CRÉATION' ? 'success' : (log.action === 'SUPPRESSION' ? 'error' : 'info');
-                tr.innerHTML = `
-                    <td class="fr-text--sm">${new Date(log.date_action).toLocaleString('fr-FR')}</td>
-                    <td class="fr-text--sm fr-text--bold">${UI.escape(log.utilisateur)}</td>
-                    <td><span class="fr-badge fr-badge--${badge} fr-badge--sm">${UI.escape(log.action)}</span></td>
-                    <td class="fr-text--sm" style="font-family: monospace;">${UI.escape(log.id_metier)}</td>
-                    <td class="fr-text--xs">${UI.escape(log.details)}</td>
-                `;
-                tbody.appendChild(tr);
+            // Requête ultra-légère : on demande uniquement l'ID le plus élevé (le plus récent)
+            const res = await API.fetch('/audit_logs?select=id&order=id.desc&limit=1', { headers: API.getHeaders() });
+            if (res.ok) {
+                const data = await res.json();
+                if (data.length > 0) {
+                    const serverLatestId = data[0].id;
+                    // S'il y a un décalage entre notre ID et celui du serveur, on affiche l'alerte
+                    if (this.latestKnownAuditId && serverLatestId > this.latestKnownAuditId) {
+                        document.getElementById('audit-new-events-banner').style.display = 'block';
+                    }
+                }
+            }
+        } catch (e) {
+            // Échec silencieux, on ne pollue pas la console de l'utilisateur
+        }
+    },
+
+    startAuditPolling() {
+        this.stopAuditPolling();
+        document.getElementById('audit-new-events-banner').style.display = 'none';
+        // Lance la vérification silencieuse toutes les 15 secondes
+        this.auditPollingTimer = setInterval(() => this.checkNewAuditEvents(), 15000);
+    },
+
+    stopAuditPolling() {
+        if (this.auditPollingTimer) clearInterval(this.auditPollingTimer);
+    },
+
+    updateAuditFilter(value) {
+        State.admin.audit.filters.query = value;
+        State.admin.audit.page = 1;
+        clearTimeout(this.auditSearchTimeout);
+        this.auditSearchTimeout = setTimeout(() => this.loadAudit(), 300);
+    },
+
+    changeAuditPage(direction) {
+        const totalPages = Math.ceil(State.admin.audit.total / CONFIG.ITEMS_PER_PAGE);
+        const newPage = State.admin.audit.page + direction;
+        if (newPage >= 1 && newPage <= totalPages) {
+            State.admin.audit.page = newPage;
+            this.loadAudit();
+        }
+    },
+
+    async loadAudit() {
+        const { page, filters } = State.admin.audit;
+        const startIndex = (page - 1) * CONFIG.ITEMS_PER_PAGE;
+        const endIndex = startIndex + CONFIG.ITEMS_PER_PAGE - 1;
+
+        let params = new URLSearchParams();
+        params.append('order', 'date_action.desc');
+
+        // Moteur de recherche multicritère (Agent, Action, Cible, Détails)
+        if (filters.query) {
+            const safeQuery = filters.query.replace(/["(),:{}\t]/g, ' ');
+            const motsCles = safeQuery.trim().split(/\s+/);
+            const conditionsMots = motsCles.map(mot => 
+                `or(utilisateur.ilike.*${mot}*,action.ilike.*${mot}*,id_metier.ilike.*${mot}*,details.ilike.*${mot}*)`
+            );
+            params.append('and', `(${conditionsMots.join(',')})`);
+        }
+
+        try {
+            // Requête paginée avec récupération du nombre total d'éléments
+            const res = await API.fetch(`/audit_logs?${params.toString()}`, { 
+                headers: API.getHeaders({ 'Range': `${startIndex}-${endIndex}`, 'Prefer': 'count=exact' }) 
             });
+            if (!res.ok) throw new Error("Erreur réseau");
+            
+            State.admin.audit.data = await res.json();
+            const contentRange = res.headers.get('Content-Range');
+            if (contentRange) State.admin.audit.total = parseInt(contentRange.split('/')[1]);
+            // Si on charge la page 1 et qu'il y a des données, on mémorise l'ID du premier log
+            if (State.admin.audit.page === 1 && State.admin.audit.data.length > 0) {
+                this.latestKnownAuditId = State.admin.audit.data[0].id;
+            }
+            // On s'assure de cacher le bandeau puisqu'on vient de recharger les données fraîches
+            const banner = document.getElementById('audit-new-events-banner');
+            if (banner) banner.style.display = 'none';
+            
+            this.renderAudit();
             UI.showView('view-audit-list', 'panel-admin');
         } catch (e) { UI.showAlert("Erreur", "Accès refusé au journal.", "error"); }
     },
 
+    renderAudit() {
+        const tbody = document.getElementById('table-audit-body');
+        tbody.innerHTML = '';
+        State.admin.audit.data.forEach(log => {
+            const tr = document.createElement('tr');
+            const badge = log.action === 'CRÉATION' ? 'success' : (log.action === 'SUPPRESSION' ? 'error' : 'info');
+            tr.innerHTML = `
+                <td class="fr-text--sm">${new Date(log.date_action).toLocaleString('fr-FR')}</td>
+                <td class="fr-text--sm fr-text--bold">${UI.escape(log.utilisateur)}</td>
+                <td><span class="fr-badge fr-badge--${badge} fr-badge--sm">${UI.escape(log.action)}</span></td>
+                <td class="fr-text--sm" style="font-family: monospace;">${UI.escape(log.id_metier)}</td>
+                <td class="fr-text--xs">${UI.escape(log.details)}</td>
+            `;
+            tbody.appendChild(tr);
+        });
+
+        // Mise à jour de l'interface de pagination
+        const totalPages = Math.ceil(State.admin.audit.total / CONFIG.ITEMS_PER_PAGE) || 1;
+        document.getElementById('audit-results-count').innerText = `${State.admin.audit.total} événement(s) enregistré(s)`;
+        
+        const pageInfo = document.getElementById('audit-page-info');
+        if(pageInfo) pageInfo.innerText = `Page ${State.admin.audit.page} sur ${totalPages}`;
+        
+        const btnPrev = document.getElementById('btn-audit-prev');
+        const btnNext = document.getElementById('btn-audit-next');
+        if(btnPrev) btnPrev.disabled = (State.admin.audit.page === 1);
+        if(btnNext) btnNext.disabled = (State.admin.audit.page >= totalPages);
+    },
+    
     // Mise au rebut (Massive + PDF)
     processRebut() {
         const fileInput = document.getElementById('rebut-file-upload');
@@ -1354,7 +1482,30 @@ const App = {
         document.getElementById('nav-admin-ua')?.addEventListener('click', () => UI.showView('view-ua-list', 'panel-admin'));
         document.getElementById('nav-admin-lieux')?.addEventListener('click', () => UI.showView('view-lieux-list', 'panel-admin'));
         document.getElementById('nav-admin-rebut')?.addEventListener('click', () => UI.showView('view-admin-rebut', 'panel-admin'));
-        document.getElementById('nav-admin-audit')?.addEventListener('click', () => AdminCtrl.loadAudit());
+        
+        document.getElementById('nav-admin-audit')?.addEventListener('click', () => {
+            State.admin.audit.page = 1; // Force le retour à la page 1
+            AdminCtrl.loadAudit();
+            AdminCtrl.startAuditPolling(); // Démarre le radar
+        });
+        
+        
+        document.getElementById('btn-refresh-audit')?.addEventListener('click', () => {
+            State.admin.audit.page = 1;
+            AdminCtrl.loadAudit();
+        });
+
+        
+        document.addEventListener('visibilitychange', () => {
+            if (!document.hidden) {
+                AdminCtrl.checkNewAuditEvents();
+            }
+        });
+        
+        
+        document.getElementById('search-audit-input')?.addEventListener('input', (e) => AdminCtrl.updateAuditFilter(e.target.value));
+        document.getElementById('btn-audit-prev')?.addEventListener('click', () => AdminCtrl.changeAuditPage(-1));
+        document.getElementById('btn-audit-next')?.addEventListener('click', () => AdminCtrl.changeAuditPage(1));
         document.getElementById('btn-exec-rebut')?.addEventListener('click', () => AdminCtrl.processRebut());
         // Admin: Vues de création et soumissions
         document.getElementById('btn-nav-create-user')?.addEventListener('click', () => AdminCtrl.openCreateUser());

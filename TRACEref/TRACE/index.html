@@ -469,7 +469,37 @@
                     <div id="view-audit-list" class="sub-view">
                         <div class="trace-card">
                             <h3>Journal d'Audit</h3>
-                            <div class="fr-table fr-table--bordered"><table><thead><tr><th>Date</th><th>Agent</th><th>Action</th><th>Cible</th><th>Détails</th></tr></thead><tbody id="table-audit-body"></tbody></table></div>
+                            
+                            <div class="fr-grid-row fr-grid-row--gutters fr-mb-2w">
+                                <div class="fr-col-12 fr-col-md-6">
+                                    <div class="fr-search-bar" role="search">
+                                        <input class="fr-input" placeholder="Rechercher (Agent, Action, Cible, Détails)..." type="search" id="search-audit-input">
+                                        <button class="fr-btn" title="Rechercher">Rechercher</button>
+                                    </div>
+                                </div>
+                            </div>
+                            <div class="fr-mb-2w fr-text--sm fr-text--bold">
+                                <span id="audit-results-count">Chargement...</span>
+                            </div>
+
+                            <div id="audit-new-events-banner" class="fr-mb-2w" style="display: none; text-align: center;">
+                                <button id="btn-refresh-audit" class="fr-btn fr-btn--sm fr-icon-refresh-line fr-btn--icon-left" style="background-color: var(--background-action-high-success); border-radius: 20px;">
+                                    Nouveaux événements détectés. Cliquez pour actualiser.
+                                </button>
+                            </div>
+
+                            <div class="fr-table fr-table--bordered">
+                                <table>
+                                    <thead><tr><th>Date</th><th>Agent</th><th>Action</th><th>Cible</th><th>Détails</th></tr></thead>
+                                    <tbody id="table-audit-body"></tbody>
+                                </table>
+                            </div>
+
+                            <div class="pagination-controls">
+                                <button id="btn-audit-prev" class="fr-btn fr-btn--secondary fr-btn--sm fr-icon-arrow-left-s-line fr-btn--icon-left">Précédent</button>
+                                <span class="fr-text--sm fr-text--bold" id="audit-page-info"></span>
+                                <button id="btn-audit-next" class="fr-btn fr-btn--secondary fr-btn--sm fr-icon-arrow-right-s-line fr-btn--icon-right">Suivant</button>
+                            </div>
                         </div>
                     </div>
                 </div>

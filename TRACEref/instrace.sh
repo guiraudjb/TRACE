@@ -252,6 +252,15 @@ END;
 GRANT EXECUTE ON FUNCTION public.get_filtres_disponibles(INTEGER, VARCHAR, INTEGER) TO divagil, agent, administrateur;
 
 
+CREATE OR REPLACE FUNCTION public.caracteristiques_txt(g public.gabarits) 
+RETURNS text AS \$\$
+  SELECT g.caracteristiques::text;
+\$\$ LANGUAGE sql IMMUTABLE;
+
+GRANT EXECUTE ON FUNCTION public.caracteristiques_txt(public.gabarits) TO divagil, agent, administrateur;
+
+
+
 -- 1. Création d'une vue qui rassemble toutes les informations textuelles
 CREATE OR REPLACE VIEW public.vue_mobiliers_recherche AS
 SELECT 

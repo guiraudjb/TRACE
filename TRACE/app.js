@@ -152,8 +152,6 @@ async function loadData() {
     }
 }
 
-
-
 function showSubView(viewId, parentId) {
     document.querySelectorAll(`#${parentId} .sub-view`).forEach(v => v.classList.remove('active'));
     document.getElementById(viewId).classList.add('active');
@@ -340,7 +338,6 @@ function changePage(direction) {
     }
 }
 
-
 function changeAdminPage(entity, direction) {
     if (entity === 'user') {
         const totalPages = Math.ceil(state.utilisateurs.length / 50) || 1;
@@ -525,7 +522,6 @@ async function deleteMobilier() {
     } catch (err) { showAlert("Erreur", err.message, "error"); }
 }
 
-
 // ============================================================================
 // RÉAFFECTATION PAR SCAN (DOUCHETTE)
 // ============================================================================
@@ -646,7 +642,6 @@ function handleScanUaChange() {
         document.getElementById('scan-target-lieu').value = ua.lieu_id;
     }
 }
-
 
 // ============================================================================
 // RÉAFFECTATION PAR SCAN (FICHIER PLAT)
@@ -1166,19 +1161,8 @@ async function resetUserPassword(email) {
     } catch (err) { showAlert("Erreur", err.message, "error"); }
 }
 
-
-
-
-
-
-
 // ============================================================================
 // EXPORTATION CSV
-// Génère un fichier compatible Excel (FR) avec les équipements visibles.
-// ============================================================================
-
-// ============================================================================
-// EXPORTATION CSV (Version optimisée pour la pagination)
 // ============================================================================
 async function exportToCSV() {
     // 1. Préparation des filtres (identique à applyFiltersAndSort)
@@ -1489,7 +1473,6 @@ async function loadAppConfig() {
     }
 }
 
-
 async function processMassDelete() {
     const fileInput = document.getElementById('rebut-file-upload');
     if (!fileInput.files[0]) {
@@ -1683,7 +1666,6 @@ async function generateRebutPDF(data) {
     doc.save(`PVSORTIETRACE_${filenameDate}.pdf`);
 }
 
-
 // ============================================================================
 // JOURNAL D'AUDIT (TRAÇABILITÉ)
 // ============================================================================
@@ -1728,12 +1710,10 @@ function renderAuditLogs() {
     document.getElementById('btn-next-audit').disabled = (state.auditPage >= totalPages);
 }
 
-
 // ============================================================================
 // INIT
 // ============================================================================
 document.addEventListener('DOMContentLoaded', async () => {
-    // NOUVEAU : On charge la configuration avant toute chose
     await loadAppConfig();
 
     if (sessionStorage.getItem('trace_jwt')) {
