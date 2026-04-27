@@ -117,7 +117,7 @@ const API = {
         State.maps.s.clear(); State.referentiels.structures.forEach(s => State.maps.s.set(s.code_sages, s));
         State.maps.l.clear(); State.referentiels.lieux.forEach(l => State.maps.l.set(l.id, l));
         const dl = document.getElementById('datalist-gabarits');
-        if (dl) dl.innerHTML = State.referentiels.gabarits.map(g => `<option value="${g.reference_catalogue} - ${g.nom_descriptif}" data-id="${g.id}">`).join('');
+        if (dl) dl.innerHTML = State.referentiels.gabarits.map(g => `<option value="${g.reference_catalogue} - ${UI.escape(g.nom_descriptif)}" data-id="${g.id}">`).join('');
     }
 };
 
