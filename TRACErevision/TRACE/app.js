@@ -507,13 +507,18 @@ const MobilierCtrl = {
         if (State.mobilier.filters.lieu) params.append('lieu_id', `eq.${State.mobilier.filters.lieu}`);
         if (State.mobilier.filters.statut) params.append('statut', `eq.${State.mobilier.filters.statut}`);
         if (State.mobilier.filters.query) {
-            params.append('or', `(id_metier.ilike.*${State.mobilier.filters.query}*,remarques.ilike.*${State.mobilier.filters.query}*)`);
+            const safeQuery = State.mobilier.filters.query.replace(/["(),:{}\t]/g, ' ');
+            const motsCles = safeQuery.trim().split(/\s+/);
+            const conditionsMots = motsCles.map(mot => 
+                `or(id_metier.ilike.*${mot}*,remarques.ilike.*${mot}*,gabarit_nom.ilike.*${mot}*,structure_libelle.ilike.*${mot}*,lieu_nom.ilike.*${mot}*,gabarit_json_txt.ilike.*${mot}*)`
+            );
+            params.append('and', `(${conditionsMots.join(',')})`);
         }
         params.append('order', `${State.mobilier.sortBy}.${State.mobilier.sortAsc ? 'asc' : 'desc'}`);
 
         try {
             UI.showAlert("Export", "Récupération des données...", "info");
-            const res = await API.fetch(`/mobiliers?${params.toString()}`, { headers: API.getHeaders() });
+            const res = await API.fetch(`/vue_mobiliers_recherche?${params.toString()}`, { headers: API.getHeaders() });
             if (!res.ok) throw new Error("Erreur récupération données.");
             const allData = await res.json();
             if (allData.length === 0) { UI.showAlert("Export", "Aucune donnée.", "warning"); return; }
