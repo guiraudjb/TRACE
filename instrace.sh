@@ -195,6 +195,72 @@ DO \$\$BEGIN
     IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'administrateur') THEN CREATE ROLE administrateur NOLOGIN; END IF;
 END\$\$;
 
+
+-- =============================================================================
+-- MOTEUR DE FACETTES (Filtres intelligents pour le Front-End)
+-- =============================================================================
+CREATE OR REPLACE FUNCTION public.get_filtres_disponibles(
+    p_lieu_id INTEGER DEFAULT NULL,
+    p_code_sages VARCHAR DEFAULT NULL,
+    p_gabarit_id INTEGER DEFAULT NULL
+) RETURNS jsonb AS \$\$
+DECLARE
+    v_lieux jsonb;
+    v_structures jsonb;
+    v_gabarits jsonb;
+BEGIN
+    -- 1. Lieux contenant au moins un équipement correspondant aux filtres
+    SELECT jsonb_agg(DISTINCT l.*) INTO v_lieux
+    FROM public.lieux l
+    WHERE EXISTS (
+        SELECT 1 FROM public.mobiliers m
+        WHERE m.lieu_id = l.id
+        AND (p_code_sages IS NULL OR m.code_sages = p_code_sages)
+        AND (p_gabarit_id IS NULL OR m.gabarit_id = p_gabarit_id)
+    );
+
+    -- 2. Services (UA) possédant au moins un équipement correspondant
+    SELECT jsonb_agg(DISTINCT s.*) INTO v_structures
+    FROM public.structures s
+    WHERE EXISTS (
+        SELECT 1 FROM public.mobiliers m
+        WHERE m.code_sages = s.code_sages
+        AND (p_lieu_id IS NULL OR m.lieu_id = p_lieu_id)
+        AND (p_gabarit_id IS NULL OR m.gabarit_id = p_gabarit_id)
+    );
+
+    -- 3. Modèles (Gabarits) physiquement présents
+    SELECT jsonb_agg(DISTINCT g.*) INTO v_gabarits
+    FROM public.gabarits g
+    WHERE EXISTS (
+        SELECT 1 FROM public.mobiliers m
+        WHERE m.gabarit_id = g.id
+        AND (p_lieu_id IS NULL OR m.lieu_id = p_lieu_id)
+        AND (p_code_sages IS NULL OR m.code_sages = p_code_sages)
+    );
+
+    -- Retourne un JSON consolidé
+    RETURN jsonb_build_object(
+        'lieux', COALESCE(v_lieux, '[]'::jsonb),
+        'structures', COALESCE(v_structures, '[]'::jsonb),
+        'gabarits', COALESCE(v_gabarits, '[]'::jsonb)
+    );
+END;
+\$\$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Autorisation d'exécution pour les rôles de l'API
+GRANT EXECUTE ON FUNCTION public.get_filtres_disponibles(INTEGER, VARCHAR, INTEGER) TO divagil, agent, administrateur;
+
+
+CREATE OR REPLACE FUNCTION public.caracteristiques_txt(g public.gabarits) 
+RETURNS text AS \$\$
+  SELECT g.caracteristiques::text;
+\$\$ LANGUAGE sql IMMUTABLE;
+
+GRANT EXECUTE ON FUNCTION public.caracteristiques_txt(public.gabarits) TO divagil, agent, administrateur;
+
+
+
 -- 1. Création d'une vue qui rassemble toutes les informations textuelles
 CREATE OR REPLACE VIEW public.vue_mobiliers_recherche AS
 SELECT 
@@ -330,6 +396,65 @@ CREATE TRIGGER trig_audit_mobiliers
 AFTER INSERT OR UPDATE OR DELETE ON public.mobiliers
 FOR EACH ROW EXECUTE FUNCTION public.log_mobilier_action();
 
+-- =============================================================================
+-- AJOUT : TRAÇABILITÉ DES ACTIONS D'ADMINISTRATION
+-- =============================================================================
+CREATE OR REPLACE FUNCTION public.log_admin_action()
+RETURNS TRIGGER AS \$\$
+DECLARE
+    v_user VARCHAR(255);
+    v_action VARCHAR(50);
+    v_cible VARCHAR(50);
+    v_details TEXT := '';
+BEGIN
+    BEGIN
+        v_user := current_setting('request.jwt.claims', true)::json->>'email';
+    EXCEPTION WHEN OTHERS THEN
+        v_user := 'Système (Admin)';
+    END;
+
+    IF TG_OP = 'INSERT' THEN v_action := 'CRÉATION';
+    ELSIF TG_OP = 'UPDATE' THEN v_action := 'MODIFICATION';
+    ELSIF TG_OP = 'DELETE' THEN v_action := 'SUPPRESSION';
+    END IF;
+
+    IF TG_TABLE_NAME = 'utilisateurs' THEN
+        v_cible := COALESCE(NEW.email, OLD.email);
+        IF TG_OP = 'INSERT' THEN v_details := 'Nouveau compte créé avec le rôle : ' || NEW.role; END IF;
+        IF TG_OP = 'UPDATE' THEN v_details := 'Mise à jour du compte (mot de passe ou rôle).'; END IF;
+        IF TG_OP = 'DELETE' THEN v_details := 'Accès révoqué et compte supprimé.'; END IF;
+
+    ELSIF TG_TABLE_NAME = 'structures' THEN
+        v_cible := COALESCE(NEW.code_sages, OLD.code_sages);
+        IF TG_OP = 'INSERT' THEN v_details := 'Nouveau service ajouté : ' || NEW.libelle; END IF;
+        IF TG_OP = 'UPDATE' THEN v_details := 'Libellé ou rattachement du service modifié.'; END IF;
+        IF TG_OP = 'DELETE' THEN v_details := 'Service retiré du référentiel.'; END IF;
+
+    ELSIF TG_TABLE_NAME = 'lieux' THEN
+        v_cible := 'Lieu ID ' || COALESCE(NEW.id, OLD.id);
+        IF TG_OP = 'INSERT' THEN v_details := 'Nouveau bâtiment/site ajouté : ' || NEW.nom; END IF;
+        IF TG_OP = 'UPDATE' THEN v_details := 'Nom du lieu modifié (Nouveau : ' || NEW.nom || ').'; END IF;
+        IF TG_OP = 'DELETE' THEN v_details := 'Lieu retiré du référentiel.'; END IF;
+    END IF;
+
+    INSERT INTO public.audit_logs (utilisateur, action, id_metier, details)
+    VALUES (v_user, v_action, v_cible, 'ADMINISTRATION : ' || v_details);
+
+    IF TG_OP = 'DELETE' THEN RETURN OLD; ELSE RETURN NEW; END IF;
+END;
+\$\$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE TRIGGER trig_audit_utilisateurs
+AFTER INSERT OR UPDATE OR DELETE ON public.utilisateurs
+FOR EACH ROW EXECUTE FUNCTION public.log_admin_action();
+
+CREATE TRIGGER trig_audit_structures
+AFTER INSERT OR UPDATE OR DELETE ON public.structures
+FOR EACH ROW EXECUTE FUNCTION public.log_admin_action();
+
+CREATE TRIGGER trig_audit_lieux
+AFTER INSERT OR UPDATE OR DELETE ON public.lieux
+FOR EACH ROW EXECUTE FUNCTION public.log_admin_action();
 
 
 ANALYZE public.mobiliers;

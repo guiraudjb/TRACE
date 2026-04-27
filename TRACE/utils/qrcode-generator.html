@@ -83,7 +83,7 @@
                 <label>Départ / Quantité</label>
                 <div style="display:flex; gap:5px">
                     <input type="number" id="start" value="1" style="width:50%">
-                    <input type="number" id="qty" value="35" style="width:50%">
+                    <input type="number" id="qty" value="40" style="width:50%">
                 </div>
             </div>
             <div class="field">
@@ -92,6 +92,16 @@
                     <option value="L">L (7%)</option><option value="M">M (15%)</option>
                     <option value="Q">Q (25%)</option><option value="H" selected>H (30%)</option>
                 </select>
+            </div>
+            <div class="field" style="margin-top: 10px; padding-top: 10px; border-top: 1px dashed #eee;">
+                <div class="field-row">
+                    <input type="checkbox" id="enableSideText" onchange="document.getElementById('sideTextWrapper').style.display = this.checked ? 'flex' : 'none'">
+                    <label for="enableSideText">Ajouter du texte à droite</label>
+                </div>
+                <div id="sideTextWrapper" style="display: none; flex-direction: column; gap: 5px;">
+                    <input type="text" id="sideText1" placeholder="Ligne 1 (Ex: Valide jusqu'au...)">
+                    <input type="text" id="sideText2" placeholder="Ligne 2 (Ex: 31/12/2026)">
+                </div>
             </div>
         </div>
 
@@ -180,8 +190,8 @@
             <div class="field">
                 <label>Colonnes / Lignes par page</label>
                 <div style="display:flex; gap:5px">
-                    <input type="number" id="nbCols" value="5">
-                    <input type="number" id="nbRows" value="7">
+                    <input type="number" id="nbCols" value="4">
+                    <input type="number" id="nbRows" value="5">
                 </div>
             </div>
             <div class="field-row">
@@ -255,7 +265,10 @@
                 corD: document.getElementById('corDt').value,
                 
                 ecc: document.getElementById('ecc').value,
-                showCutLines: document.getElementById('cutLines').checked
+                showCutLines: document.getElementById('cutLines').checked,
+                sideTextEnabled: document.getElementById('enableSideText').checked,
+                sideText1: document.getElementById('sideText1').value,
+                sideText2: document.getElementById('sideText2').value
             };
 
             const availW = 210 - (cfg.mLeft + cfg.mRight);
@@ -288,26 +301,74 @@
                     let qrSizePx;
 
                     // Choix de la disposition selon la position du logo
+                    // Choix de la disposition dynamique (Logo, QR, Texte)
+                    const row = document.createElement('div');
+                    row.className = 'label-row';
+                    
+                    let availableWidthRatio = 1.0;
+                    
+                    // 1. Logo à gauche
                     if (cfg.logoPos === 'left') {
-                        const row = document.createElement('div');
-                        row.className = 'label-row';
                         const lb = document.createElement('div'); lb.className = 'logo-box';
-                        lb.style.width = '35%'; 
+                        lb.style.width = '30%'; 
                         const img = document.createElement('img'); img.src = logoData;
                         lb.appendChild(img);
-                        const qb = document.createElement('div'); qb.style.width = '60%';
-                        qb.appendChild(qrCont);
-                        row.appendChild(lb); row.appendChild(qb);
-                        label.appendChild(row);
-                        qrSizePx = Math.round((cellW * 0.55) * 3.78); // Convertir mm en pixels approximatifs
-                    } else {
-                        label.appendChild(qrCont);
-                        qrSizePx = Math.round(Math.min(cellW, cellH) * 0.75 * 3.78);
+                        row.appendChild(lb);
+                        availableWidthRatio -= 0.3;
                     }
 
+                    // 2. Conteneur du QR Code
+                    const qb = document.createElement('div'); 
+                    
+                    // 3. Texte à droite
+                    if (cfg.sideTextEnabled) {
+                        availableWidthRatio -= 0.50; // Réserve 50% de la largeur pour le texte
+                        const tb = document.createElement('div');
+                        tb.style.width = '35%';
+                        tb.style.display = 'flex';
+                        tb.style.flexDirection = 'column';
+                        tb.style.justifyContent = 'center';
+                        tb.style.fontSize = '10pt'; // Police 12 imposée
+                        tb.style.textAlign = 'left';
+                        tb.style.paddingLeft = '3mm';
+                        tb.style.lineHeight = '1.4';
+                        
+                        if (cfg.sideText1) {
+                            const span1 = document.createElement('div');
+                            span1.innerText = cfg.sideText1;
+                            tb.appendChild(span1);
+                        }
+                        if (cfg.sideText2) {
+                            const span2 = document.createElement('div');
+                            span2.innerText = cfg.sideText2;
+                            tb.appendChild(span2);
+                        }
+                        
+                        qb.style.width = `${availableWidthRatio * 100}%`;
+                        qb.style.display = 'flex'; qb.style.justifyContent = 'center';
+                        qb.appendChild(qrCont);
+                        
+                        row.appendChild(qb);
+                        row.appendChild(tb);
+                    } else {
+                        // Pas de texte à droite
+                        qb.style.width = `${availableWidthRatio * 100}%`;
+                        qb.style.display = 'flex'; qb.style.justifyContent = 'center';
+                        qb.appendChild(qrCont);
+                        row.appendChild(qb);
+                    }
+                    
+                    label.appendChild(row);
+
+                    // Recalcul intelligent de la taille du QR Code selon l'espace restant
+                    let maxQrW = cellW * availableWidthRatio * 0.9;
+                    let maxQrH = cellH * 0.8;
+                    qrSizePx = Math.round(Math.min(maxQrW, maxQrH) * 3.78);
+
+                    // Identifiant (Numéro) en bas
                     const txt = document.createElement('div');
                     txt.className = 'label-text';
-                    txt.style.fontSize = `7.5pt`;
+                    txt.style.fontSize = `10pt`;
                     txt.innerText = val;
                     label.appendChild(txt);
                     page.appendChild(label);
