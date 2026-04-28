@@ -117,7 +117,7 @@ const API = {
         State.maps.s.clear(); State.referentiels.structures.forEach(s => State.maps.s.set(s.code_sages, s));
         State.maps.l.clear(); State.referentiels.lieux.forEach(l => State.maps.l.set(l.id, l));
         const dl = document.getElementById('datalist-gabarits');
-        if (dl) dl.innerHTML = State.referentiels.gabarits.map(g => `<option value="${g.reference_catalogue} - ${g.nom_descriptif}" data-id="${g.id}">`).join('');
+        if (dl) dl.innerHTML = State.referentiels.gabarits.map(g => `<option value="${g.reference_catalogue} - ${UI.escape(g.nom_descriptif)}" data-id="${g.id}">`).join('');
     }
 };
 
@@ -388,16 +388,20 @@ const MobilierCtrl = {
             const badgeClass = badges[mob.statut] || 'info';
 
             const tr = document.createElement('tr');
+            const actionButton = State.user.role === 'lecteur' 
+                ? '<td><span class="fr-badge fr-badge--sm fr-badge--info fr-icon-lock-line"> Protégé</span></td>'
+                : '<td><button class="fr-btn fr-btn--secondary fr-btn--sm btn-edit">Fiche</button></td>';
+
             tr.innerHTML = `
                 <td><span class="uuid-badge" style="cursor:copy" title="Copier" data-uuid="${UI.escape(mob.id_metier)}">${UI.escape(mob.id_metier)}</span></td>
                 <td><span class="fr-text--bold">${UI.escape(gab.nom_descriptif)}</span>${jsonHtml}</td>
                 <td class="fr-text--sm">${UI.escape(ua.libelle)}<br><span class="fr-text--light">${UI.escape(lieu.nom)}</span></td>
                 <td><p class="fr-badge fr-badge--${badgeClass} fr-badge--sm fr-mb-0">${UI.escape(mob.statut)}</p></td>
-                <td><button class="fr-btn fr-btn--secondary fr-btn--sm btn-edit">Fiche</button></td>
+                ${actionButton}
             `;
             
             tr.querySelector('.uuid-badge').addEventListener('click', (e) => navigator.clipboard.writeText(e.target.dataset.uuid));
-            tr.querySelector('.btn-edit').addEventListener('click', () => this.openEditForm(mob.uuid));
+            tr.querySelector('.btn-edit')?.addEventListener('click', () => this.openEditForm(mob.uuid));
             tbody.appendChild(tr);
         });
 
@@ -503,13 +507,18 @@ const MobilierCtrl = {
         if (State.mobilier.filters.lieu) params.append('lieu_id', `eq.${State.mobilier.filters.lieu}`);
         if (State.mobilier.filters.statut) params.append('statut', `eq.${State.mobilier.filters.statut}`);
         if (State.mobilier.filters.query) {
-            params.append('or', `(id_metier.ilike.*${State.mobilier.filters.query}*,remarques.ilike.*${State.mobilier.filters.query}*)`);
+            const safeQuery = State.mobilier.filters.query.replace(/["(),:{}\t]/g, ' ');
+            const motsCles = safeQuery.trim().split(/\s+/);
+            const conditionsMots = motsCles.map(mot => 
+                `or(id_metier.ilike.*${mot}*,remarques.ilike.*${mot}*,gabarit_nom.ilike.*${mot}*,structure_libelle.ilike.*${mot}*,lieu_nom.ilike.*${mot}*,gabarit_json_txt.ilike.*${mot}*)`
+            );
+            params.append('and', `(${conditionsMots.join(',')})`);
         }
         params.append('order', `${State.mobilier.sortBy}.${State.mobilier.sortAsc ? 'asc' : 'desc'}`);
 
         try {
             UI.showAlert("Export", "Récupération des données...", "info");
-            const res = await API.fetch(`/mobiliers?${params.toString()}`, { headers: API.getHeaders() });
+            const res = await API.fetch(`/vue_mobiliers_recherche?${params.toString()}`, { headers: API.getHeaders() });
             if (!res.ok) throw new Error("Erreur récupération données.");
             const allData = await res.json();
             if (allData.length === 0) { UI.showAlert("Export", "Aucune donnée.", "warning"); return; }
@@ -783,14 +792,19 @@ const GabaritCtrl = {
         
         State.gabarit.data.forEach(gab => {
             const tr = document.createElement('tr');
+            
+            const actionButtonGab = State.user.role === 'lecteur'
+                ? '<td><span class="fr-badge fr-badge--sm fr-badge--info fr-icon-lock-line"> Protégé</span></td>'
+                : '<td><button class="fr-btn fr-btn--secondary fr-btn--sm btn-edit-gab">Éditer</button></td>';
+
             tr.innerHTML = `
                 <td class="fr-text--bold">${UI.escape(gab.reference_catalogue)}</td>
                 <td><p class="fr-badge fr-badge--info fr-badge--sm fr-mb-0">${UI.escape(gab.categorie)}</p></td>
                 <td>${UI.escape(gab.nom_descriptif)}</td>
                 <td class="fr-text--xs" style="font-family: monospace;">{<br>${UI.formatJsonToText(gab.caracteristiques)}<br>}</td>
-                <td><button class="fr-btn fr-btn--secondary fr-btn--sm btn-edit-gab">Éditer</button></td>
+                ${actionButtonGab}
             `;
-            tr.querySelector('.btn-edit-gab').addEventListener('click', () => this.openEditForm(gab.id));
+            tr.querySelector('.btn-edit-gab')?.addEventListener('click', () => this.openEditForm(gab.id));
             tbody.appendChild(tr);
         });
         
@@ -1405,11 +1419,22 @@ const App = {
         document.getElementById('view-app').classList.add('active');
         document.getElementById('logout-btn-container').style.display = 'block';
 
+        // GESTION DES RÔLES ET DE L'AFFICHAGE
         if (State.user.role === 'administrateur') {
             document.getElementById('tab-admin').style.display = 'block';
             document.getElementById('btn-delete-mob').style.display = 'inline-flex';
-            
-            
+        } else if (State.user.role === 'lecteur') {
+            // Masquer les boutons de modification pour le consultant
+            const actionsToHide = [
+                'btn-nav-create-mob', 
+                'btn-nav-scan', 
+                'btn-nav-import',
+                'btn-nav-create-gab'
+            ];
+            actionsToHide.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.style.display = 'none';
+            });
         }
 
         try {

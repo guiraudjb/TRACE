@@ -115,7 +115,7 @@ CREATE TYPE public.jwt_token AS (token text);
 -- Tables
 CREATE TABLE public.lieux (id SERIAL PRIMARY KEY, nom TEXT NOT NULL, parent_id INTEGER REFERENCES public.lieux(id), type_lieu TEXT CHECK (type_lieu IN ('batiment', 'etage', 'bureau', 'local')));
 CREATE TABLE public.structures (code_sages VARCHAR(10) PRIMARY KEY, libelle TEXT NOT NULL, lieu_id INTEGER REFERENCES public.lieux(id));
-CREATE TABLE public.utilisateurs (id SERIAL PRIMARY KEY, email TEXT UNIQUE NOT NULL, mot_de_passe_hash TEXT NOT NULL, nom_complet TEXT NOT NULL, role TEXT NOT NULL CHECK (role IN ('agent', 'administrateur')) DEFAULT 'agent');
+CREATE TABLE public.utilisateurs (id SERIAL PRIMARY KEY, email TEXT UNIQUE NOT NULL, mot_de_passe_hash TEXT NOT NULL, nom_complet TEXT NOT NULL, role TEXT NOT NULL CHECK (role IN ('agent', 'administrateur', 'lecteur')) DEFAULT 'agent');
 CREATE TABLE public.gabarits (id SERIAL PRIMARY KEY, reference_catalogue VARCHAR(50) UNIQUE NOT NULL, categorie TEXT, nom_descriptif TEXT NOT NULL, caracteristiques JSONB DEFAULT '{}'::jsonb);
 CREATE TABLE public.mobiliers (uuid UUID PRIMARY KEY DEFAULT gen_random_uuid(), id_metier VARCHAR(20) UNIQUE, gabarit_id INTEGER REFERENCES public.gabarits(id), lieu_id INTEGER REFERENCES public.lieux(id), code_sages VARCHAR(10) REFERENCES public.structures(code_sages), statut statut_mobilier DEFAULT 'en_service', remarques TEXT, date_saisie TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP);
 
@@ -193,6 +193,7 @@ DO \$\$BEGIN
     
     IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'agent') THEN CREATE ROLE agent NOLOGIN; END IF;
     IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'administrateur') THEN CREATE ROLE administrateur NOLOGIN; END IF;
+    IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'lecteur') THEN CREATE ROLE lecteur NOLOGIN; END IF;
 END\$\$;
 
 
@@ -249,16 +250,13 @@ END;
 \$\$ LANGUAGE plpgsql SECURITY DEFINER;
 
 -- Autorisation d'exécution pour les rôles de l'API
-GRANT EXECUTE ON FUNCTION public.get_filtres_disponibles(INTEGER, VARCHAR, INTEGER) TO divagil, agent, administrateur;
-
-
+GRANT EXECUTE ON FUNCTION public.get_filtres_disponibles(INTEGER, VARCHAR, INTEGER) TO divagil, agent, administrateur, lecteur;
 CREATE OR REPLACE FUNCTION public.caracteristiques_txt(g public.gabarits) 
 RETURNS text AS \$\$
   SELECT g.caracteristiques::text;
 \$\$ LANGUAGE sql IMMUTABLE;
 
-GRANT EXECUTE ON FUNCTION public.caracteristiques_txt(public.gabarits) TO divagil, agent, administrateur;
-
+GRANT EXECUTE ON FUNCTION public.caracteristiques_txt(public.gabarits) TO divagil, agent, administrateur, lecteur;
 
 
 -- 1. Création d'une vue qui rassemble toutes les informations textuelles
@@ -276,13 +274,14 @@ JOIN public.structures s ON m.code_sages = s.code_sages
 JOIN public.lieux l ON m.lieu_id = l.id;
 
 -- 2. On donne les droits d'accès à l'API
-GRANT SELECT ON public.vue_mobiliers_recherche TO divagil, agent, administrateur;
-
+GRANT SELECT ON public.vue_mobiliers_recherche TO divagil, agent, administrateur, lecteur;
 
 GRANT agent TO divagil;
 GRANT administrateur TO divagil;
-GRANT USAGE ON SCHEMA public TO divagil, agent, administrateur;
+GRANT lecteur TO divagil;
+GRANT USAGE ON SCHEMA public TO divagil, agent, administrateur, lecteur;
 GRANT ALL ON ALL TABLES IN SCHEMA public TO agent, administrateur;
+GRANT SELECT ON ALL TABLES IN SCHEMA public TO lecteur;
 GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO agent, administrateur;
 
 GRANT EXECUTE ON FUNCTION public.login(text, text) TO divagil;
