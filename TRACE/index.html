@@ -304,6 +304,7 @@
                     <tr>
                         <th class="sortable-header" data-sort="reference_catalogue">Référence <span id="icon-sort-gab-reference_catalogue" class="sort-icon"></span></th>
                         <th class="sortable-header" data-sort="categorie">Catégorie <span id="icon-sort-gab-categorie" class="sort-icon"></span></th>
+                        <th style="width: 320px; text-align: center;">Photo</th>
                         <th class="sortable-header" data-sort="nom_descriptif">Désignation <span id="icon-sort-gab-nom_descriptif" class="sort-icon"></span></th>
                         <th>Attributs</th>
                         <th style="width: 15%">Actions</th>
@@ -312,6 +313,8 @@
                 <tbody id="table-gabarits-body"></tbody>
             </table>
         </div>
+
+        
         <div class="pagination-controls">
             <button id="btn-gab-prev" class="fr-btn fr-btn--secondary fr-btn--sm fr-icon-arrow-left-s-line fr-btn--icon-left">Précédent</button>
             <span class="fr-text--sm fr-text--bold" id="gab-page-info"></span>
@@ -326,6 +329,21 @@
                             <h3 id="gab-form-title">Gestion du modèle</h3>
                             <form id="form-gab-edit">
                                 <input type="hidden" id="edit-gab-id">
+                                        <div class="fr-col-12 fr-mt-2w fr-mb-4w">
+                                            <div class="fr-upload-group">
+                                                <label class="fr-label" for="edit-gab-photo">Photo témoin (Max: 5Mo)
+                                                    <span class="fr-hint-text">Format: PNG, JPG. L'image sera compressée et redimensionnée automatiquement.</span>
+                                                </label>
+                                                <input class="fr-upload" type="file" id="edit-gab-photo" accept="image/png, image/jpeg, image/jpg">
+                                                
+                                                <div id="edit-gab-photo-preview-container" class="fr-mt-2w" style="display: none; align-items: flex-end; gap: 1rem;">
+                                                    <img id="edit-gab-photo-preview" src="" alt="Prévisualisation" style="width: 100px; height: 100px; object-fit: cover; border-radius: 4px; border: 1px solid var(--border-default-grey);">
+                                                    <button type="button" id="btn-remove-photo" class="fr-btn fr-btn--tertiary-no-outline fr-btn--sm fr-icon-delete-line" style="color:var(--text-default-error);">Retirer l'image</button>
+                                                </div>
+                                                <input type="hidden" id="edit-gab-photo-base64"> </div>
+                                        </div>
+                                
+                                
                                 <div class="fr-grid-row fr-grid-row--gutters fr-mb-4w">
                                     <div class="fr-col-12 fr-col-md-4"><div class="fr-input-group"><label class="fr-label">Référence (AAA-000)</label><input class="fr-input" type="text" id="edit-gab-ref" required></div></div>
                                     <div class="fr-col-12 fr-col-md-4"><div class="fr-select-group"><label class="fr-label">Catégorie</label><select class="fr-select" id="edit-gab-cat" required><option value="Bureau">Bureau</option><option value="Assise">Assise</option><option value="Rangement">Rangement</option><option value="Autre">Autre</option></select></div></div>

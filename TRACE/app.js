@@ -16,8 +16,8 @@ const State = {
     jwt: sessionStorage.getItem('trace_jwt') || null,
     user: null,
     appConfig: {
-        administration: "DIRECTION GÉNÉRALE DES FINANCES PUBLIQUES",
-        direction: "DIRECTION RÉGIONALE DES FINANCES PUBLIQUES DE PARIS"
+        administration: "",
+        direction: ""
     },
     
     // Référentiels mis en cache
@@ -104,7 +104,7 @@ const API = {
 
     async loadReferentiels() {
         const [gRes, sRes, lRes] = await Promise.all([
-            this.fetch('/gabarits?select=id,reference_catalogue,categorie,nom_descriptif,caracteristiques', { headers: this.getHeaders() }),
+            this.fetch('/gabarits?select=id,reference_catalogue,categorie,nom_descriptif,caracteristiques,photo_base64', { headers: this.getHeaders() }),
             this.fetch('/structures', { headers: this.getHeaders() }),
             this.fetch('/lieux', { headers: this.getHeaders() })
         ]);
@@ -188,7 +188,43 @@ const UI = {
             activeIcon.style.opacity = '1';
             activeIcon.className = isAsc ? "sort-icon fr-icon-arrow-up-s-line" : "sort-icon fr-icon-arrow-down-s-line";
         }
-    }
+    },
+
+async generateThumbnailBase64(file) {
+    return new Promise((resolve, reject) => {
+        if (file.size > 5 * 1024 * 1024) {
+            return reject(new Error("L'image dépasse la taille maximale de 5 Mo."));
+        }
+        const reader = new FileReader();
+        reader.readAsDataURL(file);
+        reader.onload = (event) => {
+            const img = new Image();
+            img.src = event.target.result;
+            img.onload = () => {
+                const canvas = document.createElement('canvas');
+                const MAX_SIZE = 300; // Taille max de la miniature en pixels
+                let width = img.width;
+                let height = img.height;
+
+                if (width > MAX_SIZE || height > MAX_SIZE) {
+                    const ratio = Math.min(MAX_SIZE / width, MAX_SIZE / height);
+                    width *= ratio;
+                    height *= ratio;
+                }
+                canvas.width = width;
+                canvas.height = height;
+                const ctx = canvas.getContext('2d');
+                ctx.drawImage(img, 0, 0, width, height);
+                // On exporte en JPEG qualité 80% pour avoir un Base64 très léger (~15-40ko)
+                resolve(canvas.toDataURL('image/jpeg', 0.8));
+            };
+            img.onerror = () => reject(new Error("Fichier image corrompu."));
+        };
+        reader.onerror = () => reject(new Error("Erreur de lecture du fichier."));
+    });
+},
+
+
 };
 
 // ============================================================================
@@ -770,7 +806,10 @@ const GabaritCtrl = {
             // 4. On demande à l'API que TOUTES les conditions (ET) soient remplies
             // PostgREST utilise des virgules pour le "ET" implicite entre plusieurs conditions
             params.append('and', `(${conditionsMots.join(',')})`);
+            
+            
         }
+        params.append('order', `${sortBy}.${sortAsc ? 'asc' : 'desc'}`);
 
         try {
             const res = await API.fetch(`/gabarits?${params.toString()}`, {
@@ -796,10 +835,14 @@ const GabaritCtrl = {
             const actionButtonGab = State.user.role === 'lecteur'
                 ? '<td><span class="fr-badge fr-badge--sm fr-badge--info fr-icon-lock-line"> Protégé</span></td>'
                 : '<td><button class="fr-btn fr-btn--secondary fr-btn--sm btn-edit-gab">Éditer</button></td>';
-
+            const photoHtml = gab.photo_base64 
+                ? `<img src="${gab.photo_base64}" alt="Photo" style="width: 300px; height: 300px; object-fit: cover; border-radius: 4px; border: 1px solid var(--border-default-grey);">` 
+                : `<span class="fr-icon-image-line" style="color: var(--text-mention-grey); font-size: 1.5rem;" aria-hidden="true"></span>`;
+                
             tr.innerHTML = `
                 <td class="fr-text--bold">${UI.escape(gab.reference_catalogue)}</td>
                 <td><p class="fr-badge fr-badge--info fr-badge--sm fr-mb-0">${UI.escape(gab.categorie)}</p></td>
+                <td style="text-align: center;">${photoHtml}</td>
                 <td>${UI.escape(gab.nom_descriptif)}</td>
                 <td class="fr-text--xs" style="font-family: monospace;">{<br>${UI.formatJsonToText(gab.caracteristiques)}<br>}</td>
                 ${actionButtonGab}
@@ -853,6 +896,9 @@ const GabaritCtrl = {
         document.getElementById('form-gab-edit').reset();
         document.getElementById('edit-gab-id').value = "";
         document.getElementById('json-builder').innerHTML = "";
+        document.getElementById('edit-gab-photo').value = "";
+        document.getElementById('edit-gab-photo-base64').value = "";
+        document.getElementById('edit-gab-photo-preview-container').style.display = "none";
         this.addJsonRow("reference_marche", "null");
         this.addJsonRow("reference_ugap", "null");
         this.addJsonRow("annee_acquisition", new Date().getFullYear().toString());
@@ -864,11 +910,20 @@ const GabaritCtrl = {
     openEditForm(id) {
         const gab = State.maps.g.get(id);
         if (!gab) return;
+        
         document.getElementById('edit-gab-id').value = gab.id;
         document.getElementById('edit-gab-ref').value = gab.reference_catalogue;
         document.getElementById('edit-gab-cat').value = gab.categorie;
         document.getElementById('edit-gab-nom').value = gab.nom_descriptif;
-        
+        document.getElementById('edit-gab-photo').value = ""; // On reset l'input file
+        const photoBase64 = gab.photo_base64 || "";
+        document.getElementById('edit-gab-photo-base64').value = photoBase64;
+        if (photoBase64) {
+            document.getElementById('edit-gab-photo-preview').src = photoBase64;
+            document.getElementById('edit-gab-photo-preview-container').style.display = "flex";
+        } else {
+            document.getElementById('edit-gab-photo-preview-container').style.display = "none";
+        }
         document.getElementById('json-builder').innerHTML = '';
         let caracs = gab.caracteristiques || {};
         this.addJsonRow('reference_marche', caracs.hasOwnProperty('reference_marche') ? caracs.reference_marche : "null");
@@ -902,7 +957,8 @@ const GabaritCtrl = {
         const rawNom = document.getElementById('edit-gab-nom').value.trim();
         const payload = {
             reference_catalogue: ref, categorie: document.getElementById('edit-gab-cat').value,
-            nom_descriptif: rawNom.charAt(0).toUpperCase() + rawNom.slice(1), caracteristiques: caracs
+            nom_descriptif: rawNom.charAt(0).toUpperCase() + rawNom.slice(1), caracteristiques: caracs,
+            photo_base64: document.getElementById('edit-gab-photo-base64').value || null // NOUVELLE LIGNE
         };
 
         try {
@@ -929,6 +985,7 @@ const GabaritCtrl = {
         } catch (err) { UI.showAlert("Erreur", err.message, "error"); }
     }
 };
+
 
 // --- ADMINISTRATION ---
 const AdminCtrl = {
@@ -1504,6 +1561,28 @@ const App = {
         document.getElementById('btn-add-json-row')?.addEventListener('click', () => GabaritCtrl.addJsonRow());
         document.getElementById('form-gab-edit')?.addEventListener('submit', (e) => GabaritCtrl.handleSave(e));
         document.getElementById('btn-delete-gab')?.addEventListener('click', () => GabaritCtrl.handleDelete());
+
+        // --- Événements pour la photo du gabarit ---
+        document.getElementById('edit-gab-photo')?.addEventListener('change', async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            try {
+                const base64 = await UI.generateThumbnailBase64(file);
+                document.getElementById('edit-gab-photo-base64').value = base64;
+                document.getElementById('edit-gab-photo-preview').src = base64;
+                document.getElementById('edit-gab-photo-preview-container').style.display = "flex";
+            } catch (err) {
+                UI.showAlert("Erreur", err.message, "error");
+                e.target.value = ""; // Réinitialise le champ
+            }
+        });
+
+        document.getElementById('btn-remove-photo')?.addEventListener('click', () => {
+            document.getElementById('edit-gab-photo').value = "";
+            document.getElementById('edit-gab-photo-base64').value = "";
+            document.getElementById('edit-gab-photo-preview-container').style.display = "none";
+        });
+
 
         // Admin
         document.getElementById('nav-admin-users')?.addEventListener('click', () => UI.showView('view-users-list', 'panel-admin'));

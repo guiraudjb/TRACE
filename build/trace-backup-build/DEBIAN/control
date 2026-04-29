@@ -1,0 +1,11 @@
+Package: trace-backup-server
+Version: 1.0.0
+Architecture: all
+Maintainer: Admin TRACE <admin@dgfip.finances.gouv.fr>
+Depends: nfs-kernel-server, debconf
+Section: admin
+Priority: optional
+Description: Serveur de sauvegarde NFS distant pour TRACE.
+ Ce paquet configure automatiquement un point de montage NFS
+ destiné à recevoir les exports quotidiens de la base PostgreSQL
+ de l'application TRACE.

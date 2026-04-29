@@ -1,0 +1,46 @@
+#!/bin/bash
+set -ex
+# On charge debconf
+. /usr/share/debconf/confmodule
+
+# 1. On interroge la base de données debconf
+db_get trace-backup/client_ip || true
+CLIENT_IP="$RET"
+
+# 2. On dit au revoir à debconf
+db_stop || true
+
+# ======================================================================
+# LA SOLUTION DÉFINITIVE :
+# Redirige TOUTE la sortie standard (1) vers la sortie d'erreur (2).
+# Dès cette ligne franchie, debconf est totalement aveugle et sourd,
+# et tout s'affichera proprement dans votre terminal !
+# ======================================================================
+exec 1>&2
+
+SHARE_DIR="/mnt/trace_exports"
+
+echo "=== Configuration du serveur NFS pour TRACE ==="
+
+mkdir -p "$SHARE_DIR"
+chown nobody:nogroup "$SHARE_DIR"
+chmod 777 "$SHARE_DIR"
+
+if [ -z "$CLIENT_IP" ]; then
+    echo "ATTENTION : Aucune IP n'a été saisie. Le partage NFS est suspendu."
+    exit 0
+fi
+
+touch /etc/exports
+
+# Ajout du partage
+if ! grep -q "$SHARE_DIR $CLIENT_IP" /etc/exports; then
+    echo "$SHARE_DIR $CLIENT_IP(rw,sync,no_subtree_check,no_root_squash)" >> /etc/exports
+fi
+
+# Application de la configuration
+exportfs -ra
+systemctl restart nfs-kernel-server
+
+echo "Succès : Le dossier $SHARE_DIR est partagé et sécurisé pour l'IP $CLIENT_IP."
+exit 0

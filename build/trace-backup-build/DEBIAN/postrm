@@ -1,0 +1,19 @@
+#!/bin/bash
+set -e
+
+SHARE_DIR="/mnt/trace_exports"
+
+if [ "$1" = "purge" ]; then
+    echo "Purge demandée : Nettoyage de la configuration NFS TRACE..."
+    
+    # On retire la ligne de notre partage du fichier /etc/exports
+    sed -i "|^$SHARE_DIR |d" /etc/exports || true
+    
+    # On recharge le service NFS
+    exportfs -ra || true
+    systemctl restart nfs-kernel-server || true
+    
+    echo "Configuration NFS retirée. Note: Les fichiers de sauvegarde dans $SHARE_DIR ont été conservés par sécurité."
+fi
+
+exit 0
