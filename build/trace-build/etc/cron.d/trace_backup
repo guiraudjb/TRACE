@@ -1,0 +1,2 @@
+# Sauvegarde quotidienne de la base TRACE à 02h00
+0 2 * * * postgres /usr/local/bin/trace_backup.sh

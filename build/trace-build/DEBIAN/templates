@@ -1,0 +1,6 @@
+Template: trace-dgfip/nfs_ip
+Type: string
+Description: Adresse IP du serveur de sauvegarde NFS :
+ Veuillez indiquer l'adresse IP du serveur distant (trace-backup-server) sur lequel
+ les sauvegardes de la base de données seront envoyées.
+ Laissez ce champ vide si vous souhaitez que les sauvegardes restent locales.

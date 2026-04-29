@@ -1,0 +1,2 @@
+# Purge quotidienne des logs d'audit TRACE (plus de 3 mois)
+0 0 * * * postgres /usr/bin/psql -d parc_mobilier_dgfip -c "DELETE FROM public.audit_logs WHERE date_action < CURRENT_DATE - INTERVAL '3 months';"

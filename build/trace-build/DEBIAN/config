@@ -1,0 +1,6 @@
+#!/bin/sh
+set -e
+. /usr/share/debconf/confmodule
+
+db_input high trace-dgfip/nfs_ip || true
+db_go || true

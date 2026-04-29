@@ -1,0 +1,25 @@
+#!/bin/bash
+set -e
+
+if [ "$1" = "remove" ]; then
+    echo "Fichiers applicatifs retirés. Base de données et sauvegardes conservées."
+    systemctl restart nginx || true
+fi
+
+if [ "$1" = "purge" ]; then
+    echo "PURGE : Suppression totale des données TRACE..."
+    
+    # 1. Suppression base de données
+    sudo -u postgres psql -c "DROP DATABASE IF EXISTS parc_mobilier_dgfip;" || true
+    
+    # 2. Suppression SSL
+    rm -rf /etc/ssl/trace || true
+    
+    # 3. Démontage et suppression NFS
+    umount /mnt/savetrace || true
+    sed -i '/\/mnt\/savetrace/d' /etc/fstab || true
+    rm -rf /mnt/savetrace || true
+    
+    echo "Purge terminée."
+fi
+exit 0

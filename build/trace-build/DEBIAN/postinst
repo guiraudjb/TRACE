@@ -1,0 +1,117 @@
+#!/bin/bash
+set -e
+. /usr/share/debconf/confmodule
+
+# ==============================================================================
+# 1. INTERFACE DEBCONF (NFS)
+# ==============================================================================
+db_get trace-dgfip/nfs_ip || true
+NFS_SERVER_IP="$RET"
+
+db_stop || true
+
+# --- CORRECTION DEBCONF ---
+# Redirige toute la sortie standard vers la sortie d'erreur pour éviter le Code 10
+exec 1>&2
+
+echo "=== Début de l'installation de TRACE ==="
+
+# Variables globales
+DB_NAME="parc_mobilier_dgfip"
+WEB_ROOT="/var/www/html/TRACE"
+SCHEMA_SRC="/usr/share/trace/schema.sql"
+SSL_DIR="/etc/ssl/trace"
+BACKUP_DIR="/mnt/savetrace"
+
+# Génération dynamique des secrets
+DB_PASS=$(tr -dc 'A-Za-z0-9_-' < /dev/urandom | head -c 24)
+JWT_SECRET=$(tr -dc 'A-Za-z0-9_-' < /dev/urandom | head -c 48)
+ADMIN_EMAIL="admin@dgfip.finances.gouv.fr"
+ADMIN_PASS="admin" # Valeur par défaut issue de votre script
+
+# ==============================================================================
+# 2. CONFIGURATION DU MONTAGE NFS
+# ==============================================================================
+mkdir -p "$BACKUP_DIR"
+
+if [ -n "$NFS_SERVER_IP" ]; then
+    echo "Configuration du point de montage NFS vers $NFS_SERVER_IP..."
+    if ! grep -q "$BACKUP_DIR" /etc/fstab; then
+        echo "$NFS_SERVER_IP:/mnt/trace_exports $BACKUP_DIR nfs defaults 0 0" >> /etc/fstab
+    fi
+    mount -a || echo "Attention : Le montage NFS a échoué (Le serveur est-il prêt ?)"
+else
+    echo "Aucune IP NFS fournie. Les sauvegardes seront stockées localement dans $BACKUP_DIR."
+fi
+
+# ==============================================================================
+# 3. INITIALISATION POSTGRESQL & SCHÉMA
+# ==============================================================================
+echo "Initialisation de la base de données..."
+
+# Démarrage du cluster si nécessaire
+pg_ctlcluster 17 main start || systemctl start postgresql || true
+
+# Fermeture des connexions existantes et recréation de la base
+sudo -u postgres psql -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '$DB_NAME' AND pid <> pg_backend_pid();" > /dev/null 2>&1 || true
+sudo -u postgres psql -c "DROP DATABASE IF EXISTS $DB_NAME;"
+sudo -u postgres psql -c "CREATE DATABASE $DB_NAME;"
+
+# Préparation du schéma technique avec injection des secrets à la volée
+TMP_SCHEMA=$(mktemp)
+cp "$SCHEMA_SRC" "$TMP_SCHEMA"
+sed -i "s/__JWT_SECRET__/$JWT_SECRET/g" "$TMP_SCHEMA"
+sed -i "s/__DB_PASS__/$DB_PASS/g" "$TMP_SCHEMA"
+sed -i "s/__ADMIN_EMAIL__/$ADMIN_EMAIL/g" "$TMP_SCHEMA"
+sed -i "s/__ADMIN_PASS__/$ADMIN_PASS/g" "$TMP_SCHEMA"
+
+# Injection
+echo "Création des tables et fonctions..."
+sudo -u postgres psql -d "$DB_NAME" < "$TMP_SCHEMA"
+rm -f "$TMP_SCHEMA"
+
+# ==============================================================================
+# 4. IMPORT DES DONNÉES CSV & TRIGGERS
+# ==============================================================================
+echo "Import des référentiels CSV..."
+
+# On utilise || true pour ne pas bloquer l'installation si un CSV est absent ou vide
+sudo -u postgres psql -d "$DB_NAME" -c "\copy public.lieux(id, nom, parent_id, type_lieu) FROM '$WEB_ROOT/lieux.csv' DELIMITER ',' CSV HEADER;" || true
+sudo -u postgres psql -d "$DB_NAME" -c "\copy public.structures(code_sages, libelle, lieu_id) FROM '$WEB_ROOT/structures.csv' DELIMITER ',' CSV HEADER;" || true
+sudo -u postgres psql -d "$DB_NAME" -c "SELECT setval('public.lieux_id_seq', COALESCE((SELECT MAX(id) FROM public.lieux), 1));" || true
+sudo -u postgres psql -d "$DB_NAME" -c "\copy public.gabarits(reference_catalogue, categorie, nom_descriptif, caracteristiques) FROM '$WEB_ROOT/gabarits.csv' DELIMITER ',' CSV HEADER;" || true
+sudo -u postgres psql -d "$DB_NAME" -c "\copy public.mobiliers(id_metier, gabarit_id, lieu_id, code_sages, statut, remarques) FROM '$WEB_ROOT/mobiliers.csv' DELIMITER ',' CSV HEADER;" || true
+
+echo "Mise en place de la séquence d'ID Métier..."
+sudo -u postgres psql -d "$DB_NAME" -c "SELECT setval('public.seq_mobilier_id', COALESCE((SELECT MAX(CAST(SUBSTRING(id_metier FROM 5) AS INTEGER)) FROM public.mobiliers), 0));"
+sudo -u postgres psql -d "$DB_NAME" -c "CREATE TRIGGER trig_set_mob_id BEFORE INSERT ON public.mobiliers FOR EACH ROW EXECUTE FUNCTION public.set_mob_id();"
+
+# ==============================================================================
+# 5. CONFIGURATION SSL ET WEB
+# ==============================================================================
+echo "Génération des certificats SSL..."
+mkdir -p "$SSL_DIR"
+openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
+    -keyout "$SSL_DIR/trace.key" -out "$SSL_DIR/trace.crt" \
+    -subj "/C=FR/ST=Paris/L=Paris/O=DGFIP/OU=TRACE/CN=localhost" 2>/dev/null
+
+chown postgres:postgres "$SSL_DIR/trace.key" "$SSL_DIR/trace.crt"
+chmod 600 "$SSL_DIR/trace.key"
+chmod 644 "$SSL_DIR/trace.crt"
+chmod 755 "$SSL_DIR"
+
+echo "Application des droits sur le dossier Web..."
+chmod -R 755 "$WEB_ROOT"
+chown -R www-data:www-data "$WEB_ROOT"
+
+# Activation Nginx (Supposant que le fichier config a été placé par le paquet dans /etc/nginx/sites-available/)
+ln -sf /etc/nginx/sites-available/trace /etc/nginx/sites-enabled/trace || true
+rm -f /etc/nginx/sites-enabled/default || true
+
+# Redémarrage des services
+systemctl daemon-reload
+systemctl enable --now trace-api || true
+systemctl restart nginx
+
+echo "=== Installation de TRACE terminée avec succès ! ==="
+exit 0
