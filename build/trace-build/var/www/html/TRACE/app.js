@@ -86,22 +86,22 @@ const API = {
 
     async loadConfig() {
         try {
-            const res = await fetch('./config.ini?nocache=' + new Date().getTime());
+            // On interroge désormais la base de données via PostgREST au lieu du fichier texte
+            const res = await fetch(`${CONFIG.API_URL}/parametres`);
             if (res.ok) {
-                const text = await res.text();
-                text.split(/\r?\n/).forEach(line => {
-                    if (line.includes('=') && !line.startsWith(';') && !line.startsWith('[')) {
-                        const parts = line.split('=');
-                        const key = parts[0].trim();
-                        const value = parts.slice(1).join('=').trim().replace(/(^"|"$)/g, '');
-                        if (key === 'nom_administration') State.appConfig.administration = value;
-                        if (key === 'nom_direction') State.appConfig.direction = value;
-                    }
+                const data = await res.json();
+                data.forEach(item => {
+                    if (item.cle === 'nom_administration') State.appConfig.administration = item.valeur;
+                    if (item.cle === 'nom_direction') State.appConfig.direction = item.valeur;
                 });
             }
-        } catch (e) { console.warn("config.ini ignoré, valeurs par défaut appliquées."); }
+        } catch (e) { 
+            console.warn("Base injoignable, valeurs par défaut appliquées."); 
+            State.appConfig.administration = "RÉPUBLIQUE FRANÇAISE";
+            State.appConfig.direction = "Direction non définie";
+        }
     },
-
+    
     async loadReferentiels() {
         const [gRes, sRes, lRes] = await Promise.all([
             this.fetch('/gabarits?select=id,reference_catalogue,categorie,nom_descriptif,caracteristiques,photo_base64', { headers: this.getHeaders() }),
@@ -1448,7 +1448,40 @@ const AdminCtrl = {
         doc.setDrawColor(0, 0, 0); doc.setLineWidth(0.2); doc.rect(100, finalY + 5, 90, 35);
 
         doc.save(`PVSORTIETRACE_${filenameDate}.pdf`);
-    }
+    },
+    
+    openEditConfig() {
+        // Pré-remplit le formulaire avec l'état actuel
+        document.getElementById('edit-config-admin').value = State.appConfig.administration;
+        document.getElementById('edit-config-direction').value = State.appConfig.direction;
+        UI.showView('view-admin-config', 'panel-admin');
+    },
+
+    async handleSaveConfig(e) {
+        e.preventDefault();
+        const newAdmin = document.getElementById('edit-config-admin').value.trim();
+        const newDir = document.getElementById('edit-config-direction').value.trim();
+
+        try {
+            // Mise à jour via l'API (utilisation de l'upsert ou de deux requêtes PATCH)
+            await Promise.all([
+                API.fetch(`/parametres?cle=eq.nom_administration`, { 
+                    method: 'PATCH', headers: API.getHeaders(), body: JSON.stringify({ valeur: newAdmin }) 
+                }),
+                API.fetch(`/parametres?cle=eq.nom_direction`, { 
+                    method: 'PATCH', headers: API.getHeaders(), body: JSON.stringify({ valeur: newDir }) 
+                })
+            ]);
+            
+            // Mise à jour de l'état local
+            State.appConfig.administration = newAdmin;
+            State.appConfig.direction = newDir;
+            
+            UI.showAlert("Succès", "En-têtes des PV mis à jour.", "success");
+        } catch (err) {
+            UI.showAlert("Erreur", "Impossible de sauvegarder la configuration.", "error");
+        }
+    },
 };
 
 // ============================================================================
@@ -1641,7 +1674,12 @@ const App = {
         document.getElementById('scan-target-lieu')?.addEventListener('change', () => MobilierCtrl.handleScanLieuChange());
         document.getElementById('import-target-lieu')?.addEventListener('change', () => MobilierCtrl.handleImportLieuChange());
         
-      
+        // Navigation Admin
+        document.getElementById('nav-admin-config')?.addEventListener('click', () => AdminCtrl.openEditConfig());
+
+        // Sauvegarde du formulaire
+        document.getElementById('form-admin-config')?.addEventListener('submit', (e) => AdminCtrl.handleSaveConfig(e));
+              
         
     }
 };

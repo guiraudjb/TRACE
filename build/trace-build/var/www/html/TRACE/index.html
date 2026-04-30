@@ -70,7 +70,7 @@
                         <form id="form-login">
                             <div class="fr-input-group">
                                 <label class="fr-label" for="login-email">Mél professionnel</label>
-                                <input class="fr-input" type="email" id="login-email" required placeholder="nom@dgfip.finances.gouv.fr">
+                                <input class="fr-input" type="email" id="login-email" required placeholder="nom@gouv.fr">
                             </div>
                             <div class="fr-input-group">
                                 <label class="fr-label" for="login-password">Mot de passe</label>
@@ -372,6 +372,7 @@
                                 <li><button class="fr-btn fr-btn--secondary" onclick="window.open('./utils/qrcode-generator.html', '_blank')">Édition étiquettes</button></li>
                                 <li><button class="fr-btn fr-btn--secondary fr-icon-delete-bin-line fr-btn--icon-left" id="nav-admin-rebut">Mise au rebut</button></li>
                                 <li><button class="fr-btn fr-btn--secondary fr-icon-history-line fr-btn--icon-left" id="nav-admin-audit">Audit</button></li>
+                                <li><button class="fr-btn fr-btn--secondary fr-icon-settings-5-line fr-btn--icon-left" id="nav-admin-config">En-têtes PV</button></li>
                             </ul>
                         </div>
                     </div>
@@ -483,6 +484,24 @@
                                 <input class="fr-upload" type="file" id="rebut-file-upload" accept=".txt">
                             </div>
                             <button id="btn-exec-rebut" class="fr-btn fr-btn--error fr-icon-delete-line fr-btn--icon-left">Confirmer et Générer le PV</button>
+                        </div>
+                    </div>
+                
+                    <div id="view-admin-config" class="sub-view">
+                        <div class="trace-card">
+                            <h3 class="fr-h4">Configuration des éditions (PDF)</h3>
+                            <p class="fr-text--sm">Ces valeurs apparaîtront en haut à gauche de tous les Procès-Verbaux générés par l'application.</p>
+                            <form id="form-admin-config">
+                                <div class="fr-input-group">
+                                    <label class="fr-label">Nom de l'Administration (Gras)</label>
+                                    <input class="fr-input" type="text" id="edit-config-admin" required>
+                                </div>
+                                <div class="fr-input-group">
+                                    <label class="fr-label">Nom de la Direction (Normal)</label>
+                                    <input class="fr-input" type="text" id="edit-config-direction" required>
+                                </div>
+                                <button type="submit" class="fr-btn fr-icon-save-line fr-btn--icon-left fr-mt-2w">Sauvegarder les en-têtes</button>
+                            </form>
                         </div>
                     </div>
 

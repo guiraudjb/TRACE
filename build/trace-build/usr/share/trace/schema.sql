@@ -182,6 +182,102 @@ BEGIN
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
+-- =============================================================================
+-- TRAÇABILITÉ DES GABARITS (CATALOGUE)
+-- =============================================================================
+
+CREATE OR REPLACE FUNCTION public.log_gabarit_action() RETURNS TRIGGER AS $$
+DECLARE
+    v_user VARCHAR(255); 
+    v_action VARCHAR(50); 
+    v_cible VARCHAR(50); 
+    v_details TEXT := '';
+BEGIN
+    -- Récupération de l'utilisateur (Agent/Admin) via le jeton JWT
+    BEGIN 
+        v_user := current_setting('request.jwt.claims', true)::json->>'email'; 
+    EXCEPTION WHEN OTHERS THEN 
+        v_user := 'Système'; 
+    END;
+
+    -- Détermination du type d'action
+    IF TG_OP = 'INSERT' THEN 
+        v_action := 'CRÉATION'; 
+    ELSIF TG_OP = 'UPDATE' THEN 
+        v_action := 'MODIFICATION'; 
+    ELSIF TG_OP = 'DELETE' THEN 
+        v_action := 'SUPPRESSION'; 
+    END IF;
+
+    -- La cible sera la référence du catalogue (ex: BUR-001)
+    v_cible := COALESCE(NEW.reference_catalogue, OLD.reference_catalogue);
+
+    -- Construction des détails selon l'action
+    IF TG_OP = 'INSERT' THEN 
+        v_details := 'Nouveau modèle ajouté : ' || NEW.nom_descriptif; 
+    
+    ELSIF TG_OP = 'UPDATE' THEN 
+        IF OLD.reference_catalogue IS DISTINCT FROM NEW.reference_catalogue THEN 
+            v_details := v_details || 'Réf : ' || OLD.reference_catalogue || ' -> ' || NEW.reference_catalogue || '. '; 
+        END IF;
+        IF OLD.nom_descriptif IS DISTINCT FROM NEW.nom_descriptif THEN 
+            v_details := v_details || 'Désignation mise à jour. '; 
+        END IF;
+        IF OLD.categorie IS DISTINCT FROM NEW.categorie THEN 
+            v_details := v_details || 'Catégorie modifiée. '; 
+        END IF;
+        IF OLD.caracteristiques IS DISTINCT FROM NEW.caracteristiques THEN 
+            v_details := v_details || 'Attributs techniques (JSON) modifiés. '; 
+        END IF;
+        IF OLD.photo_base64 IS DISTINCT FROM NEW.photo_base64 THEN 
+            v_details := v_details || 'Photo mise à jour. '; 
+        END IF;
+        
+        -- Si un UPDATE a lieu mais sans changer ces champs, on met un message générique
+        IF v_details = '' THEN 
+            v_details := 'Mise à jour mineure.'; 
+        END IF;
+
+    ELSIF TG_OP = 'DELETE' THEN 
+        v_details := 'Modèle définitivement retiré du catalogue.'; 
+    END IF;
+
+    -- Insertion de la trace dans le journal
+    INSERT INTO public.audit_logs (utilisateur, action, id_metier, details) 
+    VALUES (v_user, v_action, v_cible, 'CATALOGUE : ' || v_details);
+
+    -- Retourne la ligne concernée pour PostgreSQL
+    IF TG_OP = 'DELETE' THEN 
+        RETURN OLD; 
+    ELSE 
+        RETURN NEW; 
+    END IF;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- Attachement du trigger à la table des gabarits
+CREATE TRIGGER trig_audit_gabarits 
+AFTER INSERT OR UPDATE OR DELETE ON public.gabarits 
+FOR EACH ROW EXECUTE FUNCTION public.log_gabarit_action();
+
 CREATE TRIGGER trig_audit_utilisateurs AFTER INSERT OR UPDATE OR DELETE ON public.utilisateurs FOR EACH ROW EXECUTE FUNCTION public.log_admin_action();
 CREATE TRIGGER trig_audit_structures AFTER INSERT OR UPDATE OR DELETE ON public.structures FOR EACH ROW EXECUTE FUNCTION public.log_admin_action();
 CREATE TRIGGER trig_audit_lieux AFTER INSERT OR UPDATE OR DELETE ON public.lieux FOR EACH ROW EXECUTE FUNCTION public.log_admin_action();
+
+-- =============================================================================
+-- PARAMÈTRES GLOBAUX (Remplaçant du config.ini)
+-- =============================================================================
+CREATE TABLE public.parametres (
+    cle VARCHAR(50) PRIMARY KEY,
+    valeur TEXT NOT NULL
+);
+
+-- Insertion des valeurs par défaut (celles de votre ancien config.ini)
+INSERT INTO public.parametres (cle, valeur) VALUES
+('nom_administration', 'MINISTÈRE DE L''É'),
+('nom_direction', 'Direction Générale');
+
+-- Gestion des droits
+GRANT SELECT ON public.parametres TO divagil, agent, administrateur, lecteur;
+-- Seuls les administrateurs peuvent modifier ces valeurs
+GRANT UPDATE ON public.parametres TO administrateur;
