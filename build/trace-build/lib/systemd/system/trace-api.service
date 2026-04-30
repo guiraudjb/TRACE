@@ -1,0 +1,13 @@
+[Unit]
+Description=API PostgREST TRACE
+After=postgresql.service
+Requires=postgresql.service
+
+[Service]
+ExecStart=/usr/local/bin/postgrest /etc/trace-api.conf
+Restart=always
+RestartSec=3
+SyslogIdentifier=trace-api
+
+[Install]
+WantedBy=multi-user.target

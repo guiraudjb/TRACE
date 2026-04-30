@@ -87,7 +87,25 @@ sudo -u postgres psql -d "$DB_NAME" -c "SELECT setval('public.seq_mobilier_id', 
 sudo -u postgres psql -d "$DB_NAME" -c "CREATE TRIGGER trig_set_mob_id BEFORE INSERT ON public.mobiliers FOR EACH ROW EXECUTE FUNCTION public.set_mob_id();"
 
 # ==============================================================================
-# 5. CONFIGURATION SSL ET WEB
+# 5. CONFIGURATION DE L'API POSTGREST
+# ==============================================================================
+echo "Configuration du Backend PostgREST..."
+
+# Création du fichier de configuration avec les secrets générés plus haut
+cat << EOF > /etc/trace-api.conf
+db-uri = "postgres://divagil:${DB_PASS}@localhost:5432/${DB_NAME}"
+db-schema = "public"
+db-anon-role = "divagil"
+jwt-secret = "${JWT_SECRET}"
+server-port = 3000
+server-host = "127.0.0.1"
+EOF
+
+# Sécurisation du fichier contenant des mots de passe
+chmod 600 /etc/trace-api.conf
+
+# ==============================================================================
+# 6. CONFIGURATION SSL ET WEB
 # ==============================================================================
 echo "Génération des certificats SSL..."
 mkdir -p "$SSL_DIR"
@@ -108,10 +126,12 @@ chown -R www-data:www-data "$WEB_ROOT"
 ln -sf /etc/nginx/sites-available/trace /etc/nginx/sites-enabled/trace || true
 rm -f /etc/nginx/sites-enabled/default || true
 
+
 # Redémarrage des services
 systemctl daemon-reload
 systemctl enable --now trace-api || true
 systemctl restart nginx
+
 
 echo "=== Installation de TRACE terminée avec succès ! ==="
 exit 0
