@@ -1,18 +1,18 @@
 #!/bin/bash
 set -e
-. /usr/share/debconf/confmodule
+#. /usr/share/debconf/confmodule
 
 # ==============================================================================
 # 1. INTERFACE DEBCONF (NFS)
 # ==============================================================================
-db_get trace-dgfip/nfs_ip || true
-NFS_SERVER_IP="$RET"
+#db_get trace-dgfip/nfs_ip || true
+#NFS_SERVER_IP="$RET"
 
-db_stop || true
+#db_stop || true
 
 # --- CORRECTION DEBCONF ---
 # Redirige toute la sortie standard vers la sortie d'erreur pour éviter le Code 10
-exec 1>&2
+#exec 1>&2
 
 echo "=== Début de l'installation de TRACE ==="
 
@@ -34,15 +34,15 @@ ADMIN_PASS="admin" # Valeur par défaut issue de votre script
 # ==============================================================================
 mkdir -p "$BACKUP_DIR"
 
-if [ -n "$NFS_SERVER_IP" ]; then
-    echo "Configuration du point de montage NFS vers $NFS_SERVER_IP..."
-    if ! grep -q "$BACKUP_DIR" /etc/fstab; then
-        echo "$NFS_SERVER_IP:/mnt/trace_exports $BACKUP_DIR nfs defaults 0 0" >> /etc/fstab
-    fi
-    mount -a || echo "Attention : Le montage NFS a échoué (Le serveur est-il prêt ?)"
-else
-    echo "Aucune IP NFS fournie. Les sauvegardes seront stockées localement dans $BACKUP_DIR."
-fi
+#if [ -n "$NFS_SERVER_IP" ]; then
+#    echo "Configuration du point de montage NFS vers $NFS_SERVER_IP..."
+#    if ! grep -q "$BACKUP_DIR" /etc/fstab; then
+#        echo "$NFS_SERVER_IP:/mnt/trace_exports $BACKUP_DIR nfs defaults 0 0" >> /etc/fstab
+#    fi
+#    mount -a || echo "Attention : Le montage NFS a échoué (Le serveur est-il prêt ?)"
+#else
+#    echo "Aucune IP NFS fournie. Les sauvegardes seront stockées localement dans $BACKUP_DIR."
+#fi
 
 # ==============================================================================
 # 3. INITIALISATION POSTGRESQL & SCHÉMA
@@ -83,8 +83,8 @@ sudo -u postgres psql -d "$DB_NAME" -c "\copy public.gabarits(reference_catalogu
 sudo -u postgres psql -d "$DB_NAME" -c "\copy public.mobiliers(id_metier, gabarit_id, lieu_id, code_sages, statut, remarques) FROM '$WEB_ROOT/mobiliers.csv' DELIMITER ',' CSV HEADER;" || true
 
 echo "Mise en place de la séquence d'ID Métier..."
-sudo -u postgres psql -d "$DB_NAME" -c "SELECT setval('public.seq_mobilier_id', COALESCE((SELECT MAX(CAST(SUBSTRING(id_metier FROM 5) AS INTEGER)) FROM public.mobiliers), 0));"
-sudo -u postgres psql -d "$DB_NAME" -c "CREATE TRIGGER trig_set_mob_id BEFORE INSERT ON public.mobiliers FOR EACH ROW EXECUTE FUNCTION public.set_mob_id();"
+sudo -u postgres psql -d "$DB_NAME" -c "SELECT setval('public.seq_mobilier_id', COALESCE((SELECT MAX(CAST(SUBSTRING(id_metier FROM 5) AS INTEGER)) FROM public.mobiliers), 1));" || true
+sudo -u postgres psql -d "$DB_NAME" -c "CREATE TRIGGER trig_set_mob_id BEFORE INSERT ON public.mobiliers FOR EACH ROW EXECUTE FUNCTION public.set_mob_id();" || true
 
 # ==============================================================================
 # 5. CONFIGURATION DE L'API POSTGREST
@@ -129,7 +129,9 @@ rm -f /etc/nginx/sites-enabled/default || true
 
 # Redémarrage des services
 systemctl daemon-reload
-systemctl enable --now trace-api || true
+systemctl enable trace-api
+systemctl stop trace-api || true
+systemctl start trace-api || true
 systemctl restart nginx
 
 

@@ -1,0 +1,34 @@
+server {
+    listen 80;
+    server_name _;
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl;
+    http2 on;
+    server_name _;
+
+    ssl_certificate /etc/ssl/trace/trace.crt;
+    ssl_certificate_key /etc/ssl/trace/trace.key;
+
+    # CORRECTION : Le chemin pointe bien vers le dossier TRACE
+    root /var/www/html/;
+    index index.html;
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    location /api/ {
+        proxy_pass http://127.0.0.1:3000/;
+        proxy_cookie_path / "/api/; HttpOnly; Secure; SameSite=Strict";
+        proxy_set_header Host $host;
+        proxy_set_header X-Real-IP $remote_addr;
+        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
+        proxy_set_header X-Forwarded-Proto $scheme;
+        proxy_hide_header X-Powered-By;
+        server_tokens off;
+    }
+}
+

@@ -1,19 +1,29 @@
 #!/bin/bash
 set -e
 
+# 1. On charge la librairie debconf (si elle existe encore sur le système)
+if [ -f /usr/share/debconf/confmodule ]; then
+    . /usr/share/debconf/confmodule
+fi
+
 SHARE_DIR="/mnt/trace_exports"
 
 if [ "$1" = "purge" ]; then
     echo "Purge demandée : Nettoyage de la configuration NFS TRACE..."
     
-    # On retire la ligne de notre partage du fichier /etc/exports
-    sed -i "|^$SHARE_DIR |d" /etc/exports || true
-    
-    # On recharge le service NFS
+    # --- LA NOUVEAUTÉ EST ICI ---
+    # On ordonne à debconf d'oublier toutes les réponses liées à ce paquet
+    if [ -f /usr/share/debconf/confmodule ]; then
+        db_purge || true
+    fi
+    # ----------------------------
+
+    # Nettoyage de la configuration NFS
+    sed -i '/^\/mnt\/trace_exports /d' /etc/exports || true
     exportfs -ra || true
     systemctl restart nfs-kernel-server || true
     
-    echo "Configuration NFS retirée. Note: Les fichiers de sauvegarde dans $SHARE_DIR ont été conservés par sécurité."
+    echo "Configuration NFS retirée. Note: Les fichiers de sauvegarde ont été conservés."
 fi
 
 exit 0

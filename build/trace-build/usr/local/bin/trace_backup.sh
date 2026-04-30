@@ -1,6 +1,4 @@
 #!/bin/bash
-# Sauvegarde de la base TRACE
-
 BACKUP_DIR="/mnt/savetrace"
 DB_NAME="parc_mobilier_dgfip"
 DATE=$(date +%Y-%m-%d)

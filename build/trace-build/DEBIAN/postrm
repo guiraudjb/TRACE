@@ -16,10 +16,12 @@ if [ "$1" = "purge" ]; then
     rm -rf /etc/ssl/trace || true
     
     # 3. Démontage et suppression NFS
-    umount /mnt/savetrace || true
-    sed -i '/\/mnt\/savetrace/d' /etc/fstab || true
-    rm -rf /mnt/savetrace || true
+    #umount /mnt/savetrace || true
+    #sed -i '/\/mnt\/savetrace/d' /etc/fstab || true
+    #rm -rf /mnt/savetrace || true
     
+    #suppression trace-api
+    /etc/trace-api.conf || true
     echo "Purge terminée."
 fi
 exit 0
