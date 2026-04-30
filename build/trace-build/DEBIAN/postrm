@@ -2,26 +2,40 @@
 set -e
 
 if [ "$1" = "remove" ]; then
-    echo "Fichiers applicatifs retirés. Base de données et sauvegardes conservées."
-    systemctl restart nginx || true
+    echo "Suppression des fichiers applicatifs TRACE..."
+    # On recharge Nginx doucement pour éviter des erreurs si la conf a été retirée
+    systemctl reload nginx || true
 fi
 
 if [ "$1" = "purge" ]; then
-    echo "PURGE : Suppression totale des données TRACE..."
+    echo "=== PURGE : Suppression totale des données et configurations TRACE ==="
     
-    # 1. Suppression base de données
-    sudo -u postgres psql -c "DROP DATABASE IF EXISTS parc_mobilier_dgfip;" || true
+    # 1. Suppression de la base de données
+    # On s'assure que PostgreSQL tourne pour pouvoir exécuter la commande de suppression
+    systemctl start postgresql || true
+    sudo -u postgres psql -c "DROP DATABASE IF EXISTS parc_mobilier;" > /dev/null 2>&1 || true
     
-    # 2. Suppression SSL
+    # 2. Suppression du dossier des certificats SSL
     rm -rf /etc/ssl/trace || true
     
-    # 3. Démontage et suppression NFS
-    #umount /mnt/savetrace || true
-    #sed -i '/\/mnt\/savetrace/d' /etc/fstab || true
-    #rm -rf /mnt/savetrace || true
+    # 3. Suppression du fichier de configuration contenant les mots de passe (Correction)
+    rm -f /etc/trace-api.conf || true
     
-    #suppression trace-api
-    /etc/trace-api.conf || true
-    echo "Purge terminée."
+    # 4. Nettoyage de la configuration Nginx
+    rm -f /etc/nginx/sites-enabled/trace || true
+    rm -f /etc/nginx/sites-available/trace || true
+    systemctl reload nginx || true
+
+    # 5. Nettoyage du fichier de service systemd (si créé manuellement)
+    if [ -f /etc/systemd/system/trace-api.service ]; then
+        rm -f /etc/systemd/system/trace-api.service || true
+        systemctl daemon-reload || true
+    fi
+
+    # Note : Le dossier /mnt/savetrace n'est pas supprimé ici, 
+    # car il est désormais géré par le paquet d'infrastructure tiers (NFS).
+
+    echo "Purge de TRACE terminée."
 fi
+
 exit 0

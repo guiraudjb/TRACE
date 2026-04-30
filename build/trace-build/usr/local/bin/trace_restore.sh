@@ -1,6 +1,6 @@
 #!/bin/bash
 BACKUP_DIR="/mnt/savetrace"
-DB_NAME="parc_mobilier_dgfip"
+DB_NAME="parc_mobilier"
 ITEMS_PER_PAGE=10
 
 if [ "$EUID" -ne 0 ] && [ "$(whoami)" != "postgres" ]; then

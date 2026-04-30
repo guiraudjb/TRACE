@@ -11,7 +11,7 @@ CREATE TYPE public.statut_mobilier AS ENUM ('en_service', 'en_maintenance', 'dis
 CREATE TYPE public.jwt_token AS (token text);
 
 -- Tables
-CREATE TABLE public.lieux (id SERIAL PRIMARY KEY, nom TEXT NOT NULL, parent_id INTEGER REFERENCES public.lieux(id), type_lieu TEXT CHECK (type_lieu IN ('batiment', 'etage', 'bureau', 'local')));
+CREATE TABLE public.lieux (id SERIAL PRIMARY KEY, nom TEXT NOT NULL);
 CREATE TABLE public.structures (code_sages VARCHAR(10) PRIMARY KEY, libelle TEXT NOT NULL, lieu_id INTEGER REFERENCES public.lieux(id));
 CREATE TABLE public.utilisateurs (id SERIAL PRIMARY KEY, email TEXT UNIQUE NOT NULL, mot_de_passe_hash TEXT NOT NULL, nom_complet TEXT NOT NULL, role TEXT NOT NULL CHECK (role IN ('agent', 'administrateur', 'lecteur')) DEFAULT 'agent');
 CREATE TABLE public.gabarits (id SERIAL PRIMARY KEY, reference_catalogue VARCHAR(50) UNIQUE NOT NULL, categorie TEXT, nom_descriptif TEXT NOT NULL, caracteristiques JSONB DEFAULT '{}'::jsonb, photo_base64 TEXT);

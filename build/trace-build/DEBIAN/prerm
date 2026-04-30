@@ -2,6 +2,6 @@
 set -e
 if [ "$1" = "remove" ] || [ "$1" = "upgrade" ]; then
     echo "Arrêt des services TRACE..."
-    # systemctl stop trace-api || true
+     systemctl stop trace-api || true
 fi
 exit 0
