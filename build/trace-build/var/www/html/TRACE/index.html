@@ -273,7 +273,16 @@
                     <div id="view-gabarits-list" class="sub-view active">
     <div class="fr-grid-row fr-grid-row--middle fr-mb-4w">
         <div class="fr-col-12 fr-col-md-6"><h2 class="fr-m-0">Catalogue des modèles</h2></div>
-        <div class="fr-col-12 fr-col-md-6 fr-text-md-right"><button id="btn-nav-create-gab" class="fr-btn fr-icon-add-circle-line fr-btn--icon-left">Nouveau modèle</button></div>
+        <div class="fr-col-12 fr-col-md-6 fr-text-md-right">
+            <div class="fr-checkbox-group fr-checkbox-group--sm fr-mb-0" style="text-align: left;">
+                <input type="checkbox" id="checkbox-export-photo" name="checkbox-export-photo">
+                <label class="fr-label" for="checkbox-export-photo">
+                    Inclure photos (Base64)
+                </label>
+            </div>
+            <button id="btn-export-gab-csv" class="fr-btn fr-btn--secondary fr-icon-file-line fr-btn--icon-left fr-mr-2w">Exporter CSV</button>
+            <button id="btn-nav-create-gab" class="fr-btn fr-icon-add-circle-line fr-btn--icon-left">Nouveau modèle</button>
+        </div>
     </div>
     
     <div class="trace-card">
@@ -407,7 +416,10 @@
                     <div id="view-ua-list" class="sub-view">
                         <div class="fr-grid-row fr-grid-row--middle fr-mb-2w">
                             <div class="fr-col-6"><h3 class="fr-m-0">Référentiel Services</h3></div>
-                            <div class="fr-col-6 fr-text-md-right"><button id="btn-nav-create-ua" class="fr-btn fr-icon-add-circle-line fr-btn--icon-left">Nouveau service</button></div>
+                            <div class="fr-col-6 fr-text-md-right">
+                                <button id="btn-export-ua-csv" class="fr-btn fr-btn--secondary fr-icon-file-line fr-btn--icon-left fr-mr-2w">Exporter CSV</button>
+                                <button id="btn-nav-create-ua" class="fr-btn fr-icon-add-circle-line fr-btn--icon-left">Nouveau service</button>
+                            </div>
                         </div>
                         <div class="trace-card"><div class="fr-table fr-table--bordered"><table><thead><tr><th>Code Sages</th><th>Libellé</th><th>Actions</th></tr></thead><tbody id="table-ua-body"></tbody></table></div></div>
                     </div>
@@ -444,7 +456,10 @@
                     <div id="view-lieux-list" class="sub-view">
                         <div class="fr-grid-row fr-grid-row--middle fr-mb-2w">
                             <div class="fr-col-6"><h3 class="fr-m-0">Référentiel Lieux</h3></div>
-                            <div class="fr-col-6 fr-text-md-right"><button id="btn-nav-create-lieu" class="fr-btn fr-icon-add-circle-line fr-btn--icon-left">Nouveau lieu</button></div>
+                            <div class="fr-col-6 fr-text-md-right">
+                                <button id="btn-export-lieux-csv" class="fr-btn fr-btn--secondary fr-icon-file-line fr-btn--icon-left fr-mr-2w">Exporter CSV</button>
+                                <button id="btn-nav-create-lieu" class="fr-btn fr-icon-add-circle-line fr-btn--icon-left">Nouveau lieu</button>
+                            </div>
                         </div>
                         <div class="trace-card"><div class="fr-table fr-table--bordered"><table><thead><tr><th>Désignation du bâtiment / site</th><th>Actions</th></tr></thead><tbody id="table-lieux-body"></tbody></table></div></div>
                     </div>

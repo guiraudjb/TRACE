@@ -983,6 +983,66 @@ const GabaritCtrl = {
             await this.loadData();
             UI.showView('view-gabarits-list', 'panel-gabarits');
         } catch (err) { UI.showAlert("Erreur", err.message, "error"); }
+    },
+    async exportCSV() {
+        let params = new URLSearchParams();
+        if (State.gabarit.filters.categorie) params.append('categorie', `eq.${State.gabarit.filters.categorie}`);
+        if (State.gabarit.filters.query) {
+            const safeQuery = State.gabarit.filters.query.replace(/["(),:{}\t]/g, ' ');
+            const motsCles = safeQuery.trim().split(/\s+/);
+            const conditionsMots = motsCles.map(mot => 
+                `or(reference_catalogue.ilike.*${mot}*,nom_descriptif.ilike.*${mot}*,caracteristiques_txt.ilike.*${mot}*)`
+            );
+            params.append('and', `(${conditionsMots.join(',')})`);
+        }
+        params.append('order', `${State.gabarit.sortBy}.${State.gabarit.sortAsc ? 'asc' : 'desc'}`);
+
+        try {
+            UI.showAlert("Export", "Récupération des données...", "info");
+            const res = await API.fetch(`/gabarits?${params.toString()}`, { headers: API.getHeaders() });
+            if (!res.ok) throw new Error("Erreur récupération données.");
+            const allData = await res.json();
+            if (allData.length === 0) { UI.showAlert("Export", "Aucune donnée.", "warning"); return; }
+
+            // 1. On vérifie si l'utilisateur a coché la case
+            const includePhoto = document.getElementById('checkbox-export-photo')?.checked;
+
+            // 2. On prépare les en-têtes de base
+            const headers = ["Référence", "Catégorie", "Désignation", "Caractéristiques JSON"];
+            // Si la case est cochée, on ajoute dynamiquement la colonne Photo
+            if (includePhoto) {
+                headers.push("Photo (Base64)");
+            }
+
+            // 3. On construit les lignes
+            const rows = allData.map(gab => {
+                const row = [
+                    gab.reference_catalogue,
+                    gab.categorie,
+                    gab.nom_descriptif,
+                    JSON.stringify(gab.caracteristiques || {}).replace(/"/g, '""') // Échappe les guillemets
+                ];
+                
+                // Si la case est cochée, on ajoute dynamiquement la donnée de la photo
+                if (includePhoto) {
+                    row.push(gab.photo_base64 ? gab.photo_base64 : "");
+                }
+                
+                return row;
+            });
+
+            let csvContent = "\ufeff" + headers.join(";") + "\n";
+            rows.forEach(row => { csvContent += row.map(cell => `"${String(cell)}"`).join(";") + "\n"; });
+
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = `TRACE_Gabarits_${new Date().toISOString().split('T')[0]}.csv`;
+            link.click();
+            URL.revokeObjectURL(url);
+            UI.showAlert("Succès", "Export terminé.", "success");
+        } catch (err) { UI.showAlert("Erreur Export", err.message, "error"); }
     }
 };
 
@@ -1078,6 +1138,43 @@ const AdminCtrl = {
     },
 
     // UA & Lieux
+    exportUaCSV() {
+        if (State.referentiels.structures.length === 0) { UI.showAlert("Export", "Aucune donnée.", "warning"); return; }
+        const headers = ["Code SAGES", "Libellé", "Lieu de rattachement (ID)", "Nom du Lieu"];
+        const rows = State.referentiels.structures.map(ua => {
+            const lieu = State.maps.l.get(ua.lieu_id) || {};
+            return [ua.code_sages, ua.libelle, ua.lieu_id, lieu.nom || 'Inconnu'];
+        });
+
+        let csvContent = "\ufeff" + headers.join(";") + "\n";
+        rows.forEach(row => { csvContent += row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(";") + "\n"; });
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `TRACE_Services_${new Date().toISOString().split('T')[0]}.csv`;
+        link.click();
+        URL.revokeObjectURL(url);
+    },
+
+    exportLieuxCSV() {
+        if (State.referentiels.lieux.length === 0) { UI.showAlert("Export", "Aucune donnée.", "warning"); return; }
+        const headers = ["ID Technique", "Nom du site / bâtiment"];
+        const rows = State.referentiels.lieux.map(lieu => [lieu.id, lieu.nom]);
+
+        let csvContent = "\ufeff" + headers.join(";") + "\n";
+        rows.forEach(row => { csvContent += row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(";") + "\n"; });
+
+        const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = `TRACE_Lieux_${new Date().toISOString().split('T')[0]}.csv`;
+        link.click();
+        URL.revokeObjectURL(url);
+    },
+    
     renderUA() {
         const tbody = document.getElementById('table-ua-body');
         tbody.innerHTML = '';
@@ -1679,7 +1776,14 @@ const App = {
 
         // Sauvegarde du formulaire
         document.getElementById('form-admin-config')?.addEventListener('submit', (e) => AdminCtrl.handleSaveConfig(e));
-              
+        
+        
+        // À ajouter dans la section "// Gabarits"
+        document.getElementById('btn-export-gab-csv')?.addEventListener('click', () => GabaritCtrl.exportCSV());
+
+        // À ajouter dans la section "// Admin"
+        document.getElementById('btn-export-ua-csv')?.addEventListener('click', () => AdminCtrl.exportUaCSV());
+        document.getElementById('btn-export-lieux-csv')?.addEventListener('click', () => AdminCtrl.exportLieuxCSV());     
         
     }
 };

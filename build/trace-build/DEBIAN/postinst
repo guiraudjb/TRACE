@@ -58,7 +58,7 @@ echo "Import des référentiels CSV..."
 sudo -u postgres psql -d "$DB_NAME" -c "\copy public.lieux(id, nom) FROM '/usr/share/trace/lieux.csv' DELIMITER ',' CSV HEADER;" || true
 sudo -u postgres psql -d "$DB_NAME" -c "\copy public.structures(code_sages, libelle, lieu_id) FROM '/usr/share/trace/structures.csv' DELIMITER ',' CSV HEADER;" || true
 sudo -u postgres psql -d "$DB_NAME" -c "SELECT setval('public.lieux_id_seq', COALESCE((SELECT MAX(id) FROM public.lieux), 1));" || true
-sudo -u postgres psql -d "$DB_NAME" -c "\copy public.gabarits(reference_catalogue, categorie, nom_descriptif, caracteristiques) FROM '/usr/share/trace/gabarits.csv' DELIMITER ',' CSV HEADER;" || true
+sudo -u postgres psql -d "$DB_NAME" -c "\copy public.gabarits(reference_catalogue, categorie, nom_descriptif, caracteristiques, photo_base64) FROM '/usr/share/trace/gabarits.csv' DELIMITER ',' CSV HEADER;" || true
 sudo -u postgres psql -d "$DB_NAME" -c "\copy public.mobiliers(id_metier, gabarit_id, lieu_id, code_sages, statut, remarques) FROM '/usr/share/trace/mobiliers.csv' DELIMITER ',' CSV HEADER;" || true
 
 echo "Mise en place de la séquence d'ID Métier..."
