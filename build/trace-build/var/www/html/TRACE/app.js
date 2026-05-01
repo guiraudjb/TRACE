@@ -1048,6 +1048,59 @@ const GabaritCtrl = {
 
 
 // --- ADMINISTRATION ---
+// --- UTILITAIRE DE MODALE MOT DE PASSE ---
+
+const PasswordModalCtrl = {
+    /**
+     * Ouvre la modale et retourne une Promesse résolue avec le mot de passe, ou null si annulé.
+     */
+    requestPassword(titre, description) {
+        return new Promise((resolve) => {
+            const modalElement = document.getElementById('modal-password');
+            const form = document.getElementById('form-modal-password');
+            const input = document.getElementById('modal-password-input');
+            const titleEl = document.getElementById('modal-password-title-text');
+            const descEl = document.getElementById('modal-password-desc');
+
+            // 1. Mise à jour du contenu
+            titleEl.textContent = titre;
+            descEl.textContent = description;
+            input.value = ''; // On vide le champ par sécurité
+
+            // 2. Fonctions de nettoyage et de résolution
+            const cleanup = () => {
+                form.removeEventListener('submit', onSubmit);
+                modalElement.removeEventListener('dsfr.conceal', onCancel);
+            };
+
+            const onSubmit = (e) => {
+                e.preventDefault();
+                const pwd = input.value;
+                cleanup();
+                // Fermeture propre via l'API DSFR
+                dsfr(modalElement).modal.conceal(); 
+                resolve(pwd);
+            };
+
+            const onCancel = () => {
+                cleanup();
+                resolve(null); // L'utilisateur a cliqué sur annuler ou la croix
+            };
+
+            // 3. Attachement des événements
+            form.addEventListener('submit', onSubmit);
+            // L'événement 'dsfr.conceal' est déclenché par le DSFR quand la modale se ferme
+            modalElement.addEventListener('dsfr.conceal', onCancel, { once: true });
+
+            // 4. Ouverture de la modale via l'API DSFR
+            dsfr(modalElement).modal.disclose();
+            
+            // 5. Focus automatique sur l'input pour l'ergonomie
+            setTimeout(() => input.focus(), 100);
+        });
+    }
+};
+
 const AdminCtrl = {
     async init() {
         if (State.user.role !== 'administrateur') return;
@@ -1093,9 +1146,14 @@ const AdminCtrl = {
         e.preventDefault();
         const email = document.getElementById('new-user-email').value.trim();
         const role = document.getElementById('new-user-role').value;
-        const pwd = prompt(`Veuillez définir un mot de passe initial pour ${email} :`);
         
-        if (!pwd) return;
+        // Remplacement du prompt()
+        const pwd = await PasswordModalCtrl.requestPassword(
+            "Nouveau compte", 
+            `Veuillez définir un mot de passe initial pour l'agent ${email} :`
+        );
+        
+        if (!pwd) return; // Si null (annulé), on arrête tout
 
         try {
             const res = await API.fetch(`/rpc/creer_utilisateur`, { 
@@ -1104,7 +1162,6 @@ const AdminCtrl = {
                 body: JSON.stringify({ _email: email, _password: pwd, _role: role }) 
             });
             
-            // NOUVEAU : On lit et on affiche l'erreur exacte de la base de données
             if (!res.ok) {
                 const errorData = await res.json().catch(() => ({}));
                 const serverMsg = errorData.message || errorData.details || "Erreur serveur HTTP " + res.status;
@@ -1118,7 +1175,7 @@ const AdminCtrl = {
             UI.showAlert("Erreur API/SQL", err.message, "error"); 
         }
     },
-
+    
     async deleteUser(email) {
         if (!confirm(`Révoquer l'accès pour ${email} ?`)) return;
         try {
@@ -1129,14 +1186,26 @@ const AdminCtrl = {
     },
 
     async resetUserPwd(email) {
-        const nouveauMdp = prompt(`Nouveau mot de passe pour ${email} :`);
-        if (!nouveauMdp) return;
-        try {
-            await API.fetch(`/rpc/reinitialiser_mdp`, { method: 'POST', headers: API.getHeaders(), body: JSON.stringify({ _email: email, _new_password: nouveauMdp }) });
-            UI.showAlert("Succès", "Mot de passe mis à jour.", "success");
-        } catch (err) { UI.showAlert("Erreur", "Réinitialisation impossible.", "error"); }
-    },
+        // Remplacement du prompt()
+        const nouveauMdp = await PasswordModalCtrl.requestPassword(
+            "Réinitialisation", 
+            `Veuillez saisir le nouveau mot de passe pour ${email} :`
+        );
+        
+        if (!nouveauMdp) return; // Si annulé
 
+        try {
+            await API.fetch(`/rpc/reinitialiser_mdp`, { 
+                method: 'POST', 
+                headers: API.getHeaders(), 
+                body: JSON.stringify({ _email: email, _new_password: nouveauMdp }) 
+            });
+            UI.showAlert("Succès", "Mot de passe mis à jour.", "success");
+        } catch (err) { 
+            UI.showAlert("Erreur", "Réinitialisation impossible.", "error"); 
+        }
+    },
+    
     // UA & Lieux
     exportUaCSV() {
         if (State.referentiels.structures.length === 0) { UI.showAlert("Export", "Aucune donnée.", "warning"); return; }

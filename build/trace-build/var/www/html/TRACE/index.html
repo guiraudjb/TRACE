@@ -561,10 +561,47 @@
         </section>
     </main>
 
+<!-- Modale de saisie de mot de passe sécurisée -->
+<dialog id="modal-password" class="fr-modal" role="dialog" aria-labelledby="modal-password-title">
+    <div class="fr-container fr-container--fluid fr-container-md">
+        <div class="fr-grid-row fr-grid-row--center">
+            <div class="fr-col-12 fr-col-md-8 fr-col-lg-6">
+                <div class="fr-modal__body">
+                    <div class="fr-modal__header">
+                        <button class="fr-btn--close fr-btn" title="Fermer la fenêtre modale" aria-controls="modal-password">Fermer</button>
+                    </div>
+                    <div class="fr-modal__content">
+                        <h1 id="modal-password-title" class="fr-modal__title">
+                            <span class="fr-icon-lock-fill fr-icon--lg" aria-hidden="true"></span>
+                            <span id="modal-password-title-text">Saisie du mot de passe</span>
+                        </h1>
+                        <p id="modal-password-desc">Veuillez définir un mot de passe.</p>
+                        
+                        <form id="form-modal-password">
+                            <div class="fr-input-group">
+                                <label class="fr-label" for="modal-password-input">Mot de passe</label>
+                                <input class="fr-input" type="password" id="modal-password-input" required minlength="8" autocomplete="new-password">
+                            </div>
+                            <div class="fr-mt-4w" style="display: flex; justify-content: flex-end; gap: 1rem;">
+                                <!-- Le bouton Annuler ferme la modale via aria-controls -->
+                                <button type="button" class="fr-btn fr-btn--secondary" aria-controls="modal-password">Annuler</button>
+                                <button type="submit" class="fr-btn fr-icon-check-line fr-btn--icon-left">Valider</button>
+                            </div>
+                        </form>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</dialog>
+
+
+
     <script type="module" src="dsfr-v1.14.3/dist/dsfr.module.min.js"></script>
     <script nomodule src="dsfr-v1.14.3/dist/dsfr.nomodule.min.js"></script>
 
     <script src="app.js" defer></script>
+    
 </body>
 
 </html>
