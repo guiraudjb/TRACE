@@ -13,12 +13,13 @@ const CONFIG = {
 };
 
 const State = {
-    jwt: sessionStorage.getItem('trace_jwt') || null,
     user: null,
     appConfig: {
         administration: "",
         direction: ""
     },
+    
+    
     
     // Référentiels mis en cache
     referentiels: { gabarits: [], structures: [], lieux: [] },
@@ -40,19 +41,26 @@ const State = {
         audit: { data: [], total: 0, page: 1, filters: { query: '' } }
     },
 
-    initUser() {
-        if (!this.jwt) return false;
+    
+    async fetchUser() {
         try {
-            const base64Url = this.jwt.split('.')[1];
-            const base64 = base64Url.replace(/-/g, '+').replace(/_/g, '/');
-            const payload = JSON.parse(decodeURIComponent(atob(base64).split('').map(c => '%' + ('00' + c.charCodeAt(0).toString(16)).slice(-2)).join('')));
+            // 1. On force la méthode POST pour que PostgREST accepte l'appel RPC
+            const res = await fetch(`${CONFIG.API_URL}/rpc/me`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' }
+            });
             
-            if (payload.exp < Math.floor(Date.now() / 1000)) throw new Error("Expiré");
-            this.user = payload;
+            if (!res.ok) return false;
+            
+            const data = await res.json();
+            
+            // 2. Si le serveur répond 'null', cela signifie : "Pas de cookie valide"
+            if (!data) return false; 
+            
+            // 3. Sinon, on enregistre les données de l'utilisateur
+            this.user = data;
             return true;
         } catch (e) {
-            this.jwt = null;
-            sessionStorage.removeItem('trace_jwt');
             return false;
         }
     }
@@ -63,13 +71,12 @@ const State = {
 // ============================================================================
 const API = {
     getHeaders(customHeaders = {}) {
-        if (!State.initUser()) {
+        if (!State.user) {
             AuthCtrl.logout("Votre session a expiré.");
             throw new Error("Session invalide");
         }
         return {
             'Content-Type': 'application/json',
-            'Authorization': `Bearer ${State.jwt}`,
             'Prefer': 'return=representation',
             ...customHeaders
         };
@@ -246,20 +253,21 @@ const AuthCtrl = {
             });
             
             if (!res.ok) throw new Error("Identifiants incorrects ou serveur injoignable");
-            const data = await res.json();
-            
-            State.jwt = data.token;
-            sessionStorage.setItem('trace_jwt', data.token);
-            App.start(); 
+            location.reload();
         } catch (err) { UI.showAlert("Erreur", err.message, "error"); }
     },
 
-    logout(msg) {
-        State.jwt = null;
+    async logout(msg) {
+        try {
+            await fetch(`${CONFIG.API_URL}/rpc/logout`, { method: 'POST' });
+        } catch(e) {
+            console.warn("Échec de la déconnexion côté serveur");
+        }
+
+        // Nettoyage local
         State.user = null;
-        sessionStorage.removeItem('trace_jwt');
         if (msg) alert(msg);
-        location.reload();
+        location.reload(); // Redirige vers l'écran de connexion
     }
 };
 
@@ -1665,16 +1673,20 @@ const App = {
         
         await API.loadConfig();
 
-        if (!State.initUser()) {
+        // NOUVEAU : On interroge le serveur pour valider le cookie HttpOnly
+        const estConnecte = await State.fetchUser();
+
+        if (!estConnecte) {
             document.getElementById('view-login').classList.add('active');
             document.getElementById('view-app').classList.remove('active');
             return; 
         }
 
+        // Si on arrive ici, l'utilisateur est reconnu par le serveur (cookie valide)
         document.getElementById('view-login').classList.remove('active');
         document.getElementById('view-app').classList.add('active');
         document.getElementById('logout-btn-container').style.display = 'block';
-
+        
         // GESTION DES RÔLES ET DE L'AFFICHAGE
         if (State.user.role === 'administrateur') {
             document.getElementById('tab-admin').style.display = 'block';

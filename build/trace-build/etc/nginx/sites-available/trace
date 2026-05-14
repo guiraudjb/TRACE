@@ -21,12 +21,26 @@ server {
     }
 
     location /api/ {
+        # 1. On prépare un en-tête vide par défaut
+        set $auth_header "";
+        
+        # 2. Si le cookie existe, on construit la chaîne "Bearer XXX" complète
+        if ($http_cookie ~* "trace_token=([^;]+)") {
+            set $auth_header "Bearer $1";
+        }
+
+        # 3. NOUVEAU : Ignorer l'ancien cookie si on tente de se connecter
+        if ($request_uri ~* "^/api/rpc/login") {
+            set $auth_header "";
+        }
+        
+        # 4. Nginx ignorera cet en-tête si $auth_header est vide !
+        proxy_set_header Authorization $auth_header;
+
         proxy_pass http://127.0.0.1:3000/;
+        
         proxy_cookie_path / "/api/; HttpOnly; Secure; SameSite=Strict";
         proxy_set_header Host $host;
-        proxy_set_header X-Real-IP $remote_addr;
-        proxy_set_header X-Forwarded-For $proxy_add_x_forwarded_for;
-        proxy_set_header X-Forwarded-Proto $scheme;
         proxy_hide_header X-Powered-By;
         server_tokens off;
     }

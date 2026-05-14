@@ -48,14 +48,49 @@ BEGIN
   RETURN header_b64 || '.' || payload_b64 || '.' || signature;
 END;$$ LANGUAGE plpgsql;
 
-CREATE OR REPLACE FUNCTION public.login(email text, password text) RETURNS public.jwt_token AS $$DECLARE
-  _role text; _id int; result public.jwt_token;
+CREATE OR REPLACE FUNCTION public.login(email text, password text) RETURNS public.jwt_token AS $$
+DECLARE
+  _role text; _id int; _token text; result public.jwt_token;
 BEGIN
-  SELECT u.role, u.id INTO _role, _id FROM public.utilisateurs u WHERE u.email = login.email AND u.mot_de_passe_hash = crypt(login.password, u.mot_de_passe_hash);
+  SELECT u.role, u.id INTO _role, _id FROM public.utilisateurs u 
+  WHERE u.email = login.email AND u.mot_de_passe_hash = crypt(login.password, u.mot_de_passe_hash);
+  
   IF _role IS NULL THEN RAISE EXCEPTION 'Identifiants incorrects'; END IF;
-  result.token := auth.sign_jwt(json_build_object('role', _role, 'user_id', _id, 'email', login.email, 'exp', extract(epoch from now())::integer + 28800), '__JWT_SECRET__');
+  
+  _token := auth.sign_jwt(json_build_object('role', _role, 'user_id', _id, 'email', login.email, 'exp', extract(epoch from now())::integer + 28800), '__JWT_SECRET__');
+  
+  -- On définit l'en-tête Set-Cookie pour PostgREST
+  -- Note: PostgREST permet de définir des headers via 'response.headers'
+  perform set_config('response.headers', '[{"Set-Cookie": "trace_token=' || _token || '; Path=/api; HttpOnly; Secure; SameSite=Strict"}]', true);
+
+  result.token := 'Session démarrée'; -- Le contenu importe peu, le token est dans le cookie
   RETURN result;
 END;$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE OR REPLACE FUNCTION public.logout() RETURNS void AS $$
+BEGIN
+  -- On renvoie un en-tête Set-Cookie qui écrase l'ancien et expire immédiatement (Max-Age=0)
+  perform set_config('response.headers', '[{"Set-Cookie": "trace_token=; Path=/api; HttpOnly; Secure; SameSite=Strict; Max-Age=0"}]', true);
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+CREATE OR REPLACE FUNCTION public.me() RETURNS json AS $$
+DECLARE
+  _email text;
+  _role text;
+BEGIN
+  -- PostgREST lit automatiquement le cookie et peuple ces variables
+  _email := current_setting('request.jwt.claims', true)::json->>'email';
+  _role := current_setting('request.jwt.claims', true)::json->>'role';
+  
+  IF _email IS NULL THEN 
+      RETURN NULL;
+  END IF;
+  
+  RETURN json_build_object('email', _email, 'role', _role);
+END;
+$$ LANGUAGE plpgsql;
+
 
 -- Administration
 CREATE OR REPLACE FUNCTION public.creer_utilisateur(_email TEXT, _password TEXT, _role TEXT) RETURNS void AS $$BEGIN
@@ -125,6 +160,11 @@ REVOKE EXECUTE ON FUNCTION public.creer_utilisateur(text, text, text) FROM PUBLI
 GRANT EXECUTE ON FUNCTION public.creer_utilisateur(text, text, text) TO administrateur;
 REVOKE EXECUTE ON FUNCTION public.reinitialiser_mdp(text, text) FROM PUBLIC;
 GRANT EXECUTE ON FUNCTION public.reinitialiser_mdp(text, text) TO administrateur;
+-- Autoriser tout le monde (y compris les utilisateurs non connectés) à vérifier leur session
+GRANT EXECUTE ON FUNCTION public.me() TO divagil, agent, administrateur, lecteur;
+
+-- Autoriser la déconnexion
+GRANT EXECUTE ON FUNCTION public.logout() TO divagil, agent, administrateur, lecteur;
 
 -- Insertion Admin initial
 INSERT INTO utilisateurs (email, mot_de_passe_hash, nom_complet, role) 

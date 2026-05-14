@@ -102,6 +102,43 @@ chown -R www-data:www-data "$WEB_ROOT"
 ln -sf /etc/nginx/sites-available/trace /etc/nginx/sites-enabled/trace || true
 rm -f /etc/nginx/sites-enabled/default || true
 
+# ==============================================================================
+# 6. SÉCURISATION AVANCÉE (ANTI-BRUTEFORCE)
+# ==============================================================================
+echo "Mise en place de la sécurisation anti-bruteforce (Nginx + Fail2Ban)..."
+
+# 6.1 Configuration de la zone de Rate Limiting Nginx
+cat << EOF > /etc/nginx/conf.d/trace-ratelimit.conf
+# Zone mémoire pour limiter les tentatives de connexion TRACE (10Mo = ~160 000 IPs)
+limit_req_zone \$binary_remote_addr zone=login_limit:10m rate=3r/s;
+EOF
+
+# Note : L'installation de Fail2Ban est désormais gérée par les dépendances (DEBIAN/control)
+
+# 6.2 Création du filtre de détection Fail2Ban (Erreurs 401 sur le login)
+cat << EOF > /etc/fail2ban/filter.d/mobitrace-login.conf
+[Definition]
+failregex = ^<HOST> \- \- \[.*\] "POST /api/rpc/login HTTP.*" (400|401) .+$
+ignoreregex =
+EOF
+
+# 6.3 Création de la prison (Jail) Fail2Ban
+cat << EOF > /etc/fail2ban/jail.d/mobitrace-login.conf
+[mobitrace-login]
+enabled  = true
+port     = http,https
+filter   = mobitrace-login
+logpath  = /var/log/nginx/access.log
+maxretry = 5
+findtime = 600
+bantime  = 3600
+EOF
+
+# 6.4 Activation des services de sécurité
+systemctl restart fail2ban
+systemctl enable fail2ban
+
+
 systemctl daemon-reload
 systemctl enable trace-api
 systemctl stop trace-api || true
