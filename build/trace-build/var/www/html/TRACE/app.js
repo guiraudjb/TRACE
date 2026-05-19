@@ -275,11 +275,9 @@ const AuthCtrl = {
 const MobilierCtrl = {
     searchTimeout: null,
     
-    getGabaritId(inputId) {
-        const val = document.getElementById(inputId).value;
-        const safeVal = val.replace(/"/g, '\\"'); // Sécurité contre les guillemets dans les noms
-        const opt = document.querySelector(`#datalist-gabarits option[value="${safeVal}"]`);
-        return opt ? parseInt(opt.dataset.id) : null;
+    getGabaritId(selectId) {
+        const selectElement = document.getElementById(selectId);
+        return selectElement && selectElement.value ? parseInt(selectElement.value, 10) : null;
     },
 
     async init() {
@@ -460,6 +458,14 @@ const MobilierCtrl = {
     openCreateForm() {
         document.getElementById('form-mob-create').reset();
         document.getElementById('new-mob-id').value = "Auto-généré";
+        // 1. On fabrique un tableau temporaire avec le bon formatage visuel "Référence - Nom"
+        const gabaritsOptions = State.referentiels.gabarits.map(g => ({
+            id: g.id,
+            labelComplet: `${g.reference_catalogue} - ${g.nom_descriptif}`
+        }));
+        
+        // 2. On peuple le nouveau menu déroulant
+        UI.fillSelect('new-mob-gabarit-select', gabaritsOptions, 'id', 'labelComplet');
         UI.fillSelect('new-mob-ua', State.referentiels.structures, 'code_sages', 'libelle');
         UI.fillSelect('new-mob-lieu', State.referentiels.lieux, 'id', 'nom');
         UI.showView('view-mobilier-create', 'panel-mobilier');
@@ -482,8 +488,21 @@ const MobilierCtrl = {
 
     async handleCreate(e) {
         e.preventDefault();
-        const gabarit_id = this.getGabaritId('new-mob-gabarit-input');
-        if (!gabarit_id) { UI.showAlert("Erreur", "Veuillez sélectionner un modèle valide dans la liste.", "error"); return; }
+        
+        // 1. Verrouillage UX : Désactiver le bouton pour éviter les doubles-clics
+        const submitBtn = document.querySelector('#form-mob-create button[type="submit"]');
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerText = "Création en cours...";
+        }
+
+        const gabarit_id = this.getGabaritId('new-mob-gabarit-select');
+        if (!gabarit_id) { 
+            UI.showAlert("Erreur", "Veuillez sélectionner un modèle valide dans la liste.", "error"); 
+            if (submitBtn) { submitBtn.disabled = false; submitBtn.innerText = "Enregistrer le lot"; }
+            return; 
+        }
+
         const payload = {
             gabarit_id: gabarit_id,
             code_sages: document.getElementById('new-mob-ua').value,
@@ -493,26 +512,52 @@ const MobilierCtrl = {
         };
         const quantite = parseInt(document.getElementById('new-mob-quantite').value) || 1;
 
-        if (quantite > 100 && !confirm(`Créer ${quantite} équipements identiques ?`)) return;
+        if (quantite > 100 && !confirm(`Créer ${quantite} équipements identiques ?`)) {
+            if (submitBtn) { submitBtn.disabled = false; submitBtn.innerText = "Enregistrer le lot"; }
+            return;
+        }
 
         try {
             const payloads = Array(quantite).fill(payload);
             const res = await API.fetch(`/mobiliers`, { method: 'POST', headers: API.getHeaders(), body: JSON.stringify(payloads) });
-            if (!res.ok) throw new Error("Erreur création.");
             
-            UI.showAlert("Succès", `${quantite} équipement(s) créé(s).`, "success");
+            if (!res.ok) throw new Error("Erreur lors de la création.");
+            
+            // 2. EXTRACTION DES IDENTIFIANTS GÉNÉRÉS
+            const data = await res.json();
+            // On extrait les id_metier et on les trie par ordre alphabétique/numérique
+            const idsCrees = data.map(m => m.id_metier).sort();
+            
+            // 3. FORMATAGE DU MESSAGE DE RETOUR
+            let messageDetail = "";
+            if (idsCrees.length === 1) {
+                messageDetail = ` Numéro affecté : ${idsCrees[0]}.`;
+            } else if (idsCrees.length > 1) {
+                messageDetail = ` Série affectée : de ${idsCrees[0]} à ${idsCrees[idsCrees.length - 1]}.`;
+            }
+
+            UI.showAlert("Succès", `${quantite} équipement(s) créé(s).${messageDetail}`, "success");
+            
             await this.loadData();
             UI.showView('view-mobilier-list', 'panel-mobilier');
-        } catch (err) { UI.showAlert("Erreur", err.message, "error"); }
+        } catch (err) { 
+            UI.showAlert("Erreur", err.message, "error"); 
+        } finally {
+            // 4. Libération du bouton quoi qu'il arrive (succès ou erreur)
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerText = "Enregistrer le lot";
+            }
+        }
     },
-
+    
     async handleEdit(e) {
         e.preventDefault();
         const uuid = document.getElementById('edit-mob-uuid').value;
         const idMetier = document.getElementById('edit-mob-id').value;
         if (!/^MOB-\d{6}$/.test(idMetier)) { UI.showAlert("Erreur", "ID métier mal formé.", "error"); return; }
         
-        const gabarit_id = this.getGabaritId('edit-mob-gabarit-input');
+        const gabarit_id = this.getGabaritId('edit-mob-gabarit-select');
         if (!gabarit_id) { UI.showAlert("Erreur", "Veuillez sélectionner un modèle valide dans la liste.", "error"); return; }
 
         const payload = {

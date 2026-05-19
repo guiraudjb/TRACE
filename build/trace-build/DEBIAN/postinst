@@ -28,6 +28,29 @@ mkdir -p "$BACKUP_DIR"
 # On s'assure que PostgreSQL aura les droits d'écriture une fois le dossier monté
 chown postgres:postgres "$BACKUP_DIR" 2>/dev/null || true
 
+echo "Application des droits sur les utilitaires de sauvegarde et tâches planifiées..."
+
+# 1. Rendre les scripts bash exécutables (755)
+if [ -f /usr/local/bin/trace_backup.sh ]; then
+    chmod +x /usr/local/bin/trace_backup.sh
+    chown postgres:postgres /usr/local/bin/trace_backup.sh
+fi
+
+if [ -f /usr/local/bin/trace_restore.sh ]; then
+    chmod 755 /usr/local/bin/trace_restore.sh
+fi
+
+# 2. Sécuriser les tâches planifiées Cron (Exigence stricte : propriétaire root, droits 644)
+if [ -f /etc/cron.d/trace_backup ]; then
+    chown root:root /etc/cron.d/trace_backup
+    chmod 644 /etc/cron.d/trace_backup
+fi
+
+if [ -f /etc/cron.d/trace_purge_logs ]; then
+    chown root:root /etc/cron.d/trace_purge_logs
+    chmod 644 /etc/cron.d/trace_purge_logs
+fi
+
 # ==============================================================================
 # 2. INITIALISATION POSTGRESQL & SCHÉMA
 # ==============================================================================
