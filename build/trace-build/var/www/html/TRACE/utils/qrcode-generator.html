@@ -46,12 +46,12 @@
         .label {
             display: flex; flex-direction: column; align-items: center; justify-content: center;
             box-sizing: border-box; overflow: hidden; padding: 1mm;
-            /* Repère très léger à l'écran par défaut (invisible à l'impression) */
-            outline: 1px dashed #e8e8e8; outline-offset: -1px;
+            /* Remplacement de outline par border pour garantir l'impression */
+            border: 1px dashed #e8e8e8;
         }
 
         /* Classe ajoutée si l'option "Pointillés" est cochée */
-        .label.show-cut-lines { outline: 1px dashed #888; }
+        .label.show-cut-lines { border: 1px dashed #888; }
 
         .label-row { display: flex; flex-direction: row; align-items: center; justify-content: space-around; width: 100%; height: 85%; }
         .logo-box { display: flex; align-items: center; justify-content: center; }
@@ -65,9 +65,9 @@
             .page-a4 { box-shadow: none; margin: 0; }
             
             /* Supprime les repères d'écran */
-            .label { outline: none; }
+            .label { border: none; }
             /* Force l'affichage des pointillés légers si l'option est cochée */
-            .label.show-cut-lines { outline: 0.5pt dashed #999 !important; }
+            .label.show-cut-lines { border: 0.5pt dashed #999 !important; }
             
             @page { size: A4; margin: 0; }
         }
