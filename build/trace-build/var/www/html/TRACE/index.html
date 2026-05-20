@@ -198,9 +198,10 @@
                             <form id="form-mob-edit">
                                 <input type="hidden" id="edit-mob-uuid">
                                 <div class="fr-input-group"><label class="fr-label">Identifiant métier</label><input class="fr-input" type="text" id="edit-mob-id" readonly></div>
-                                <div class="fr-input-group">
-                                    <label class="fr-label">Modèle (Recherche par référence ou nom)</label>
-                                    <input class="fr-input" type="text" id="edit-mob-gabarit-input" list="datalist-gabarits" placeholder="Commencez à taper..." required autocomplete="off">
+                                <div class="fr-select-group">
+                                    <label class="fr-label" for="edit-mob-gabarit-select">Modèle</label>
+                                    <select class="fr-select" id="edit-mob-gabarit-select" required>
+                                        </select>
                                 </div>
                                 <div class="fr-grid-row fr-grid-row--gutters">
                                     <div class="fr-col-12 fr-col-md-6"><div class="fr-select-group"><label class="fr-label">Affectation</label><select class="fr-select" id="edit-mob-ua" required></select></div></div>

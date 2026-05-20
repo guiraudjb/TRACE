@@ -195,6 +195,41 @@ $$ LANGUAGE plpgsql SECURITY DEFINER;
 
 CREATE TRIGGER trig_audit_mobiliers AFTER INSERT OR UPDATE OR DELETE ON public.mobiliers FOR EACH ROW EXECUTE FUNCTION public.log_mobilier_action();
 
+
+-- =============================================================================
+-- SÉCURISATION DES DROITS MÉTIER (CONTRÔLE DES RÔLES EN MISE À JOUR) 20/05/2026 19:17
+-- =============================================================================
+
+-- 1. Création de la fonction de contrôle
+CREATE OR REPLACE FUNCTION public.check_mobilier_update_rights()
+RETURNS TRIGGER AS $$
+DECLARE
+    v_role TEXT;
+BEGIN
+    -- On lit le rôle depuis le jeton sécurisé
+    BEGIN 
+        v_role := current_setting('request.jwt.claims', true)::json->>'role'; 
+    EXCEPTION WHEN OTHERS THEN 
+        v_role := 'agent'; -- Sécurité par défaut
+    END;
+
+    -- Si le gabarit a changé ET que l'utilisateur n'est pas admin, on bloque
+    IF OLD.gabarit_id IS DISTINCT FROM NEW.gabarit_id AND v_role != 'administrateur' THEN
+        RAISE EXCEPTION 'ACTION_BLOQUEE: Seul un administrateur peut modifier le modèle (gabarit) d''un équipement.';
+    END IF;
+
+    RETURN NEW;
+END;
+$$ LANGUAGE plpgsql SECURITY DEFINER;
+
+-- 2. Déclenchement automatique AVANT chaque modification de meuble
+CREATE TRIGGER trig_check_mob_update
+BEFORE UPDATE ON public.mobiliers
+FOR EACH ROW EXECUTE FUNCTION public.check_mobilier_update_rights();
+
+
+
+
 CREATE OR REPLACE FUNCTION public.log_admin_action() RETURNS TRIGGER AS $$
 DECLARE
     v_user VARCHAR(255); v_action VARCHAR(50); v_cible VARCHAR(50); v_details TEXT := '';

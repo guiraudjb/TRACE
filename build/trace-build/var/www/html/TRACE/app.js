@@ -476,8 +476,28 @@ const MobilierCtrl = {
         if (!mob) return;
         document.getElementById('edit-mob-uuid').value = mob.uuid;
         document.getElementById('edit-mob-id').value = mob.id_metier;
-        const gab = State.maps.g.get(mob.gabarit_id);
-        document.getElementById('edit-mob-gabarit-input').value = gab ? `${gab.reference_catalogue} - ${gab.nom_descriptif}` : "";
+        // --- ALIGNEMENT COMPOSANT SELECT ---
+        const gabaritsOptions = State.referentiels.gabarits.map(g => ({
+            id: g.id,
+            labelComplet: `${g.reference_catalogue} - ${g.nom_descriptif}`
+        }));
+        UI.fillSelect('edit-mob-gabarit-select', gabaritsOptions, 'id', 'labelComplet', { selected: mob.gabarit_id });
+        
+        
+        // ==============================================================
+        // NOUVEAU : VERROUILLAGE DU CHAMP SELON LE RÔLE
+        // ==============================================================
+        const selectGabarit = document.getElementById('edit-mob-gabarit-select');
+        if (State.user.role !== 'administrateur') {
+            selectGabarit.disabled = true;
+            // Ajout UX : Une infobulle explique pourquoi le champ est grisé
+            selectGabarit.title = "Seul un administrateur peut modifier le modèle d'un équipement existant.";
+        } else {
+            selectGabarit.disabled = false;
+            selectGabarit.title = "";
+        }
+        
+        
         UI.fillSelect('edit-mob-ua', State.referentiels.structures, 'code_sages', 'libelle', { selected: mob.code_sages });
         UI.fillSelect('edit-mob-lieu', State.referentiels.lieux, 'id', 'nom', { selected: mob.lieu_id });
         document.getElementById('edit-mob-statut').value = mob.statut;
@@ -553,12 +573,29 @@ const MobilierCtrl = {
     
     async handleEdit(e) {
         e.preventDefault();
+        
+        // Verrouillage UX de sécurité contre les clics multiples
+        const submitBtn = document.querySelector('#form-mob-edit button[type="submit"]');
+        if (submitBtn) {
+            submitBtn.disabled = true;
+            submitBtn.innerText = "Sauvegarde en cours...";
+        }
+
         const uuid = document.getElementById('edit-mob-uuid').value;
         const idMetier = document.getElementById('edit-mob-id').value;
-        if (!/^MOB-\d{6}$/.test(idMetier)) { UI.showAlert("Erreur", "ID métier mal formé.", "error"); return; }
+        if (!/^MOB-\d{6}$/.test(idMetier)) { 
+            UI.showAlert("Erreur", "ID métier mal formé.", "error"); 
+            if (submitBtn) { submitBtn.disabled = false; submitBtn.innerText = "Sauvegarder"; }
+            return; 
+        }
         
+        // --- EXTRACTION DEPUIS LE COMPOSANT SELECT ---
         const gabarit_id = this.getGabaritId('edit-mob-gabarit-select');
-        if (!gabarit_id) { UI.showAlert("Erreur", "Veuillez sélectionner un modèle valide dans la liste.", "error"); return; }
+        if (!gabarit_id) { 
+            UI.showAlert("Erreur", "Veuillez sélectionner un modèle valide dans la liste.", "error"); 
+            if (submitBtn) { submitBtn.disabled = false; submitBtn.innerText = "Sauvegarder"; }
+            return; 
+        }
 
         const payload = {
             gabarit_id: gabarit_id,
@@ -574,9 +611,17 @@ const MobilierCtrl = {
             UI.showAlert("Succès", "Équipement mis à jour.", "success");
             await this.loadData();
             UI.showView('view-mobilier-list', 'panel-mobilier');
-        } catch (err) { UI.showAlert("Erreur", err.message, "error"); }
+        } catch (err) { 
+            UI.showAlert("Erreur", err.message, "error"); 
+        } finally {
+            // Libération systématique du bouton
+            if (submitBtn) {
+                submitBtn.disabled = false;
+                submitBtn.innerText = "Sauvegarder";
+            }
+        }
     },
-
+    
     async handleDelete() {
         const uuid = document.getElementById('edit-mob-uuid').value;
         if (!confirm("Supprimer définitivement cet équipement ?")) return;
