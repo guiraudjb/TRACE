@@ -1,0 +1,205 @@
+<!DOCTYPE html>
+<html lang="fr" data-fr-theme="light">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>mobiTrace - Sélection du Type d'Étiquettes</title>
+
+    <link rel="stylesheet" href="../dsfr-v1.14.3/dist/dsfr.min.css">
+    <link rel="stylesheet" href="../dsfr-v1.14.3/dist/utility/utility.main.min.css">
+
+    <style>
+        body {
+            background-color: #f6f6f6;
+        }
+        .trace-container {
+            max-width: 1000px; /* Élargi pour accommoder 3 cartes */
+            margin: 0 auto;
+        }
+        .fr-card__title a {
+            background-image: none !important;
+        }
+        .report-section { background-color: #fff; border: 1px solid #ddd; padding: 2rem; margin-top: 3rem; }
+    </style>
+</head>
+
+<body>
+    <header role="banner" class="fr-header">
+        <div class="fr-header__body">
+            <div class="fr-container">
+                <div class="fr-header__body-row">
+                    <div class="fr-header__brand">
+                        <div class="fr-header__brand-top">
+                            <div class="fr-header__logo">
+                                <p class="fr-logo">République<br>Française</p>
+                            </div>
+                        </div>
+                        <div class="fr-header__service">
+                            <p class="fr-header__service-title">mobiTrace</p>
+                            <p class="fr-header__service-tagline">Module de génération d'étiquettes d'inventaire</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main role="main" class="fr-container trace-container fr-my-6w">
+        <div class="fr-grid-row">
+            <div class="fr-col-12 fr-mb-4w">
+                <h1 class="fr-h2">Édition des étiquettes de marquage</h1>
+                <p class="fr-text--lg">Sélectionnez le format technologique ou le prestataire adapté à votre matériel d'impression et aux contraintes d'exposition de votre parc mobilier.</p>
+            </div>
+        </div>
+
+        <div class="fr-grid-row fr-grid-row--gutters">
+            <div class="fr-col-12 fr-col-md-4">
+                <div class="fr-card fr-enlarge-link" style="height: 100%;">
+                    <div class="fr-card__body">
+                        <div class="fr-card__content">
+                            <h2 class="fr-card__title">
+                                <a href="./codebar-generator.html">Impression en régie (Code-Barres)</a>
+                            </h2>
+                            <p class="fr-card__desc">Idéal pour l'impression séquentielle industrielle (Code 128) sur étiquettes de type Dymo LW Durable ou imprimantes à transfert thermique (Zebra).</p>
+                        </div>
+                    </div>
+                    <div class="fr-card__header">
+                        <div class="fr-card__img" style="background-color: #eef1f2; display: flex; align-items: center; justify-content: center; font-size: 3rem; padding: 2rem;">
+                            <span class="fr-icon-barcode-line" aria-hidden="true" style="color: #000091;"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="fr-col-12 fr-col-md-4">
+                <div class="fr-card fr-enlarge-link" style="height: 100%;">
+                    <div class="fr-card__body">
+                        <div class="fr-card__content">
+                            <h2 class="fr-card__title">
+                                <a href="./qrcode-generator.html">Impression en régie (QR Codes A4)</a>
+                            </h2>
+                            <p class="fr-card__desc">Adapté pour l'impression par planches d'étiquettes (A4) sur imprimante laser de bureau standard.</p>
+                        </div>
+                    </div>
+                    <div class="fr-card__header">
+                        <div class="fr-card__img" style="background-color: #eef1f2; display: flex; align-items: center; justify-content: center; font-size: 3rem; padding: 2rem;">
+                            <span class="fr-icon-qr-code-line" aria-hidden="true" style="color: #000091;"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="fr-col-12 fr-col-md-4">
+                <div class="fr-card fr-enlarge-link" style="height: 100%;">
+                    <div class="fr-card__body">
+                        <div class="fr-card__content">
+                            <h2 class="fr-card__title">
+                                <a href="./copytop-qrcode-generator.html">Prestataire externe (COPYTOP)</a>
+                            </h2>
+                            <p class="fr-card__desc">Génère un fichier PDF pré-formaté avec traits de coupe et fonds perdus, prêt à être envoyé au prestataire commercial pour l'impression de lots industriels.</p>
+                        </div>
+                    </div>
+                    <div class="fr-card__header">
+                        <div class="fr-card__img" style="background-color: #eef1f2; display: flex; align-items: center; justify-content: center; font-size: 3rem; padding: 2rem;">
+                            <span class="fr-icon-printer-line" aria-hidden="true" style="color: #000091;"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <section class="report-section">
+            <h2 class="fr-h3">Note technique : Analyse d'aide à la décision (Projet mobiTrace)</h2>
+            <p>Conformément aux impératifs de gestion des actifs de la DGFiP, cette analyse compare les solutions techniques pour un parc cible de 5 000 actifs.</p>
+            
+            <h3 class="fr-h4">1. Matrice comparative des solutions</h3>
+            <div class="fr-table">
+                <table>
+                    <thead>
+                        <tr>
+                            <th>Critère</th>
+                            <th>Thermique Direct (dymo labelwritter LW550)</th>
+                            <th>Transfert Thermique (Zebra ZD421T)</th>
+                            <th>Externalisation (Copytop)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        <tr>
+                            <td>Durabilité (5-10 ans)</td>
+                            <td>Faible (Jaunissement)</td>
+                            <td>Excellente (Résine)</td>
+                            <td>Très élevée</td>
+                        </tr>
+                        <tr>
+                            <td>Résistance (UV/Chimie)</td>
+                            <td>Inexistante</td>
+                            <td>Optimale</td>
+                            <td>Optimale</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+
+            <h3 class="fr-h4">2. Justification du choix technologique</h3>
+            <p>Le <strong>Transfert Thermique</strong> est la solution retenue pour les raisons suivantes :</p>
+            <ul class="fr-list">
+                <li><strong>Intégrité des données :</strong> Le ruban encreur "résine pure" permet une fusion thermique dans le support Polyester (PET), rendant le marquage inaltérable face aux produits d'entretien et aux rayonnements UV (exposition en vitrine).</li>
+                <li><strong>Optimisation budgétaire :</strong> Malgré un investissement matériel initial (CAPEX) plus élevé, l'économie réalisée sur le coût unitaire des consommables (OPEX) compense l'investissement dès la première année. Le TCO est le plus compétitif du marché pour un volume de 5 000 actifs.</li>
+                <li><strong>Agilité opérationnelle :</strong> La maîtrise de la chaîne d'impression en interne (régie) permet d'étiqueter les nouveaux actifs immédiatement lors de leur réception, évitant les ruptures de suivi dans la base de données mobiTrace.</li>
+            </ul>
+
+            <h3 class="fr-h4">3. Préconisations techniques pour les achats</h3>
+            <p>Pour garantir la conformité, tout marché de fournitures devra spécifier :</p>
+            <ul class="fr-list">
+                <li><strong>Impression :</strong> Résolution minimale de 300 dpi pour garantir la lisibilité des QR Codes haute densité sur formats réduits (50x25 mm).</li>
+                <li><strong>Consommables :</strong> Support 100% Polyester (PET) avec adhésif industriel renforcé ("High Tack") et rubans encreurs type <strong>Résine pure</strong> (exclure les rubans "Cire" ou "Cire/Résine").</li>
+            </ul>
+        </section>
+        <div class="fr-grid-row fr-mt-4w">
+            <div class="fr-col-12">
+                <div class="fr-notice fr-notice--info">
+                    <div class="fr-container">
+                        <div class="fr-notice__body">
+                            <p class="fr-notice__title">Rappel de gestion : Conformément aux règles d'inventaire, veillez à utiliser des consommables synthétiques imputrescibles (polypropylène ou polyester) pour l'étiquetage durable des actifs physiques.</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+        <section class="fr-my-4w">
+    <h3 class="fr-h4">Glossaire financier pour le projet mobiTrace</h3>
+    <div class="fr-grid-row fr-grid-row--gutters">
+        
+        <div class="fr-col-12 fr-col-md-4">
+            <div class="fr-tile fr-tile--horizontal">
+                <div class="fr-tile__body">
+                    <h4 class="fr-tile__title">CAPEX (Capital Expenditure)</h4>
+                    <p class="fr-tile__desc">Dépenses d'investissement (ex: achat de l'imprimante). Ce sont les actifs durables amortis sur plusieurs années.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="fr-col-12 fr-col-md-4">
+            <div class="fr-tile fr-tile--horizontal">
+                <div class="fr-tile__body">
+                    <h4 class="fr-tile__title">OPEX (Operating Expenditure)</h4>
+                    <p class="fr-tile__desc">Dépenses de fonctionnement (ex: rubans résine, étiquettes). Coûts récurrents nécessaires à l'activité courante.</p>
+                </div>
+            </div>
+        </div>
+
+        <div class="fr-col-12 fr-col-md-4">
+            <div class="fr-tile fr-tile--horizontal">
+                <div class="fr-tile__body">
+                    <h4 class="fr-tile__title">TCO (Total Cost of Ownership)</h4>
+                    <p class="fr-tile__desc">Coût Total de Possession : <strong>CAPEX + Somme des OPEX</strong>. Indicateur clé pour mesurer la rentabilité réelle sur 5 ans.</p>
+                </div>
+            </div>
+        </div>
+
+    </div>
+</section>
+    </main>
+</body>
+
+</html>

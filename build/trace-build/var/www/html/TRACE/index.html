@@ -385,7 +385,7 @@
                                 <li><button class="fr-btn fr-btn--secondary" id="nav-admin-users">Utilisateurs</button></li>
                                 <li><button class="fr-btn fr-btn--secondary" id="nav-admin-ua">Services (UA)</button></li>
                                 <li><button class="fr-btn fr-btn--secondary" id="nav-admin-lieux">Lieux physiques</button></li>
-                                <li><button class="fr-btn fr-btn--secondary" onclick="window.open('./utils/qrcode-generator.html', '_blank')">Édition étiquettes</button></li>
+                                <li><button class="fr-btn fr-btn--secondary" onclick="window.open('./utils/etiquettes-generator.html', '_blank')">Édition étiquettes</button></li>
                                 <li><button class="fr-btn fr-btn--secondary fr-icon-delete-bin-line fr-btn--icon-left" id="nav-admin-rebut">Mise au rebut</button></li>
                                 <li><button class="fr-btn fr-btn--secondary fr-icon-history-line fr-btn--icon-left" id="nav-admin-audit">Audit</button></li>
                                 <li><button class="fr-btn fr-btn--secondary fr-icon-settings-5-line fr-btn--icon-left" id="nav-admin-config">En-têtes PV</button></li>
@@ -428,7 +428,41 @@
                                 <button id="btn-nav-create-ua" class="fr-btn fr-icon-add-circle-line fr-btn--icon-left">Nouveau service</button>
                             </div>
                         </div>
-                        <div class="trace-card"><div class="fr-table fr-table--bordered"><table><thead><tr><th>Code Sages</th><th>Libellé</th><th>Actions</th></tr></thead><tbody id="table-ua-body"></tbody></table></div></div>
+
+                        <div class="trace-card">
+                            <div class="fr-grid-row fr-grid-row--gutters fr-mb-2w">
+                                <div class="fr-col-12 fr-col-md-6">
+                                    <div class="fr-search-bar" role="search">
+                                        <input class="fr-input" placeholder="Rechercher un Code SAGES ou Libellé..." type="search" id="search-ua-input">
+                                        <button class="fr-btn" title="Rechercher">Rechercher</button>
+                                    </div>
+                                </div>
+                                <div class="fr-col-12 fr-col-md-6">
+                                    <select class="fr-select" id="filter-ua-lieu">
+                                        <option value="">Tous les lieux</option>
+                                    </select>
+                                </div>
+                            </div>
+                            
+                            <div class="fr-mb-2w fr-text--sm fr-text--bold" style="display:flex; justify-content: space-between;">
+                                <span id="ua-results-count">Chargement...</span>
+                                <button type="button" id="btn-reset-ua-filters" class="fr-btn fr-btn--tertiary-no-outline fr-btn--sm fr-icon-refresh-line fr-btn--icon-left">Réinitialiser</button>
+                            </div>
+
+                            <div class="fr-table fr-table--bordered">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th class="sortable-header" data-sort="code_sages" style="cursor:pointer;">Code SAGES <span id="icon-sort-ua-code_sages" class="sort-icon fr-icon-arrow-down-s-line"></span></th>
+                                            <th class="sortable-header" data-sort="libelle" style="cursor:pointer;">Libellé <span id="icon-sort-ua-libelle" class="sort-icon fr-icon-arrow-down-s-line" style="opacity:0;"></span></th>
+                                            <th>Lieu d'hébergement</th>
+                                            <th>Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="table-ua-body"></tbody>
+                                </table>
+                            </div>
+                        </div>
                     </div>
 
                     <div id="view-ua-form" class="sub-view">
@@ -468,9 +502,34 @@
                                 <button id="btn-nav-create-lieu" class="fr-btn fr-icon-add-circle-line fr-btn--icon-left">Nouveau lieu</button>
                             </div>
                         </div>
-                        <div class="trace-card"><div class="fr-table fr-table--bordered"><table><thead><tr><th>Désignation du bâtiment / site</th><th>Actions</th></tr></thead><tbody id="table-lieux-body"></tbody></table></div></div>
-                    </div>
+                        <div class="trace-card">
+                            <div class="fr-grid-row fr-grid-row--gutters fr-mb-2w">
+                                <div class="fr-col-12 fr-col-md-6">
+                                    <div class="fr-search-bar" role="search">
+                                        <input class="fr-input" placeholder="Rechercher un lieu..." type="search" id="search-lieux-input">
+                                        <button class="fr-btn" title="Rechercher">Rechercher</button>
+                                    </div>
+                                </div>
+                            </div>
+                            
+                            <div class="fr-mb-2w fr-text--sm fr-text--bold" style="display:flex; justify-content: space-between;">
+                                <span id="lieux-results-count">Chargement...</span>
+                                <button type="button" id="btn-reset-lieux-filters" class="fr-btn fr-btn--tertiary-no-outline fr-btn--sm fr-icon-refresh-line fr-btn--icon-left">Réinitialiser</button>
+                            </div>
 
+                            <div class="fr-table fr-table--bordered">
+                                <table>
+                                    <thead>
+                                        <tr>
+                                            <th class="sortable-header" data-sort="nom" style="cursor:pointer;">Désignation du bâtiment / site <span id="icon-sort-lieux-nom" class="sort-icon fr-icon-arrow-down-s-line"></span></th>
+                                            <th style="width: 15%">Actions</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody id="table-lieux-body"></tbody>
+                                </table>
+                            </div>
+                        </div>
+                    </div>
                     <div id="view-lieux-form" class="sub-view">
                         <button class="fr-btn fr-btn--secondary fr-icon-arrow-left-line fr-mb-4w btn-back-to-lieux">Retour</button>
                         <div class="trace-card">

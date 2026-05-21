@@ -1202,7 +1202,10 @@ const PasswordModalCtrl = {
 const AdminCtrl = {
     async init() {
         if (State.user.role !== 'administrateur') return;
+        State.admin.uaFilters = { query: '', lieu: '' };
+        State.admin.lieuxFilters = { query: '' };
         await this.loadUsers();
+        UI.fillSelect('filter-ua-lieu', State.referentiels.lieux, 'id', 'nom', { disablePlaceholder: false, placeholder: 'Tous les lieux' });
         this.renderUA();
         this.renderLieux();
     },
@@ -1342,19 +1345,82 @@ const AdminCtrl = {
         URL.revokeObjectURL(url);
     },
     
+    updateUaFilter(key, value) {
+        if (!State.admin.uaFilters) State.admin.uaFilters = { query: '', lieu: '' };
+        State.admin.uaFilters[key] = value.trim();
+        this.renderUA();
+    },
+
+    resetUaFilters() {
+        State.admin.uaFilters = { query: '', lieu: '' };
+        document.getElementById('search-ua-input').value = '';
+        document.getElementById('filter-ua-lieu').value = '';
+        this.renderUA();
+    },
+
+    toggleUaSort(columnName) {
+        if (State.admin.uaSortBy === columnName) {
+            State.admin.uaSortAsc = !State.admin.uaSortAsc;
+        } else {
+            State.admin.uaSortBy = columnName;
+            State.admin.uaSortAsc = true;
+        }
+        this.renderUA();
+    },
+    
     renderUA() {
         const tbody = document.getElementById('table-ua-body');
         tbody.innerHTML = '';
-        State.referentiels.structures.forEach(ua => {
-            const tr = document.createElement('tr');
-            tr.innerHTML = `<td class="fr-text--bold">${UI.escape(ua.code_sages)}</td><td>${UI.escape(ua.libelle)}</td><td><button class="fr-btn fr-btn--secondary fr-btn--sm fr-icon-edit-line btn-edit-ua"></button></td>`;
+
+        // 1. Filtrage en mémoire
+        let filteredData = State.referentiels.structures.filter(ua => {
+            const filters = State.admin.uaFilters || { query: '', lieu: '' };
             
-            // NOUVEAU : On branche le bouton d'édition
+            // Filtre Lieu
+            if (filters.lieu && String(ua.lieu_id) !== filters.lieu) return false;
+            
+            // Filtre Mot-clé (Code SAGES ou Libellé)
+            if (filters.query) {
+                const q = filters.query.toLowerCase();
+                const matchCode = ua.code_sages.toLowerCase().includes(q);
+                const matchLibelle = ua.libelle.toLowerCase().includes(q);
+                if (!matchCode && !matchLibelle) return false;
+            }
+            return true;
+        });
+
+        // 2. Tri en mémoire
+        const sortBy = State.admin.uaSortBy || 'code_sages';
+        const sortAsc = State.admin.uaSortAsc !== false; // true par défaut
+        
+        filteredData.sort((a, b) => {
+            let valA = (a[sortBy] || '').toString().toLowerCase();
+            let valB = (b[sortBy] || '').toString().toLowerCase();
+            if (valA < valB) return sortAsc ? -1 : 1;
+            if (valA > valB) return sortAsc ? 1 : -1;
+            return 0;
+        });
+
+        // 3. Génération du HTML
+        filteredData.forEach(ua => {
+            const lieu = State.maps.l.get(ua.lieu_id) || { nom: 'Non défini' };
+            const tr = document.createElement('tr');
+            tr.innerHTML = `
+                <td class="fr-text--bold">${UI.escape(ua.code_sages)}</td>
+                <td>${UI.escape(ua.libelle)}</td>
+                <td class="fr-text--sm">${UI.escape(lieu.nom)}</td>
+                <td><button class="fr-btn fr-btn--secondary fr-btn--sm fr-icon-edit-line btn-edit-ua"></button></td>
+            `;
             tr.querySelector('.btn-edit-ua').addEventListener('click', () => this.openEditUa(ua.code_sages));
             tbody.appendChild(tr);
         });
-    },
 
+        // 4. Mise à jour des icônes de tri et du compteur
+        UI.updateSortUI('ua', sortBy, sortAsc);
+        const countSpan = document.getElementById('ua-results-count');
+        if (countSpan) countSpan.innerText = `${filteredData.length} service(s) trouvé(s)`;
+    },
+    
     openCreateUa() {
         document.getElementById('form-ua-create').reset();
         UI.fillSelect('new-ua-lieu', State.referentiels.lieux, 'id', 'nom');
@@ -1427,15 +1493,68 @@ const AdminCtrl = {
     renderLieux() {
         const tbody = document.getElementById('table-lieux-body');
         tbody.innerHTML = '';
-        State.referentiels.lieux.forEach(l => {
+
+        // 1. Filtrage en mémoire
+        let filteredData = State.referentiels.lieux.filter(l => {
+            const filters = State.admin.lieuxFilters || { query: '' };
+            if (filters.query) {
+                const q = filters.query.toLowerCase();
+                return l.nom.toLowerCase().includes(q);
+            }
+            return true;
+        });
+
+        // 2. Tri en mémoire
+        const sortBy = State.admin.lieuxSortBy || 'nom';
+        const sortAsc = State.admin.lieuxSortAsc !== false; // true par défaut
+
+        filteredData.sort((a, b) => {
+            let valA = (a[sortBy] || '').toString().toLowerCase();
+            let valB = (b[sortBy] || '').toString().toLowerCase();
+            if (valA < valB) return sortAsc ? -1 : 1;
+            if (valA > valB) return sortAsc ? 1 : -1;
+            return 0;
+        });
+
+        // 3. Génération du HTML
+        filteredData.forEach(l => {
             const tr = document.createElement('tr');
-            tr.innerHTML = `<td class="fr-text--bold">${UI.escape(l.nom)}</td><td><button class="fr-btn fr-btn--secondary fr-btn--sm fr-icon-edit-line btn-edit-lieu"></button></td>`;
-            
-            // NOUVEAU : On branche le bouton d'édition
+            tr.innerHTML = `
+                <td class="fr-text--bold">${UI.escape(l.nom)}</td>
+                <td><button class="fr-btn fr-btn--secondary fr-btn--sm fr-icon-edit-line btn-edit-lieu"></button></td>
+            `;
             tr.querySelector('.btn-edit-lieu').addEventListener('click', () => this.openEditLieu(l.id));
             tbody.appendChild(tr);
         });
+
+        // 4. Mise à jour des icônes de tri et du compteur
+        UI.updateSortUI('lieux', sortBy, sortAsc);
+        const countSpan = document.getElementById('lieux-results-count');
+        if (countSpan) countSpan.innerText = `${filteredData.length} lieu(x) trouvé(s)`;
     },
+    
+    updateLieuxFilter(value) {
+        if (!State.admin.lieuxFilters) State.admin.lieuxFilters = { query: '' };
+        State.admin.lieuxFilters.query = value.trim();
+        this.renderLieux();
+    },
+
+    resetLieuxFilters() {
+        State.admin.lieuxFilters = { query: '' };
+        document.getElementById('search-lieux-input').value = '';
+        this.renderLieux();
+    },
+
+    toggleLieuxSort(columnName) {
+        if (State.admin.lieuxSortBy === columnName) {
+            State.admin.lieuxSortAsc = !State.admin.lieuxSortAsc;
+        } else {
+            State.admin.lieuxSortBy = columnName;
+            State.admin.lieuxSortAsc = true;
+        }
+        this.renderLieux();
+    },
+
 
     openCreateLieu() {
         document.getElementById('form-lieu-create').reset();
@@ -1931,10 +2050,31 @@ const App = {
         // NOUVEAU : Édition/Suppression UA
         document.getElementById('form-ua-edit')?.addEventListener('submit', (e) => AdminCtrl.handleEditUa(e));
         document.getElementById('btn-delete-ua')?.addEventListener('click', () => AdminCtrl.deleteUa());
+        
+        // NOUVEAU : Filtres et Tris des Services (UA)
+        document.getElementById('search-ua-input')?.addEventListener('input', (e) => AdminCtrl.updateUaFilter('query', e.target.value));
+        document.getElementById('filter-ua-lieu')?.addEventListener('change', (e) => AdminCtrl.updateUaFilter('lieu', e.target.value));
+        document.getElementById('btn-reset-ua-filters')?.addEventListener('click', () => AdminCtrl.resetUaFilters());
+        
+        document.querySelectorAll('#table-ua-body').forEach(el => {
+            el.closest('table').querySelectorAll('th.sortable-header').forEach(th => {
+                th.addEventListener('click', () => AdminCtrl.toggleUaSort(th.dataset.sort));
+            });
+        });
 
         // NOUVEAU : Édition/Suppression Lieux
         document.getElementById('form-lieu-edit')?.addEventListener('submit', (e) => AdminCtrl.handleEditLieu(e));
         document.getElementById('btn-delete-lieu')?.addEventListener('click', () => AdminCtrl.deleteLieu());
+        // NOUVEAU : Filtres et Tris des Lieux physiques
+        document.getElementById('search-lieux-input')?.addEventListener('input', (e) => AdminCtrl.updateLieuxFilter(e.target.value));
+        document.getElementById('btn-reset-lieux-filters')?.addEventListener('click', () => AdminCtrl.resetLieuxFilters());
+        
+        document.querySelectorAll('#table-lieux-body').forEach(el => {
+            el.closest('table').querySelectorAll('th.sortable-header').forEach(th => {
+                th.addEventListener('click', () => AdminCtrl.toggleLieuxSort(th.dataset.sort));
+            });
+        });
+        
         
         // --- NOUVEAU : Écouteurs pour les Lieux ---
         document.getElementById('new-mob-lieu')?.addEventListener('change', () => MobilierCtrl.handleCreateLieuChange());
