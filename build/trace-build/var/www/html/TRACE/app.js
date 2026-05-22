@@ -1745,6 +1745,68 @@ const AdminCtrl = {
         if(btnPrev) btnPrev.disabled = (State.admin.audit.page === 1);
         if(btnNext) btnNext.disabled = (State.admin.audit.page >= totalPages);
     },
+
+
+        async exportAuditCSV() {
+        let params = new URLSearchParams();
+        params.append('order', 'date_action.desc');
+
+        // On applique les mêmes filtres que la vue actuelle, mais SANS la pagination
+        if (State.admin.audit.filters.query) {
+            const safeQuery = State.admin.audit.filters.query.replace(/["(),:{}\t]/g, ' ');
+            const motsCles = safeQuery.trim().split(/\s+/);
+            const conditionsMots = motsCles.map(mot => 
+                `or(utilisateur.ilike.*${mot}*,action.ilike.*${mot}*,id_metier.ilike.*${mot}*,details.ilike.*${mot}*)`
+            );
+            params.append('and', `(${conditionsMots.join(',')})`);
+        }
+
+        try {
+            UI.showAlert("Export", "Extraction de l'historique d'audit...", "info");
+            
+            // On lance la requête sans en-tête "Range" pour tout récupérer
+            const res = await API.fetch(`/audit_logs?${params.toString()}`, { headers: API.getHeaders() });
+            if (!res.ok) throw new Error("Erreur lors de la récupération des données d'audit.");
+            
+            const allData = await res.json();
+            if (allData.length === 0) { 
+                UI.showAlert("Export", "Aucun événement à exporter.", "warning"); 
+                return; 
+            }
+
+            // Préparation des en-têtes et des lignes
+            const headers = ["ID", "Date de l'action", "Agent", "Type d'Action", "Cible (ID Métier)", "Détails"];
+            const rows = allData.map(log => [
+                log.id,
+                new Date(log.date_action).toLocaleString('fr-FR'),
+                log.utilisateur,
+                log.action,
+                log.id_metier || '',
+                // On purge les sauts de ligne ou point-virgules pour ne pas casser les colonnes CSV
+                (log.details || '').replace(/(\r\n|\n|\r|;)/gm, " ") 
+            ]);
+
+            // Construction du fichier CSV (BOM \ufeff pour forcer l'encodage UTF-8 sous Excel)
+            let csvContent = "\ufeff" + headers.join(";") + "\n";
+            rows.forEach(row => { 
+                csvContent += row.map(cell => `"${String(cell).replace(/"/g, '""')}"`).join(";") + "\n"; 
+            });
+
+            // Déclenchement du téléchargement
+            const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = `TRACE_Audit_Historique_${new Date().toISOString().split('T')[0]}.csv`;
+            link.click();
+            URL.revokeObjectURL(url);
+            
+            UI.showAlert("Succès", "Export de l'audit terminé.", "success");
+        } catch (err) { 
+            UI.showAlert("Erreur Export", err.message, "error"); 
+        }
+    },
+
     
     // Mise au rebut (Massive + PDF)
     processRebut() {
@@ -2017,10 +2079,13 @@ const App = {
         });
         
         
+        
         document.getElementById('btn-refresh-audit')?.addEventListener('click', () => {
             State.admin.audit.page = 1;
             AdminCtrl.loadAudit();
         });
+        // NOUVEAU : Export CSV de l'Audit
+        document.getElementById('btn-export-audit-csv')?.addEventListener('click', () => AdminCtrl.exportAuditCSV());
 
         
         document.addEventListener('visibilitychange', () => {
