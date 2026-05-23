@@ -204,7 +204,6 @@ GRANT SELECT ON public.audit_logs TO divagil, administrateur;
 -- Règles d'immuabilité strictes (Bloque physiquement l'altération des logs au niveau SQL)
 CREATE RULE no_update_audit AS ON UPDATE TO public.audit_logs DO INSTEAD NOTHING;
 CREATE RULE no_delete_audit AS ON DELETE TO public.audit_logs DO INSTEAD NOTHING;
-CREATE RULE no_truncate_audit AS ON TRUNCATE TO public.audit_logs DO INSTEAD NOTHING;
 
 CREATE OR REPLACE FUNCTION public.log_mobilier_action() RETURNS TRIGGER AS $$
 DECLARE
