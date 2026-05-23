@@ -151,9 +151,31 @@ GRANT agent TO divagil;
 GRANT administrateur TO divagil;
 GRANT lecteur TO divagil;
 GRANT USAGE ON SCHEMA public TO divagil, agent, administrateur, lecteur;
-GRANT ALL ON ALL TABLES IN SCHEMA public TO agent, administrateur;
+
+-- Droits du Lecteur (Consultation seule sur toutes les tables)
 GRANT SELECT ON ALL TABLES IN SCHEMA public TO lecteur;
-GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO agent, administrateur;
+
+-- Droits de l'Agent (Consultation, Ajout, Modification - MAIS AUCUNE SUPPRESSION)
+GRANT SELECT, INSERT, UPDATE ON TABLE public.mobiliers TO agent;
+GRANT SELECT ON TABLE public.gabarits, public.lieux, public.structures TO agent;
+GRANT USAGE, SELECT ON SEQUENCE public.seq_mobilier_id TO agent;
+
+-- Droits de l'Administrateur (Contrôle total sur les tables métiers)
+GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO administrateur;
+GRANT ALL ON ALL SEQUENCES IN SCHEMA public TO administrateur;
+
+-- =============================================================================
+-- SÉCURISATION DES DONNÉES D'AUTHENTIFICATION
+-- =============================================================================
+-- 1. On annule les droits de lecture globaux accordés précédemment sur cette table
+REVOKE ALL ON TABLE public.utilisateurs FROM PUBLIC, agent, lecteur;
+
+-- 2. On redonne l'accès exclusif à l'administrateur (pour la gestion des comptes via le panel admin)
+GRANT SELECT, INSERT, UPDATE, DELETE ON TABLE public.utilisateurs TO administrateur;
+
+-- Note : Les fonctions de connexion (login) et de session (me) continuent de fonctionner
+-- pour les agents car elles sont déclarées avec "SECURITY DEFINER" (elles s'exécutent avec
+-- les droits du super-utilisateur).
 
 GRANT EXECUTE ON FUNCTION public.login(text, text) TO divagil;
 REVOKE EXECUTE ON FUNCTION public.creer_utilisateur(text, text, text) FROM PUBLIC;
@@ -172,7 +194,17 @@ VALUES ('__ADMIN_EMAIL__', crypt('__ADMIN_PASS__', gen_salt('bf')), 'Administrat
 
 -- Traçabilité (Audit logs)
 CREATE TABLE public.audit_logs (id SERIAL PRIMARY KEY, date_action TIMESTAMP WITH TIME ZONE DEFAULT CURRENT_TIMESTAMP, utilisateur VARCHAR(255), action VARCHAR(50), id_metier VARCHAR(50), details TEXT);
+
+-- Annulation de tous les droits implicites sur l'audit
+REVOKE ALL ON TABLE public.audit_logs FROM PUBLIC, agent, administrateur, lecteur;
+
+-- Seuls les administrateurs et le compte système peuvent LIRE le journal
 GRANT SELECT ON public.audit_logs TO divagil, administrateur;
+
+-- Règles d'immuabilité strictes (Bloque physiquement l'altération des logs au niveau SQL)
+CREATE RULE no_update_audit AS ON UPDATE TO public.audit_logs DO INSTEAD NOTHING;
+CREATE RULE no_delete_audit AS ON DELETE TO public.audit_logs DO INSTEAD NOTHING;
+CREATE RULE no_truncate_audit AS ON TRUNCATE TO public.audit_logs DO INSTEAD NOTHING;
 
 CREATE OR REPLACE FUNCTION public.log_mobilier_action() RETURNS TRIGGER AS $$
 DECLARE
