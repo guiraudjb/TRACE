@@ -14,7 +14,7 @@
             background-color: #f6f6f6;
         }
         .trace-container {
-            max-width: 1000px; /* Élargi pour accommoder 3 cartes */
+            max-width: 1000px;
             margin: 0 auto;
         }
         .fr-card__title a {
@@ -54,14 +54,14 @@
         </div>
 
         <div class="fr-grid-row fr-grid-row--gutters">
-            <div class="fr-col-12 fr-col-md-4">
+            <div class="fr-col-12 fr-col-md-6">
                 <div class="fr-card fr-enlarge-link" style="height: 100%;">
                     <div class="fr-card__body">
                         <div class="fr-card__content">
                             <h2 class="fr-card__title">
-                                <a href="./codebar-generator.html">Impression en régie (Code-Barres)</a>
+                                <a href="./codebar-generator.html">Bureautique - Dymo (Code-Barres)</a>
                             </h2>
-                            <p class="fr-card__desc">Idéal pour l'impression séquentielle industrielle (Code 128) sur étiquettes de type Dymo LW Durable ou imprimantes à transfert thermique (Zebra).</p>
+                            <p class="fr-card__desc">Impression thermique directe sur imprimante de bureau (ex: Dymo LW 550). Adapté pour les dépannages ponctuels (Faible résistance aux UV et à la chaleur).</p>
                         </div>
                     </div>
                     <div class="fr-card__header">
@@ -72,7 +72,25 @@
                 </div>
             </div>
 
-            <div class="fr-col-12 fr-col-md-4">
+            <div class="fr-col-12 fr-col-md-6">
+                <div class="fr-card fr-enlarge-link" style="height: 100%;">
+                    <div class="fr-card__body">
+                        <div class="fr-card__content">
+                            <h2 class="fr-card__title">
+                                <a href="./zebra-codebar-generator.html">Industriel - Zebra (Code-Barres)</a>
+                            </h2>
+                            <p class="fr-card__desc">Solution recommandée. Impression par transfert thermique sur imprimante industrielle (ex: Zebra ZD421T) avec rouleaux polyester et ruban résine pour une durabilité maximale.</p>
+                        </div>
+                    </div>
+                    <div class="fr-card__header">
+                        <div class="fr-card__img" style="background-color: #eef1f2; display: flex; align-items: center; justify-content: center; font-size: 3rem; padding: 2rem;">
+                            <span class="fr-icon-printer-fill" aria-hidden="true" style="color: #000091;"></span>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+            <div class="fr-col-12 fr-col-md-6">
                 <div class="fr-card fr-enlarge-link" style="height: 100%;">
                     <div class="fr-card__body">
                         <div class="fr-card__content">
@@ -90,7 +108,7 @@
                 </div>
             </div>
 
-            <div class="fr-col-12 fr-col-md-4">
+            <div class="fr-col-12 fr-col-md-6">
                 <div class="fr-card fr-enlarge-link" style="height: 100%;">
                     <div class="fr-card__body">
                         <div class="fr-card__content">
@@ -108,6 +126,7 @@
                 </div>
             </div>
         </div>
+        
         <section class="report-section">
             <h2 class="fr-h3">Note technique : Analyse d'aide à la décision (Projet mobiTrace)</h2>
             <p>Conformément aux impératifs de gestion des actifs de la DGFiP, cette analyse compare les solutions techniques pour un parc cible de 5 000 actifs.</p>
@@ -155,6 +174,7 @@
                 <li><strong>Consommables :</strong> Support 100% Polyester (PET) avec adhésif industriel renforcé ("High Tack") et rubans encreurs type <strong>Résine pure</strong> (exclure les rubans "Cire" ou "Cire/Résine").</li>
             </ul>
         </section>
+        
         <div class="fr-grid-row fr-mt-4w">
             <div class="fr-col-12">
                 <div class="fr-notice fr-notice--info">
@@ -166,39 +186,40 @@
                 </div>
             </div>
         </div>
-        <section class="fr-my-4w">
-    <h3 class="fr-h4">Glossaire financier pour le projet mobiTrace</h3>
-    <div class="fr-grid-row fr-grid-row--gutters">
         
-        <div class="fr-col-12 fr-col-md-4">
-            <div class="fr-tile fr-tile--horizontal">
-                <div class="fr-tile__body">
-                    <h4 class="fr-tile__title">CAPEX (Capital Expenditure)</h4>
-                    <p class="fr-tile__desc">Dépenses d'investissement (ex: achat de l'imprimante). Ce sont les actifs durables amortis sur plusieurs années.</p>
+        <section class="fr-my-4w">
+            <h3 class="fr-h4">Glossaire financier pour le projet mobiTrace</h3>
+            <div class="fr-grid-row fr-grid-row--gutters">
+                
+                <div class="fr-col-12 fr-col-md-4">
+                    <div class="fr-tile fr-tile--horizontal">
+                        <div class="fr-tile__body">
+                            <h4 class="fr-tile__title">CAPEX (Capital Expenditure)</h4>
+                            <p class="fr-tile__desc">Dépenses d'investissement (ex: achat de l'imprimante). Ce sont les actifs durables amortis sur plusieurs années.</p>
+                        </div>
+                    </div>
                 </div>
-            </div>
-        </div>
 
-        <div class="fr-col-12 fr-col-md-4">
-            <div class="fr-tile fr-tile--horizontal">
-                <div class="fr-tile__body">
-                    <h4 class="fr-tile__title">OPEX (Operating Expenditure)</h4>
-                    <p class="fr-tile__desc">Dépenses de fonctionnement (ex: rubans résine, étiquettes). Coûts récurrents nécessaires à l'activité courante.</p>
+                <div class="fr-col-12 fr-col-md-4">
+                    <div class="fr-tile fr-tile--horizontal">
+                        <div class="fr-tile__body">
+                            <h4 class="fr-tile__title">OPEX (Operating Expenditure)</h4>
+                            <p class="fr-tile__desc">Dépenses de fonctionnement (ex: rubans résine, étiquettes). Coûts récurrents nécessaires à l'activité courante.</p>
+                        </div>
+                    </div>
                 </div>
-            </div>
-        </div>
 
-        <div class="fr-col-12 fr-col-md-4">
-            <div class="fr-tile fr-tile--horizontal">
-                <div class="fr-tile__body">
-                    <h4 class="fr-tile__title">TCO (Total Cost of Ownership)</h4>
-                    <p class="fr-tile__desc">Coût Total de Possession : <strong>CAPEX + Somme des OPEX</strong>. Indicateur clé pour mesurer la rentabilité réelle sur 5 ans.</p>
+                <div class="fr-col-12 fr-col-md-4">
+                    <div class="fr-tile fr-tile--horizontal">
+                        <div class="fr-tile__body">
+                            <h4 class="fr-tile__title">TCO (Total Cost of Ownership)</h4>
+                            <p class="fr-tile__desc">Coût Total de Possession : <strong>CAPEX + Somme des OPEX</strong>. Indicateur clé pour mesurer la rentabilité réelle sur 5 ans.</p>
+                        </div>
+                    </div>
                 </div>
-            </div>
-        </div>
 
-    </div>
-</section>
+            </div>
+        </section>
     </main>
 </body>
 

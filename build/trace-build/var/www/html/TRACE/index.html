@@ -389,6 +389,7 @@
                                 <li><button class="fr-btn fr-btn--secondary fr-icon-delete-bin-line fr-btn--icon-left" id="nav-admin-rebut">Mise au rebut</button></li>
                                 <li><button class="fr-btn fr-btn--secondary fr-icon-history-line fr-btn--icon-left" id="nav-admin-audit">Audit</button></li>
                                 <li><button class="fr-btn fr-btn--secondary fr-icon-settings-5-line fr-btn--icon-left" id="nav-admin-config">En-têtes PV</button></li>
+                                <li><button class="fr-btn fr-btn--secondary fr-icon-recycle-line fr-btn--icon-left" id="nav-admin-recyclage">Recyclage ID</button></li>
                             </ul>
                         </div>
                     </div>
@@ -586,6 +587,56 @@
                         </div>
                     </div>
 
+                    <div id="view-admin-recyclage" class="sub-view">
+                        <div class="trace-card">
+                            <h3 class="fr-text--info"><span class="fr-icon-recycle-line" aria-hidden="true"></span> Recyclage d'Identifiants (MOB-XXXXXX)</h3>
+                            <p>Réaffectation massive de numéros créés par erreur vers un gabarit tampon pour un futur réemploi. L'historique d'audit tracera cette remise à zéro.</p>
+                            
+                            <form id="form-admin-recyclage">
+                                <div class="fr-select-group">
+                                    <label class="fr-label">Modèle (Gabarit) de recyclage / tampon</label>
+                                    <select class="fr-select" id="recyclage-gabarit" required></select>
+                                </div>
+                                
+                                <div class="fr-grid-row fr-grid-row--gutters fr-mb-3w" style="background: var(--background-alt-blue-france); padding: 1rem; border-radius: 4px;">
+                                    <div class="fr-col-12 fr-col-md-4">
+                                        <div class="fr-select-group">
+                                            <label class="fr-label">Service (UA) d'attente</label>
+                                            <select class="fr-select" id="recyclage-ua"></select>
+                                        </div>
+                                    </div>
+                                    <div class="fr-col-12 fr-col-md-4">
+                                        <div class="fr-select-group">
+                                            <label class="fr-label">Lieu de stockage</label>
+                                            <select class="fr-select" id="recyclage-lieu"></select>
+                                        </div>
+                                    </div>
+                                    <div class="fr-col-12 fr-col-md-4">
+                                        <div class="fr-select-group">
+                                            <label class="fr-label">Statut forcé</label>
+                                            <select class="fr-select" id="recyclage-statut" required>
+                                                <option value="dispo_reemploi" selected>Disponible réemploi</option>
+                                                <option value="en_stock">En stock</option>
+                                            </select>
+                                        </div>
+                                    </div>
+                                </div>
+                                
+                                <div class="fr-input-group">
+                                    <label class="fr-label">Remarques appliquées au lot</label>
+                                    <input class="fr-input" type="text" id="recyclage-remarques" value="Recyclage - En attente de réattribution">
+                                </div>
+                                
+                                <div class="fr-upload-group fr-my-3w">
+                                    <label class="fr-label">Fichier des identifiants à recycler (.txt)</label>
+                                    <input class="fr-upload" type="file" id="recyclage-file-upload" accept=".txt" required>
+                                </div>
+                                
+                                <button type="submit" id="btn-exec-recyclage" class="fr-btn fr-icon-check-line fr-btn--icon-left">Lancer le recyclage massif</button>
+                            </form>
+                        </div>
+                    </div>
+                    
                     <div id="view-audit-list" class="sub-view">
                         <div class="trace-card">
                             <div class="fr-grid-row fr-grid-row--middle fr-mb-4w">

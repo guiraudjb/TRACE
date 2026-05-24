@@ -1717,6 +1717,79 @@ const AdminCtrl = {
         } catch (e) { UI.showAlert("Erreur", "Accès refusé au journal.", "error"); }
     },
 
+    openRecyclage() {
+        // Remplissage des listes déroulantes
+        UI.fillSelect('recyclage-gabarit', State.referentiels.gabarits, 'id', 'nom_descriptif');
+        UI.fillSelect('recyclage-ua', State.referentiels.structures, 'code_sages', 'libelle');
+        UI.fillSelect('recyclage-lieu', State.referentiels.lieux, 'id', 'nom');
+        
+        document.getElementById('recyclage-file-upload').value = '';
+        UI.showView('view-admin-recyclage', 'panel-admin');
+    },
+
+    async processRecyclage(e) {
+        e.preventDefault();
+        const fileInput = document.getElementById('recyclage-file-upload');
+        if (!fileInput.files[0]) { UI.showAlert("Attention", "Sélectionnez un fichier .txt", "warning"); return; }
+        if (!confirm("Confirmer le recyclage de ces identifiants vers le gabarit tampon ?")) return;
+
+        // Préparation des données d'écrasement
+        const payload = {
+            gabarit_id: parseInt(document.getElementById('recyclage-gabarit').value),
+            statut: document.getElementById('recyclage-statut').value,
+            remarques: document.getElementById('recyclage-remarques').value
+        };
+        
+        const uaVal = document.getElementById('recyclage-ua').value;
+        const lieuVal = document.getElementById('recyclage-lieu').value;
+        if (uaVal) payload.code_sages = uaVal;
+        if (lieuVal) payload.lieu_id = parseInt(lieuVal);
+
+        const btn = document.getElementById('btn-exec-recyclage');
+        const originalText = btn.innerHTML;
+        btn.disabled = true;
+        btn.innerHTML = '<span class="fr-icon-refresh-line fr-btn--icon-left" aria-hidden="true"></span> Recyclage en cours...';
+
+        const reader = new FileReader();
+        reader.onload = async (ev) => {
+            // Extraction et nettoyage des identifiants (MOB-XXXXXX)
+            const ids = ev.target.result.split(/\r?\n/).map(id => id.trim().toUpperCase()).filter(id => /^MOB-\d{6}$/.test(id));
+            if (ids.length === 0) { 
+                UI.showAlert("Erreur", "Aucun identifiant valide trouvé dans le fichier.", "error"); 
+                btn.disabled = false; btn.innerHTML = originalText;
+                return; 
+            }
+
+            try {
+                UI.showAlert("Traitement", `Recyclage de ${ids.length} identifiants...`, "info");
+                const CHUNK_SIZE = 100; // Envoi par lots de 100 pour ne pas saturer l'API
+                let successCount = 0;
+
+                for (let i = 0; i < ids.length; i += CHUNK_SIZE) {
+                    const chunk = ids.slice(i, i + CHUNK_SIZE);
+                    const res = await API.fetch(`/mobiliers?id_metier=in.(${chunk.join(',')})`, {
+                        method: 'PATCH', 
+                        headers: API.getHeaders({ 'Prefer': 'return=representation' }), 
+                        body: JSON.stringify(payload)
+                    });
+                    if (!res.ok) throw new Error("Erreur lors du traitement d'un lot d'identifiants.");
+                    const data = await res.json();
+                    successCount += data.length;
+                }
+
+                UI.showAlert("Succès total", `${successCount} identifiants réinitialisés et recyclés.`, "success");
+                MobilierCtrl.loadData(); // Mise à jour de l'inventaire en arrière-plan
+                document.getElementById('form-admin-recyclage').reset();
+            } catch (err) {
+                UI.showAlert("Erreur", err.message, "error");
+            } finally {
+                btn.disabled = false;
+                btn.innerHTML = originalText;
+            }
+        };
+        reader.readAsText(fileInput.files[0]);
+    }
+
     renderAudit() {
         const tbody = document.getElementById('table-audit-body');
         tbody.innerHTML = '';
@@ -2024,6 +2097,15 @@ const App = {
         
         document.getElementById('scanner-input')?.addEventListener('keypress', (e) => MobilierCtrl.processScan(e));
         document.getElementById('btn-exec-import')?.addEventListener('click', () => MobilierCtrl.processImport());
+
+        // NOUVEAU : Module de recyclage
+        document.getElementById('nav-admin-recyclage')?.addEventListener('click', () => AdminCtrl.openRecyclage());
+        document.getElementById('form-admin-recyclage')?.addEventListener('submit', (e) => AdminCtrl.processRecyclage(e));
+        
+        // Optionnel : Activer la logique de filtrage en cascade UA/Lieu pour le recyclage
+        document.getElementById('recyclage-ua')?.addEventListener('change', () => MobilierCtrl.handleUaChange('recyclage'));
+        document.getElementById('recyclage-lieu')?.addEventListener('change', () => MobilierCtrl.handleLieuChange('recyclage'));
+
 
         // Gabarits
         document.getElementById('search-gab-input')?.addEventListener('input', (e) => GabaritCtrl.updateFilter('query', e.target.value));
