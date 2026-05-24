@@ -1788,7 +1788,7 @@ const AdminCtrl = {
             }
         };
         reader.readAsText(fileInput.files[0]);
-    }
+    },
 
     renderAudit() {
         const tbody = document.getElementById('table-audit-body');
