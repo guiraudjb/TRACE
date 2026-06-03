@@ -117,6 +117,10 @@ const API = {
         ]);
 
         State.referentiels.gabarits = await gRes.json();
+        
+        State.referentiels.gabarits.forEach(g => {
+            g.label_affichage = `${g.reference_catalogue} ${g.nom_descriptif}`;
+        });
         State.referentiels.structures = await sRes.json();
         State.referentiels.lieux = await lRes.json();
 
@@ -124,7 +128,7 @@ const API = {
         State.maps.s.clear(); State.referentiels.structures.forEach(s => State.maps.s.set(s.code_sages, s));
         State.maps.l.clear(); State.referentiels.lieux.forEach(l => State.maps.l.set(l.id, l));
         const dl = document.getElementById('datalist-gabarits');
-        if (dl) dl.innerHTML = State.referentiels.gabarits.map(g => `<option value="${g.reference_catalogue} - ${UI.escape(g.nom_descriptif)}" data-id="${g.id}">`).join('');
+        if (dl) dl.innerHTML = State.referentiels.gabarits.map(g => `<option value="${g.label_affichage}" data-id="${g.id}">`).join('');
     }
 };
 
@@ -281,7 +285,7 @@ const MobilierCtrl = {
     },
 
     async init() {
-        UI.fillSelect('filter-gabarit', State.referentiels.gabarits, 'id', 'nom_descriptif', { disablePlaceholder: false, placeholder: 'Tous les modèles' });
+        UI.fillSelect('filter-gabarit', State.referentiels.gabarits, 'id', 'label_affichage', { disablePlaceholder: false, placeholder: 'Tous les modèles' });
         UI.fillSelect('filter-ua', State.referentiels.structures, 'code_sages', 'libelle', { disablePlaceholder: false, placeholder: 'Toutes les affectations' });
         UI.fillSelect('filter-lieu', State.referentiels.lieux, 'id', 'nom', { disablePlaceholder: false, placeholder: 'Tous les lieux' });
         await this.updateFacets();
@@ -329,7 +333,14 @@ const MobilierCtrl = {
 
             // On repeuple les listes déroulantes avec les données filtrées par le serveur,
             // tout en conservant la sélection actuelle si elle existe.
-            UI.fillSelect('filter-gabarit', facettes.gabarits, 'id', 'nom_descriptif', { placeholder: 'Tous les modèles', selected: gabarit, disablePlaceholder: false });
+            
+            if (facettes.gabarits) {
+                facettes.gabarits.forEach(g => {
+                    g.label_affichage = `${g.reference_catalogue} ${g.nom_descriptif}`;
+                });
+            }
+            
+            UI.fillSelect('filter-gabarit', facettes.gabarits, 'id', 'label_affichage', { placeholder: 'Tous les modèles', selected: gabarit, disablePlaceholder: false });
             UI.fillSelect('filter-ua', facettes.structures, 'code_sages', 'libelle', { placeholder: 'Toutes les affectations', selected: ua, disablePlaceholder: false });
             UI.fillSelect('filter-lieu', facettes.lieux, 'id', 'nom', { placeholder: 'Tous les lieux', selected: lieu, disablePlaceholder: false });
 
@@ -459,13 +470,11 @@ const MobilierCtrl = {
         document.getElementById('form-mob-create').reset();
         document.getElementById('new-mob-id').value = "Auto-généré";
         // 1. On fabrique un tableau temporaire avec le bon formatage visuel "Référence - Nom"
-        const gabaritsOptions = State.referentiels.gabarits.map(g => ({
-            id: g.id,
-            labelComplet: `${g.reference_catalogue} - ${g.nom_descriptif}`
-        }));
+        // On peuple le nouveau menu déroulant avec la propriété pré-calculée
+        UI.fillSelect('new-mob-gabarit-select', State.referentiels.gabarits, 'id', 'label_affichage');
         
         // 2. On peuple le nouveau menu déroulant
-        UI.fillSelect('new-mob-gabarit-select', gabaritsOptions, 'id', 'labelComplet');
+        
         UI.fillSelect('new-mob-ua', State.referentiels.structures, 'code_sages', 'libelle');
         UI.fillSelect('new-mob-lieu', State.referentiels.lieux, 'id', 'nom');
         UI.showView('view-mobilier-create', 'panel-mobilier');
@@ -476,12 +485,9 @@ const MobilierCtrl = {
         if (!mob) return;
         document.getElementById('edit-mob-uuid').value = mob.uuid;
         document.getElementById('edit-mob-id').value = mob.id_metier;
-        // --- ALIGNEMENT COMPOSANT SELECT ---
-        const gabaritsOptions = State.referentiels.gabarits.map(g => ({
-            id: g.id,
-            labelComplet: `${g.reference_catalogue} - ${g.nom_descriptif}`
-        }));
-        UI.fillSelect('edit-mob-gabarit-select', gabaritsOptions, 'id', 'labelComplet', { selected: mob.gabarit_id });
+        // Extraction depuis le composant select avec la propriété pré-calculée
+        UI.fillSelect('edit-mob-gabarit-select', State.referentiels.gabarits, 'id', 'label_affichage', { selected: mob.gabarit_id });
+        
         
         
         // ==============================================================
@@ -1002,6 +1008,8 @@ const GabaritCtrl = {
         this.addJsonRow("annee_acquisition", new Date().getFullYear().toString());
         document.getElementById('gab-form-title').innerText = "Créer un Modèle";
         document.getElementById('btn-delete-gab').style.display = 'none';
+        // NOUVEAU : Auto-complétion immédiate au lancement du formulaire
+        this.suggestNextReference();
         UI.showView('view-gabarits-form', 'panel-gabarits');
     },
 
@@ -1719,7 +1727,7 @@ const AdminCtrl = {
 
     openRecyclage() {
         // Remplissage des listes déroulantes
-        UI.fillSelect('recyclage-gabarit', State.referentiels.gabarits, 'id', 'nom_descriptif');
+        UI.fillSelect('recyclage-gabarit', State.referentiels.gabarits, 'id', 'label_affichage');
         UI.fillSelect('recyclage-ua', State.referentiels.structures, 'code_sages', 'libelle');
         UI.fillSelect('recyclage-lieu', State.referentiels.lieux, 'id', 'nom');
         

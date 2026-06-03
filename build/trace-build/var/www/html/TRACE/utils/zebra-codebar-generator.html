@@ -95,20 +95,44 @@
                             </select>
                         </div>
 
-                        <div class="fr-grid-row fr-grid-row--gutters fr-mb-2w">
+                        <div class="fr-form-group fr-mb-2w">
+                            <fieldset class="fr-fieldset fr-fieldset--inline">
+                                <legend class="fr-fieldset__legend fr-text--regular">Mode de génération</legend>
+                                <div class="fr-fieldset__content">
+                                    <div class="fr-radio-group">
+                                        <input type="radio" id="mode-seq" name="gen-mode" value="sequential" checked>
+                                        <label class="fr-label" for="mode-seq">Série numérotée</label>
+                                    </div>
+                                    <div class="fr-radio-group">
+                                        <input type="radio" id="mode-file" name="gen-mode" value="file">
+                                        <label class="fr-label" for="mode-file">Import fichier (.txt)</label>
+                                    </div>
+                                </div>
+                            </fieldset>
+                        </div>
+
+                        <div id="group-sequential" class="fr-grid-row fr-grid-row--gutters fr-mb-2w">
                             <div class="fr-col-12 fr-col-sm-6">
                                 <div class="fr-input-group">
                                     <label class="fr-label" for="input-start-num">Premier numéro</label>
                                     <span class="fr-hint-text">Ex: 42 pour MOB-000042</span>
-                                    <input class="fr-input" type="number" id="input-start-num" min="1" max="999999" value="1" required>
+                                    <input class="fr-input" type="number" id="input-start-num" min="1" max="999999" value="1">
                                 </div>
                             </div>
                             <div class="fr-col-12 fr-col-sm-6">
                                 <div class="fr-input-group">
                                     <label class="fr-label" for="input-count">Nombre d'étiquettes</label>
                                     <span class="fr-hint-text">Capacité rouleau Zebra (max 5000)</span>
-                                    <input class="fr-input" type="number" id="input-count" min="1" max="5000" value="50" required>
+                                    <input class="fr-input" type="number" id="input-count" min="1" max="5000" value="50">
                                 </div>
+                            </div>
+                        </div>
+
+                        <div id="group-file" class="fr-mb-3w" style="display: none;">
+                            <div class="fr-upload-group">
+                                <label class="fr-label" for="input-file">Fichier d'identifiants (.txt)</label>
+                                <span class="fr-hint-text">Un identifiant (MOB-XXXXXX) par ligne. Les doublons seront ignorés.</span>
+                                <input class="fr-upload" type="file" id="input-file" accept=".txt">
                             </div>
                         </div>
 
@@ -125,7 +149,6 @@
                             </div>
                         </div>
 
-                        <!-- Actions d'export double format -->
                         <div class="fr-grid-row fr-grid-row--gutters fr-mt-2w">
                             <div class="fr-col-12 fr-col-sm-6 fr-mb-2v fr-mb-sm-0">
                                 <button type="button" id="btn-generate-pdf" class="fr-btn fr-icon-file-pdf-line fr-btn--icon-left" style="width: 100%;">
@@ -179,6 +202,16 @@
         const btnGeneratePdf = document.getElementById('btn-generate-pdf');
         const btnGenerateZpl = document.getElementById('btn-generate-zpl');
 
+        // Variables pour la nouvelle gestion par fichier
+        const modeSeq = document.getElementById('mode-seq');
+        const modeFile = document.getElementById('mode-file');
+        const groupSeq = document.getElementById('group-sequential');
+        const groupFile = document.getElementById('group-file');
+        const inputFile = document.getElementById('input-file');
+        
+        let importedIds = []; // Stockage en mémoire des IDs du fichier
+
+        // Génération de la suite logique de numéros
         function generateSequentialIds() {
             const startNum = parseInt(inputStartNum.value, 10);
             const count = parseInt(inputCount.value, 10);
@@ -199,12 +232,56 @@
             return ids;
         }
 
+        // Gère l'affichage des champs selon le mode choisi
+        function toggleMode() {
+            if (modeSeq.checked) {
+                groupSeq.style.display = 'flex';
+                groupFile.style.display = 'none';
+            } else {
+                groupSeq.style.display = 'none';
+                groupFile.style.display = 'block';
+            }
+            updateLivePreview();
+        }
+
+        // Lecture et extraction des identifiants du fichier .txt
+        inputFile.addEventListener('change', function(e) {
+            const file = e.target.files[0];
+            if (!file) {
+                importedIds = [];
+                updateLivePreview();
+                return;
+            }
+            const reader = new FileReader();
+            reader.onload = function(ev) {
+                importedIds = [...new Set(ev.target.result.split(/\r?\n/)
+                    .map(id => id.trim().toUpperCase())
+                    .filter(id => /^MOB-\d{6}$/.test(id)))];
+                
+                if (importedIds.length === 0) {
+                    alert("Aucun identifiant au format MOB-XXXXXX n'a été trouvé dans ce fichier.");
+                }
+                updateLivePreview();
+            };
+            reader.readAsText(file);
+        });
+
+        // Fonction "Aiguillage" : Retourne les IDs selon le mode actif
+        function getActiveIds() {
+            if (modeSeq.checked) {
+                return generateSequentialIds();
+            } else {
+                return importedIds;
+            }
+        }
+
+        // Mise à jour de la zone d'aperçu
         function updateLivePreview() {
-            const sequentialIds = generateSequentialIds();
+            const sequentialIds = getActiveIds();
             
             if (sequentialIds.length === 0) {
-                textSeriesInfo.innerText = "Série configurée : Configuration invalide.";
-                previewZone.innerHTML = '<div id="preview-placeholder">Veuillez saisir un premier numéro et une quantité valides.</div>';
+                textSeriesInfo.innerText = "Série configurée : Configuration invalide ou aucun fichier chargé.";
+                previewZone.innerHTML = '<div id="preview-placeholder">Veuillez configurer la série ou charger un fichier valide.</div>';
                 return;
             }
 
@@ -238,18 +315,21 @@
             });
         }
 
+        // Écouteurs d'événements
         inputStartNum.addEventListener('input', updateLivePreview);
         inputCount.addEventListener('input', updateLivePreview);
         selectLabelSize.addEventListener('change', updateLivePreview);
         optIncludeHeader.addEventListener('change', updateLivePreview);
         optDisplayValue.addEventListener('change', updateLivePreview);
+        modeSeq.addEventListener('change', toggleMode);
+        modeFile.addEventListener('change', toggleMode);
 
         document.addEventListener('DOMContentLoaded', updateLivePreview);
 
         // --- MOTEUR 1 : EXPORT CLASSIQUE PDF ---
         btnGeneratePdf.addEventListener('click', function() {
             if (!formGenerator.reportValidity()) return;
-            const sequentialIds = generateSequentialIds();
+            const sequentialIds = getActiveIds();
             if (sequentialIds.length === 0) return;
 
             btnGeneratePdf.disabled = true;
@@ -305,7 +385,7 @@
         // --- MOTEUR 2 : COMPILATEUR ZPL INDUSTRIEL DIRECT ---
         btnGenerateZpl.addEventListener('click', function() {
             if (!formGenerator.reportValidity()) return;
-            const sequentialIds = generateSequentialIds();
+            const sequentialIds = getActiveIds();
             if (sequentialIds.length === 0) return;
 
             const profile = LABEL_PROFILES[selectLabelSize.value];
@@ -314,46 +394,34 @@
 
             let zplOutput = "";
 
-            // Itération séquentielle pour assembler le flux d'étiquettes
             for (let i = 0; i < sequentialIds.length; i++) {
                 const currentId = sequentialIds[i];
 
-                zplOutput += "^XA\n"; // Début de l'étiquette
-                zplOutput += `^PW${profile.dotsW}\n`; // Largeur physique (en points)
-                zplOutput += `^LL${profile.dotsH}\n`; // Hauteur physique (en points)
-                zplOutput += "^LH0,0\n"; // Origine du repère à 0,0
+                zplOutput += "^XA\n"; 
+                zplOutput += `^PW${profile.dotsW}\n`; 
+                zplOutput += `^LL${profile.dotsH}\n`; 
+                zplOutput += "^LH0,0\n"; 
 
-                // 1. En-tête administratif textuel (DGFIP - mobiTrace)
                 if (includeHeader) {
-                    // ^CF font, height, width
                     zplOutput += "^CF0,22,18\n";
-                    // Centrage automatique via la commande de bloc texte ^FB
-                    // ^FB width, max_lines, line_spacing, justification
                     zplOutput += `^FO20,20^FB${profile.dotsW - 40},1,0,C^FDDGFIP - mobiTrace^FS\n`;
                 }
 
-                // 2. Configuration du module Code 128
                 let barcodeY = includeHeader ? 65 : 35;
                 let barcodeHeight = profile.height === 20 ? 55 : 85;
-                let moduleWidth = profile.width <= 40 ? 2 : 3; // Épaisseur fine ou standard des barres
+                let moduleWidth = profile.width <= 40 ? 2 : 3; 
 
-                // ^BY module_width, wide_ratio, bar_height
                 zplOutput += `^BY${moduleWidth},3.0,${barcodeHeight}\n`;
                 
-                // Positionnement horizontal calculé pour le centrage du Code 128
-                // Un masque "MOB-000000" fait exactement 10 caractères.
-                // En Code 128, chaque caractère fait 11 modules de large (+ start/stop/checksum = ~145 modules).
                 const estimatedBarcodeWidth = 145 * moduleWidth;
                 let barcodeX = Math.max(10, Math.floor((profile.dotsW - estimatedBarcodeWidth) / 2));
 
-                // ^BC orientation, height, print_text, text_above, check_digit, mode
                 zplOutput += `^FO${barcodeX},${barcodeY}^BCN,${barcodeHeight},${displayValue ? 'Y' : 'N'},N,N\n`;
-                zplOutput += `^FD${currentId}^FS\n`; // Injection de la donnée métier
+                zplOutput += `^FD${currentId}^FS\n`; 
 
-                zplOutput += "^XZ\n"; // Fin de l'étiquette
+                zplOutput += "^XZ\n"; 
             }
 
-            // Déclenchement du téléchargement du fichier texte brut ZPL
             const blob = new Blob([zplOutput], { type: 'text/plain;charset=utf-8;' });
             const url = URL.createObjectURL(blob);
             const link = document.createElement("a");
