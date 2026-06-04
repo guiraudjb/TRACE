@@ -90,6 +90,7 @@
                             <label class="fr-label" for="select-label-size">Format des étiquettes rouleau (Zebra)</label>
                             <select class="fr-select" id="select-label-size" required>
                                 <option value="50x25" selected>Standard Inventaire (50mm × 25mm)</option>
+                                <option value="51x25">Nouveau Format (51mm × 25mm)</option>
                                 <option value="60x30">Grand Format (60mm × 30mm)</option>
                                 <option value="40x20">Petit Format (40mm × 20mm)</option>
                             </select>
@@ -185,6 +186,7 @@
         // Configuration dimensionnelle et géométrique (Densité standard Zebra 8 dots/mm - 203 dpi)
         const LABEL_PROFILES = {
             "50x25": { width: 50, height: 25, dotsW: 406, dotsH: 203, name: "Zebra 50x25" },
+            "51x25": { width: 51, height: 25, dotsW: 408, dotsH: 200, name: "Zebra 51x25" },
             "60x30": { width: 60, height: 30, dotsW: 488, dotsH: 244, name: "Zebra 60x30" },
             "40x20": { width: 40, height: 20, dotsW: 325, dotsH: 162, name: "Zebra 40x20" }
         };

@@ -1,0 +1,26 @@
+#!/bin/bash
+set -e
+
+if [ "$1" = "purge" ]; then
+    echo "=== PURGE : Nettoyage du module d'impression Zebra ==="
+    
+    # 1. Nettoyage des fichiers applicatifs
+    rm -rf /opt/mobitrace-print || true
+    rm -f /etc/systemd/system/mobitrace-print.service || true
+    systemctl daemon-reload || true
+    
+    # 2. Nettoyage de CUPS
+    lpadmin -x Zebra_Trace 2>/dev/null || true
+
+    # 3. Retrait de la route dans Nginx
+    NGINX_CONF="/etc/nginx/sites-available/trace"
+    if [ -f "$NGINX_CONF" ]; then
+        # Supprime le bloc location d'impression ajouté lors de l'installation
+        sed -i '/location \/imprimer-zpl {/,/}/d' "$NGINX_CONF"
+        systemctl reload nginx || true
+    fi
+    
+    echo "Module d'impression supprimé."
+fi
+
+exit 0
