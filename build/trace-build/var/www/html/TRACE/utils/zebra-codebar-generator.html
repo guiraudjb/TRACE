@@ -73,7 +73,7 @@
             <div class="fr-container">
                 <div class="fr-notice__body">
                     <p class="fr-notice__title">
-                        <strong>Optimisation Zebra ZD421T :</strong> Ce module vous permet d'exporter soit un fichier <strong>PDF standard</strong> (traduit par le pilote de votre système d'exploitation), soit un fichier de commandes <strong>ZPL industrielles natives</strong>. Le format ZPL est recommandé pour les impressions de masse à haute vitesse sans perte de netteté graphique.
+                        <strong>Optimisation Zebra ZD421T :</strong> Ce module vous permet d'exporter soit un fichier <strong>PDF standard</strong> (traduit par le pilote de votre système d'exploitation), soit d'envoyer les étiquettes directement au serveur Linux en <strong>ZPL natif</strong>. Le format ZPL est recommandé pour les impressions de masse à haute vitesse.
                     </p>
                 </div>
             </div>
@@ -157,8 +157,8 @@
                                 </button>
                             </div>
                             <div class="fr-col-12 fr-col-sm-6">
-                                <button type="button" id="btn-generate-zpl" class="fr-btn fr-btn--secondary fr-icon-code-box-line fr-btn--icon-left" style="width: 100%;">
-                                    Code ZPL (.zpl)
+                                <button type="button" id="btn-generate-zpl" class="fr-btn fr-btn--secondary fr-icon-printer-line fr-btn--icon-left" style="width: 100%;">
+                                    Imprimer sur Zebra
                                 </button>
                             </div>
                         </div>
@@ -384,11 +384,16 @@
             }, 50);
         });
 
-        // --- MOTEUR 2 : COMPILATEUR ZPL INDUSTRIEL DIRECT ---
-        btnGenerateZpl.addEventListener('click', function() {
+        // --- MOTEUR 2 : IMPRESSION ZPL DIRECTE VIA LE SERVEUR LINUX ---
+        btnGenerateZpl.addEventListener('click', async function() {
             if (!formGenerator.reportValidity()) return;
             const sequentialIds = getActiveIds();
             if (sequentialIds.length === 0) return;
+
+            // Verrouillage visuel du bouton
+            const originalText = btnGenerateZpl.innerHTML;
+            btnGenerateZpl.disabled = true;
+            btnGenerateZpl.innerHTML = 'Envoi en cours...';
 
             const profile = LABEL_PROFILES[selectLabelSize.value];
             const includeHeader = optIncludeHeader.checked;
@@ -396,6 +401,7 @@
 
             let zplOutput = "";
 
+            // 1. L'ordinateur compile les étiquettes en langage machine Zebra (ZPL)
             for (let i = 0; i < sequentialIds.length; i++) {
                 const currentId = sequentialIds[i];
 
@@ -424,13 +430,26 @@
                 zplOutput += "^XZ\n"; 
             }
 
-            const blob = new Blob([zplOutput], { type: 'text/plain;charset=utf-8;' });
-            const url = URL.createObjectURL(blob);
-            const link = document.createElement("a");
-            link.href = url;
-            link.download = `ZEBRA_SERIE_NATIVE_${profile.width}x${profile.height}_${new Date().toISOString().split('T')[0]}.zpl`;
-            link.click();
-            URL.revokeObjectURL(url);
+            // 2. L'ordinateur expédie le tout silencieusement vers notre micro-service Linux
+            try {
+                const response = await fetch('/imprimer-zpl', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'text/plain' },
+                    body: zplOutput
+                });
+
+                if (!response.ok) throw new Error("Le serveur d'impression n'a pas répondu.");
+                
+                alert("Succès : Les étiquettes ont été envoyées à l'imprimante Zebra !");
+                
+            } catch (error) {
+                console.error(error);
+                alert("Erreur de communication avec l'imprimante : " + error.message);
+            } finally {
+                // Déverrouillage du bouton
+                btnGenerateZpl.disabled = false;
+                btnGenerateZpl.innerHTML = originalText;
+            }
         });
     </script>
 </body>
