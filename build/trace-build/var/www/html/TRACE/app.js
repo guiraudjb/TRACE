@@ -2008,6 +2008,181 @@ const AdminCtrl = {
             UI.showAlert("Erreur", "Impossible de sauvegarder la configuration.", "error");
         }
     },
+        // ==========================================
+
+    // MODULE IMPRIMANTE ZEBRA
+
+    // ==========================================
+
+    printerRefreshTimer: null,
+
+
+    async loadPrinterStatus() {
+
+        try {
+
+            const res = await fetch('/imprimante/status');
+
+            if (!res.ok) throw new Error("Serveur d'impression injoignable");
+
+            const data = await res.json();
+
+            
+
+            const statusDiv = document.getElementById('printer-status-text');
+
+            if(statusDiv) {
+
+                if (data.etat.includes("paused")) {
+
+                    statusDiv.innerHTML = `<span class="fr-badge fr-badge--warning">Imprimante en PAUSE</span> <br><small class="text-muted">${UI.escape(data.etat)}</small>`;
+
+                } else {
+
+                    statusDiv.innerHTML = `<span class="fr-badge fr-badge--success">Imprimante PRÊTE</span> <br><small class="text-muted">${UI.escape(data.etat)}</small>`;
+
+                }
+
+            }
+
+
+            const tbody = document.getElementById('table-printer-queue-body');
+
+            if(tbody) {
+
+                tbody.innerHTML = '';
+
+                if (data.jobs.length === 0) {
+
+                    tbody.innerHTML = '<tr><td colspan="4" style="text-align:center;">Aucune impression en attente</td></tr>';
+
+                } else {
+
+                    data.jobs.forEach(job => {
+
+                        const tr = document.createElement('tr');
+
+                        tr.innerHTML = `
+
+                            <td>${UI.escape(job.id)}</td>
+
+                            <td>${UI.escape(job.date)}</td>
+
+                            <td>${UI.escape(job.size)} octets</td>
+
+                            <td style="text-align: center;"><button type="button" class="fr-btn fr-btn--sm fr-btn--tertiary-no-outline fr-icon-delete-line text-danger" onclick="AdminCtrl.doPrinterAction('cancel_job', '${job.id}')" title="Annuler cette tâche" style="color: var(--text-default-error);"></button></td>
+
+                        `;
+
+                        tbody.appendChild(tr);
+
+                    });
+
+                }
+
+            }
+
+        } catch (e) {
+
+            console.error("Erreur imprimante:", e);
+
+            const statusDiv = document.getElementById('printer-status-text');
+
+            if(statusDiv) statusDiv.innerHTML = `<span class="fr-badge fr-badge--error">Serveur injoignable</span>`;
+
+        }
+
+    },
+
+
+    async doPrinterAction(action, jobId = null) {
+
+        if (action === 'cancel_all' && !confirm("Voulez-vous annuler TOUTES les impressions en attente ?")) return;
+
+        
+
+        try {
+
+            const res = await fetch('/imprimante/action', {
+
+                method: 'POST',
+
+                headers: { 'Content-Type': 'application/json' },
+
+                body: JSON.stringify({ action: action, job_id: jobId })
+
+            });
+
+            if (res.ok) {
+
+                UI.showAlert("Succès", "L'action a été transmise à l'imprimante.", "success");
+
+                this.loadPrinterStatus(); 
+
+            } else {
+
+                UI.showAlert("Erreur", "Impossible de contrôler l'imprimante.", "error");
+
+            }
+
+        } catch (e) {
+
+            UI.showAlert("Erreur réseau", e.message, "error");
+
+        }
+
+    },
+
+
+    async savePrinterConfig(e) {
+
+        e.preventDefault();
+
+        const newIp = document.getElementById('admin-printer-ip').value.trim();
+
+        if (!confirm(`Rediriger les futures impressions vers l'IP ${newIp} ?`)) return;
+
+
+        try {
+
+            const res = await fetch('/imprimante/config', {
+
+                method: 'POST',
+
+                headers: { 'Content-Type': 'application/json' },
+
+                body: JSON.stringify({ ip: newIp })
+
+            });
+
+            
+
+            if (res.ok) {
+
+                UI.showAlert("Succès", `La nouvelle IP (${newIp}) a été paramétrée sur le serveur.`, "success");
+
+                this.loadPrinterStatus();
+
+            } else {
+
+                const err = await res.json();
+
+                UI.showAlert("Erreur de configuration", err.erreur, "error");
+
+            }
+
+        } catch (e) {
+
+            UI.showAlert("Erreur réseau", e.message, "error");
+
+        }
+
+    },
+
+    // ==========================================
+
+
+
 };
 
 // ============================================================================
@@ -2249,7 +2424,39 @@ const App = {
 
         // À ajouter dans la section "// Admin"
         document.getElementById('btn-export-ua-csv')?.addEventListener('click', () => AdminCtrl.exportUaCSV());
-        document.getElementById('btn-export-lieux-csv')?.addEventListener('click', () => AdminCtrl.exportLieuxCSV());     
+        document.getElementById('btn-export-lieux-csv')?.addEventListener('click', () => AdminCtrl.exportLieuxCSV());
+        
+       
+		// --- GESTION IMPRIMANTE ZEBRA ---
+
+        document.getElementById('nav-admin-printer')?.addEventListener('click', () => {
+
+            UI.showView('view-admin-printer', 'panel-admin');
+
+            AdminCtrl.loadPrinterStatus();
+
+            // Démarre le rafraîchissement automatique de la file d'attente (5 sec)
+
+            clearInterval(AdminCtrl.printerRefreshTimer);
+
+            AdminCtrl.printerRefreshTimer = setInterval(() => AdminCtrl.loadPrinterStatus(), 5000);
+
+        });
+
+
+        document.getElementById('btn-printer-pause')?.addEventListener('click', () => AdminCtrl.doPrinterAction('pause'));
+
+        document.getElementById('btn-printer-resume')?.addEventListener('click', () => AdminCtrl.doPrinterAction('resume'));
+
+        document.getElementById('btn-printer-clear')?.addEventListener('click', () => AdminCtrl.doPrinterAction('cancel_all'));
+
+        document.getElementById('form-printer-config')?.addEventListener('submit', (e) => AdminCtrl.savePrinterConfig(e));
+
+
+
+
+
+        
         
     }
 };

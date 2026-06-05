@@ -1,115 +1,241 @@
 #!/bin/bash
+
 set -e
+
 
 echo "=== Installation du module d'impression Zebra pour TRACE ==="
 
-# ==============================================================================
-# 1. QUESTION INTERACTIVE (Adresse IP de l'imprimante)
-# ==============================================================================
+
 DEFAULT_IP="192.168.1.99"
+
 ZEBRA_IP=""
 
+
 echo ""
+
 echo "------------------------------------------------------------"
+
 if [ -t 1 ]; then
+
     read -p "Entrez l'adresse IP de l'imprimante Zebra [$DEFAULT_IP] : " ZEBRA_IP < /dev/tty
+
 fi
 
-if [ -z "$ZEBRA_IP" ]; then
-    ZEBRA_IP=$DEFAULT_IP
-    echo "Aucune saisie détectée. Utilisation de l'IP par défaut : $ZEBRA_IP"
-else
-    echo "Adresse IP enregistrée : $ZEBRA_IP"
-fi
+[ -z "$ZEBRA_IP" ] && ZEBRA_IP=$DEFAULT_IP
+
+echo "Adresse IP enregistrée : $ZEBRA_IP"
+
 echo "------------------------------------------------------------"
-echo ""
 
-# ==============================================================================
-# 2. CONFIGURATION DE CUPS (File d'attente et Interface Réseau)
-# ==============================================================================
-echo "Configuration de la file d'attente CUPS (Zebra_Trace)..."
+
+# 1. Configuration CUPS
+
+echo "Configuration CUPS..."
+
 lpadmin -p Zebra_Trace -E -v socket://${ZEBRA_IP}:9100 -m raw || true
 
-echo "Ouverture de l'interface d'administration CUPS sur le réseau local..."
-# Autorise l'accès distant à l'interface web de CUPS (port 631)
 cupsctl --remote-admin --remote-any --share-printers || true
 
-# Si le pare-feu UFW est installé et actif, on ouvre le port 631
-if command -v ufw > /dev/null; then
-    echo "Configuration du pare-feu pour le port 631..."
-    ufw allow 631/tcp > /dev/null || true
-fi
+if command -v ufw > /dev/null; then ufw allow 631/tcp > /dev/null || true; fi
 
-# ==============================================================================
-# 3. CRÉATION DU MICRO-SERVICE PYTHON
-# ==============================================================================
-echo "Déploiement du micro-service Python..."
+
+# 2. Le Passe-Partout (Sudoers)
+
+# Autorise le service web à modifier l'imprimante sans taper de mot de passe administrateur
+
+echo "Configuration des droits système pour le micro-service..."
+
+cat << 'EOF' > /etc/sudoers.d/mobitrace-print
+
+www-data ALL=(ALL) NOPASSWD: /usr/sbin/lpadmin, /usr/sbin/cupsenable, /usr/sbin/cupsdisable, /usr/bin/cancel
+
+EOF
+
+chmod 440 /etc/sudoers.d/mobitrace-print
+
+
+# 3. Le Micro-Service Python (Évolué)
+
+echo "Déploiement du micro-service Python avancé..."
+
 mkdir -p /opt/mobitrace-print
+
 cat << 'EOF' > /opt/mobitrace-print/print_api.py
+
 from flask import Flask, request, jsonify
-import subprocess
+
+import subprocess, re
+
 
 app = Flask(__name__)
 
-@app.route('/imprimer-zpl', methods=['POST'])
-def imprimer_zpl():
-    zpl_data = request.data.decode('utf-8')
-    if not zpl_data.startswith('^XA'):
-        return jsonify({"erreur": "Format ZPL invalide."}), 400
+PRINTER = "Zebra_Trace"
+
+
+def run_cmd(cmd):
+
     try:
-        process = subprocess.Popen(['lp', '-d', 'Zebra_Trace', '-o', 'raw'], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
-        stdout, stderr = process.communicate(input=zpl_data.encode('utf-8'))
-        if process.returncode != 0:
-            raise Exception(stderr.decode('utf-8'))
-        return jsonify({"succes": True, "message": "Impression envoyée."}), 200
+
+        res = subprocess.run(cmd, shell=True, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+
+        return True, res.stdout
+
+    except subprocess.CalledProcessError as e:
+
+        return False, e.stderr
+
+
+@app.route('/imprimer-zpl', methods=['POST'])
+
+def imprimer_zpl():
+
+    zpl_data = request.data.decode('utf-8')
+
+    if not zpl_data.startswith('^XA'): return jsonify({"erreur": "Format ZPL invalide."}), 400
+
+    ok, err = run_cmd(f"lp -d {PRINTER} -o raw") # On passe les datas via stdin en prod
+
+    try:
+
+        proc = subprocess.Popen(['lp', '-d', PRINTER, '-o', 'raw'], stdin=subprocess.PIPE, stdout=subprocess.PIPE, stderr=subprocess.PIPE)
+
+        stdout, stderr = proc.communicate(input=zpl_data.encode('utf-8'))
+
+        if proc.returncode != 0: raise Exception(stderr.decode('utf-8'))
+
+        return jsonify({"succes": True})
+
     except Exception as e:
+
         return jsonify({"erreur": str(e)}), 500
 
+
+@app.route('/imprimante/status', methods=['GET'])
+
+def status():
+
+    # Lit l'état de l'imprimante
+
+    ok_s, stat = run_cmd(f"lpstat -p {PRINTER}")
+
+    # Lit la file d'attente
+
+    ok_q, queue = run_cmd(f"lpstat -o {PRINTER}")
+
+    
+
+    jobs = []
+
+    if ok_q and queue:
+
+        for line in queue.strip().split('\n'):
+
+            parts = line.split()
+
+            if len(parts) >= 4:
+
+                jobs.append({"id": parts[0], "size": parts[2], "date": " ".join(parts[3:])})
+
+                
+
+    return jsonify({"etat": stat.strip() if ok_s else "Inconnu", "jobs": jobs})
+
+
+@app.route('/imprimante/action', methods=['POST'])
+
+def action():
+
+    act = request.json.get('action')
+
+    job_id = request.json.get('job_id', '')
+
+    
+
+    if act == 'pause': ok, err = run_cmd(f"sudo cupsdisable {PRINTER}")
+
+    elif act == 'resume': ok, err = run_cmd(f"sudo cupsenable {PRINTER}")
+
+    elif act == 'cancel_all': ok, err = run_cmd(f"sudo cancel -a {PRINTER}")
+
+    elif act == 'cancel_job': ok, err = run_cmd(f"sudo cancel {job_id}")
+
+    else: return jsonify({"erreur": "Action invalide"}), 400
+
+    
+
+    return jsonify({"succes": True}) if ok else jsonify({"erreur": err}), 500
+
+
+@app.route('/imprimante/config', methods=['POST'])
+
+def config():
+
+    ip = request.json.get('ip', '').strip()
+
+    if not re.match(r"^\d{1,3}(\.\d{1,3}){3}$", ip):
+
+        return jsonify({"erreur": "Format IP invalide."}), 400
+
+    
+
+    # Change l'IP au niveau du système Linux
+
+    ok, err = run_cmd(f"sudo lpadmin -p {PRINTER} -v socket://{ip}:9100")
+
+    return jsonify({"succes": True}) if ok else jsonify({"erreur": err}), 500
+
+
 if __name__ == '__main__':
+
     app.run(host='127.0.0.1', port=5050)
+
 EOF
+
 chown -R www-data:www-data /opt/mobitrace-print
 
-# ==============================================================================
-# 4. CRÉATION DU SERVICE SYSTEMD
-# ==============================================================================
-echo "Configuration du service systemd..."
+
+# 4. Service SystemD
+
 cat << 'EOF' > /etc/systemd/system/mobitrace-print.service
+
 [Unit]
+
 Description=Service d'impression ZPL mobiTrace
-After=network.target
 
 [Service]
+
 User=www-data
+
 WorkingDirectory=/opt/mobitrace-print
+
 ExecStart=/usr/bin/gunicorn --workers 2 --bind 127.0.0.1:5050 print_api:app
+
 Restart=always
 
 [Install]
+
 WantedBy=multi-user.target
+
 EOF
 
-systemctl daemon-reload
-systemctl enable mobitrace-print
-systemctl restart mobitrace-print
+systemctl daemon-reload && systemctl enable --now mobitrace-print || true
 
-# ==============================================================================
-# 5. INJECTION DE LA ROUTE DANS NGINX
-# ==============================================================================
+
+# 5. Injection de la route Nginx
+
 NGINX_CONF="/etc/nginx/sites-available/trace"
-if [ -f "$NGINX_CONF" ]; then
-    if ! grep -q "location /imprimer-zpl" "$NGINX_CONF"; then
-        echo "Ajout de la route d'impression dans Nginx..."
-        sed -i -e '/^}/i \    location /imprimer-zpl {\n        proxy_pass http://127.0.0.1:5050/imprimer-zpl;\n        proxy_set_header Host $host;\n        proxy_set_header X-Real-IP $remote_addr;\n    }\n' "$NGINX_CONF"
-        systemctl reload nginx || true
-    fi
+
+if [ -f "$NGINX_CONF" ] && ! grep -q "location /imprimante/" "$NGINX_CONF"; then
+
+    echo "Ajout des routes d'impression dans Nginx..."
+
+    sed -i -e '/^}/i \ location /imprimer-zpl {\n proxy_pass http://127.0.0.1:5050/imprimer-zpl;\n }\n\n location /imprimante/ {\n proxy_pass http://127.0.0.1:5050/imprimante/;\n }\n' "$NGINX_CONF"
+
+    systemctl reload nginx || true
+
 fi
 
-echo "=== Module d'impression installé avec succès ! ==="
-echo ""
-echo "L'interface de gestion CUPS est désormais accessible sur :"
-echo "👉 http://<IP_DU_SERVEUR>:631"
-echo ""
-echo "RAPPEL: Pour vous y connecter, votre compte utilisateur Linux doit faire partie du groupe 'lpadmin'."
-echo "Vous pouvez l'ajouter avec la commande : sudo usermod -aG lpadmin <votre_nom_utilisateur>"
+
+echo "=== Module d'impression mis à jour ! ==="
+
 exit 0

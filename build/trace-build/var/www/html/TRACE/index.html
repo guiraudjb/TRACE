@@ -389,9 +389,16 @@
                                 <li><button class="fr-btn fr-btn--secondary fr-icon-delete-bin-line fr-btn--icon-left" id="nav-admin-rebut">Mise au rebut</button></li>
                                 <li><button class="fr-btn fr-btn--secondary fr-icon-article-line fr-btn--icon-left" id="nav-admin-audit">Audit</button></li>                                <li><button class="fr-btn fr-btn--secondary fr-icon-settings-5-line fr-btn--icon-left" id="nav-admin-config">En-têtes PV</button></li>
                                 <li><button class="fr-btn fr-btn--secondary fr-icon-recycle-line fr-btn--icon-left" id="nav-admin-recyclage">Recyclage ID</button></li>
+
+                                <li><button class="fr-btn fr-btn--secondary fr-icon-printer-line fr-btn--icon-left" id="nav-admin-printer">Gestion Imprimante</button></li>
+
                             </ul>
                         </div>
                     </div>
+
+
+
+
 
                     <div id="view-users-list" class="sub-view active">
                         <div class="fr-grid-row fr-grid-row--middle fr-mb-2w">
@@ -676,12 +683,86 @@
                             </div>
                         </div>
                     </div>
+                    <div id="view-admin-printer" class="sub-view">
+    <div class="fr-container fr-mt-2w">
+        <h2 class="fr-h4 fr-mb-3w">
+            <span class="fr-icon-settings-5-line" aria-hidden="true"></span> 
+            Salle de contrôle de l'imprimante Zebra
+        </h2>
+        
+        <div class="fr-grid-row fr-grid-row--gutters">
+            <div class="fr-col-12 fr-col-md-6">
+                <div class="fr-card fr-p-3w" style="height: 100%;">
+                    <h3 class="fr-h6">État de la machine</h3>
+                    <div id="printer-status-text" class="fr-mb-4w">
+                        <span class="fr-badge fr-badge--info">Recherche de l'imprimante...</span>
+                    </div>
+                    <div class="fr-btns-group fr-btns-group--inline">
+                        <button id="btn-printer-pause" class="fr-btn fr-btn--secondary fr-btn--sm fr-icon-pause-circle-line fr-btn--icon-left">
+                            Mettre en Pause
+                        </button>
+                        <button id="btn-printer-resume" class="fr-btn fr-btn--secondary fr-btn--sm fr-icon-play-circle-line fr-btn--icon-left">
+                            Relancer
+                        </button>
+                    </div>
                 </div>
             </div>
-        </section>
-    </main>
 
-<!-- Modale de saisie de mot de passe sécurisée -->
+            <div class="fr-col-12 fr-col-md-6">
+                <div class="fr-card fr-p-3w" style="height: 100%;">
+                    <h3 class="fr-h6">Configuration réseau</h3>
+                    <p class="fr-text--sm">Modifiez l'adresse si l'imprimante a été remplacée ou déplacée.</p>
+                    <form id="form-printer-config">
+                        <div class="fr-input-group">
+                            <label class="fr-label" for="admin-printer-ip">Adresse IP (IPv4)</label>
+                            <div class="fr-input-wrap fr-input-wrap--addon">
+                                <input type="text" class="fr-input" id="admin-printer-ip" placeholder="192.168.1.99" required pattern="\d{1,3}(\.\d{1,3}){3}">
+                                <button class="fr-btn" type="submit">Appliquer</button>
+                            </div>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        </div>
+
+        <div class="fr-mt-5w">
+            <div class="fr-grid-row fr-grid-row--middle fr-mb-2w">
+                <div class="fr-col">
+                    <h3 class="fr-h6 fr-mb-0">File d'attente des impressions</h3>
+                </div>
+                <div class="fr-col-auto">
+                    <button id="btn-printer-clear" class="fr-btn fr-btn--sm fr-btn--secondary fr-icon-delete-bin-line fr-btn--icon-left text-danger" style="color: var(--text-default-error); box-shadow: inset 0 0 0 1px var(--border-default-error);">
+                        Vider toute la file
+                    </button>
+                </div>
+            </div>
+            
+            <div class="fr-table fr-table--no-caption">
+                <table>
+                    <caption>Liste des étiquettes en attente d'impression</caption>
+                    <thead>
+                        <tr>
+                            <th>N° de Tâche (CUPS)</th>
+                            <th>Date et Heure d'envoi</th>
+                            <th>Poids (Octets)</th>
+                            <th style="width: 100px; text-align: center;">Action</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-printer-queue-body">
+                        <tr>
+                            <td colspan="4" class="text-center">Chargement de la file d'attente...</td>
+                        </tr>
+                    </tbody>
+                </table>
+            </div>
+        </div>
+    </div>
+</div>
+
+</div> 
+            </div> 
+        </section> 
+    </main> 
 <dialog id="modal-password" class="fr-modal" role="dialog" aria-labelledby="modal-password-title">
     <div class="fr-container fr-container--fluid fr-container-md">
         <div class="fr-grid-row fr-grid-row--center">
