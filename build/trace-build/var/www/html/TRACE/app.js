@@ -136,6 +136,32 @@ const API = {
 // 3. COUCHE UTILITAIRE UI (RENDU & SÉCURITÉ)
 // ============================================================================
 const UI = {
+    
+    // Remplacez votre méthode UI.confirm actuelle par celle-ci
+    confirm: (titre, message, onConfirm) => {
+        const modalElement = document.getElementById('modal-confirm');
+        
+        // 1. Mise à jour du contenu
+        document.getElementById('modal-confirm-title').textContent = titre;
+        document.getElementById('modal-confirm-text').textContent = message;
+        
+        // 2. Initialisation explicite de la modale via DSFR
+        const modal = dsfr(modalElement).modal;
+        
+        // 3. Gestion de la confirmation
+        const btnYes = document.getElementById('modal-confirm-btn-yes');
+        const newBtnYes = btnYes.cloneNode(true);
+        btnYes.parentNode.replaceChild(newBtnYes, btnYes);
+        
+        newBtnYes.addEventListener('click', () => {
+            onConfirm();
+            modal.conceal(); // Fermer la modale
+        });
+        
+        // 4. Affichage
+        modal.disclose();
+    },
+    
     escape(str) {
         if (str === null || str === undefined) return "";
         const div = document.createElement('div');
@@ -630,7 +656,7 @@ const MobilierCtrl = {
     
     async handleDelete() {
         const uuid = document.getElementById('edit-mob-uuid').value;
-        if (!confirm("Supprimer définitivement cet équipement ?")) return;
+        UI.confirm("Suppression", "Supprimer définitivement cet équipement ?", async () => {
         try {
             const res = await API.fetch(`/mobiliers?uuid=eq.${uuid}`, { method: 'DELETE', headers: API.getHeaders() });
             if (!res.ok) throw new Error("Échec de la suppression");
@@ -638,6 +664,7 @@ const MobilierCtrl = {
             await this.loadData();
             UI.showView('view-mobilier-list', 'panel-mobilier');
         } catch (err) { UI.showAlert("Erreur", err.message, "error"); }
+        });
     },
 
     async exportCSV() {
@@ -1080,15 +1107,16 @@ const GabaritCtrl = {
 
     async handleDelete() {
         const id = document.getElementById('edit-gab-id').value;
-        if (!confirm("Voulez-vous supprimer ce modèle ?")) return;
-        try {
-            const res = await API.fetch(`/gabarits?id=eq.${id}`, { method: 'DELETE', headers: API.getHeaders() });
-            if (!res.ok) throw new Error("Ce modèle est utilisé par des équipements.");
-            UI.showAlert("Succès", "Modèle retiré", "success");
-            await API.loadReferentiels();
-            await this.loadData();
-            UI.showView('view-gabarits-list', 'panel-gabarits');
-        } catch (err) { UI.showAlert("Erreur", err.message, "error"); }
+        UI.confirm("Suppression", "Voulez-vous supprimer ce modèle ?", async () => {
+            try {
+                const res = await API.fetch(`/gabarits?id=eq.${id}`, { method: 'DELETE', headers: API.getHeaders() });
+                if (!res.ok) throw new Error("Ce modèle est utilisé par des équipements.");
+                UI.showAlert("Succès", "Modèle retiré", "success");
+                await API.loadReferentiels();
+                await this.loadData();
+                UI.showView('view-gabarits-list', 'panel-gabarits');
+            } catch (err) { UI.showAlert("Erreur", err.message, "error"); }
+        });
     },
     async exportCSV() {
         let params = new URLSearchParams();
@@ -1486,15 +1514,16 @@ const AdminCtrl = {
 
     async deleteUa() {
         const code = document.getElementById('edit-ua-code').value;
-        if (!confirm(`Supprimer définitivement le service ${code} ?`)) return;
-        try {
-            const res = await API.fetch(`/structures?code_sages=eq.${code}`, { method: 'DELETE', headers: API.getHeaders() });
-            if (!res.ok) throw new Error("Impossible : ce service est utilisé par des équipements.");
-            UI.showAlert("Succès", "Service supprimé.", "success");
-            await API.loadReferentiels();
-            this.renderUA();
-            UI.showView('view-ua-list', 'panel-admin');
-        } catch (err) { UI.showAlert("Erreur SQL", err.message, "error"); }
+        UI.confirm("Suppression", `Supprimer définitivement le service ${code} ?`, async () => {
+            try {
+                const res = await API.fetch(`/structures?code_sages=eq.${code}`, { method: 'DELETE', headers: API.getHeaders() });
+                if (!res.ok) throw new Error("Impossible : ce service est utilisé par des équipements.");
+                UI.showAlert("Succès", "Service supprimé.", "success");
+                await API.loadReferentiels();
+                this.renderUA();
+                UI.showView('view-ua-list', 'panel-admin');
+            } catch (err) { UI.showAlert("Erreur SQL", err.message, "error"); }
+        });
     },
 
 
@@ -1612,15 +1641,16 @@ const AdminCtrl = {
 
     async deleteLieu() {
         const id = document.getElementById('edit-lieu-id').value;
-        if (!confirm(`Supprimer définitivement ce lieu ?`)) return;
-        try {
-            const res = await API.fetch(`/lieux?id=eq.${id}`, { method: 'DELETE', headers: API.getHeaders() });
-            if (!res.ok) throw new Error("Impossible : ce lieu est rattaché à des équipements ou des services.");
-            UI.showAlert("Succès", "Lieu supprimé.", "success");
-            await API.loadReferentiels();
-            this.renderLieux();
-            UI.showView('view-lieux-list', 'panel-admin');
-        } catch (err) { UI.showAlert("Erreur SQL", err.message, "error"); }
+        UI.confirm("Suppression", "Supprimer définitivement ce lieu ?", async () => {
+            try {
+                const res = await API.fetch(`/lieux?id=eq.${id}`, { method: 'DELETE', headers: API.getHeaders() });
+                if (!res.ok) throw new Error("Impossible : ce lieu est rattaché à des équipements ou des services.");
+                UI.showAlert("Succès", "Lieu supprimé.", "success");
+                await API.loadReferentiels();
+                this.renderLieux();
+                UI.showView('view-lieux-list', 'panel-admin');
+            } catch (err) { UI.showAlert("Erreur SQL", err.message, "error"); }
+        });
     },
 
 
@@ -2427,7 +2457,7 @@ const App = {
         document.getElementById('btn-export-lieux-csv')?.addEventListener('click', () => AdminCtrl.exportLieuxCSV());
         
        
-		// --- GESTION IMPRIMANTE ZEBRA ---
+        // --- GESTION IMPRIMANTE ZEBRA ---
 
         document.getElementById('nav-admin-printer')?.addEventListener('click', () => {
 

@@ -837,6 +837,29 @@
 </dialog>
 
 
+<dialog id="modal-confirm" class="fr-modal" role="dialog" aria-labelledby="modal-confirm-title">
+    <div class="fr-container fr-container--fluid fr-container-md">
+        <div class="fr-grid-row fr-grid-row--center">
+            <div class="fr-col-12 fr-col-md-8 fr-col-lg-6">
+                <div class="fr-modal__body">
+                    <div class="fr-modal__header">
+                        <button class="fr-btn--close fr-btn" aria-controls="modal-confirm">Fermer</button>
+                    </div>
+                    <div class="fr-modal__content">
+                        <h1 id="modal-confirm-title" class="fr-modal__title">Confirmation</h1>
+                        <p id="modal-confirm-text"></p>
+                    </div>
+                    <div class="fr-modal__footer">
+                        <ul class="fr-btns-group fr-btns-group--right fr-btns-group--inline-reverse fr-btns-group--inline-lg">
+                            <li><button class="fr-btn" id="modal-confirm-btn-yes">Confirmer</button></li>
+                            <li><button class="fr-btn fr-btn--secondary" aria-controls="modal-confirm">Annuler</button></li>
+                        </ul>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </div>
+</dialog>
 
 
     <script type="module" src="dsfr-v1.14.3/dist/dsfr.module.min.js"></script>
