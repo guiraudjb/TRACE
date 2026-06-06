@@ -1,0 +1,27 @@
+#!/bin/bash
+set -e
+
+# 1. On charge la librairie debconf
+if [ -f /usr/share/debconf/confmodule ]; then
+    . /usr/share/debconf/confmodule
+fi
+
+if [ "$1" = "purge" ]; then
+    echo "Nettoyage de la sonde de surveillance mobiTrace..."
+    
+    # Oubli des réponses dans la base Debconf
+    if [ -f /usr/share/debconf/confmodule ]; then
+        db_purge || true
+    fi
+    
+    # Retrait des scripts de surveillance
+    rm -f /usr/local/bin/mobitrace_backup_survey.sh || true
+    rm -f /etc/cron.d/mobitrace-backup-survey || true
+    
+    systemctl reload cron || true
+    
+    echo "Sonde retirée avec succès."
+    # (Note: Nous ne désinstallons pas Postfix pour ne pas casser d'autres services éventuels du serveur)
+fi
+
+exit 0

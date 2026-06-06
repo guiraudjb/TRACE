@@ -1,9 +1,0 @@
-#!/bin/sh
-set -e
-
-# Chargement de la librairie interactive de Debian
-. /usr/share/debconf/confmodule
-
-# On pose la question (priorité haute pour forcer l'affichage)
-db_input high trace-backup/client_ip || true
-db_go || true

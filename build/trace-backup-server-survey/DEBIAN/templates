@@ -1,0 +1,13 @@
+Template: trace-backup-survey/admin_email
+Type: string
+Default: equipe.support@dgfip.finances.gouv.fr,admin.sys@dgfip.finances.gouv.fr
+Description: E-mails pour les rapports et alertes de sauvegarde :
+ Veuillez indiquer les adresses e-mails (séparées par des virgules, 
+ sans espace) qui recevront le bilan quotidien et les alertes.
+
+Template: trace-backup-survey/smtp_relay
+Type: string
+Description: Adresse du proxy SMTP interne (Relayhost) :
+ Veuillez indiquer l'adresse IP ou le nom DNS du proxy mail interne
+ de votre direction (ex: smtp.dgfip.finances.gouv.fr). 
+ Laissez vide si la machine envoie les e-mails directement.

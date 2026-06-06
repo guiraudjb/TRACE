@@ -1,0 +1,10 @@
+#!/bin/sh
+set -e
+
+# Chargement de la librairie interactive de Debian
+. /usr/share/debconf/confmodule
+
+# On pose les questions
+db_input high trace-backup-survey/admin_email || true
+db_input high trace-backup-survey/smtp_relay || true
+db_go || true

@@ -1,0 +1,30 @@
+#!/bin/bash
+set -e
+
+MOUNT_POINT="/mnt/savetrace"
+FSTAB="/etc/fstab"
+
+if [ "$1" = "remove" ] || [ "$1" = "purge" ]; then
+    echo "Nettoyage de la configuration NFS TRACE..."
+
+    # 1. Coupure du service et démontage en douceur
+    systemctl stop mnt-savetrace.automount 2>/dev/null || true
+    umount "$MOUNT_POINT" 2>/dev/null || true
+
+    # 2. Nettoyage chirurgical du fichier fstab
+    if grep -q "[[:space:]]${MOUNT_POINT}[[:space:]]" "$FSTAB"; then
+        echo "Retrait de la règle de montage du fichier fstab..."
+        # Supprime la ligne qui contient /mnt/savetrace
+        sed -i "\|[[:space:]]${MOUNT_POINT}[[:space:]]|d" "$FSTAB"
+        systemctl daemon-reload
+    fi
+    
+    # 3. Suppression du dossier vide uniquement si on purge
+    if [ "$1" = "purge" ]; then
+        rmdir "$MOUNT_POINT" 2>/dev/null || true
+    fi
+    
+    echo "Nettoyage terminé."
+fi
+
+exit 0

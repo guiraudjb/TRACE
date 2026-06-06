@@ -1,0 +1,106 @@
+#!/bin/bash
+set -e
+
+# On charge debconf
+. /usr/share/debconf/confmodule
+
+# 1. Récupération des réponses
+db_get trace-backup-survey/admin_email || true
+ADMIN_EMAIL="$RET"
+
+db_get trace-backup-survey/smtp_relay || true
+SMTP_RELAY="$RET"
+
+# 2. Fermeture de debconf
+db_stop || true
+
+# Redirection de la sortie
+exec 1>&2
+
+echo "=== Configuration de la sonde de surveillance mobiTrace ==="
+
+# 3. Configuration de Postfix
+if [ -n "$SMTP_RELAY" ]; then
+    echo "Configuration du relais SMTP Postfix vers : $SMTP_RELAY"
+    postconf -e "relayhost = $SMTP_RELAY"
+    systemctl restart postfix || true
+else
+    echo "Aucun relais SMTP spécifié. Postfix utilisera la distribution directe."
+fi
+
+# 4. Création du script de surveillance
+echo "Déploiement du script de contrôle (/usr/local/bin/mobitrace_backup_survey.sh)..."
+cat << 'EOF' > /usr/local/bin/mobitrace_backup_survey.sh
+#!/bin/bash
+# ==========================================
+# Configuration
+# ==========================================
+BACKUP_DIR="/var/nfs/backupTRACE"
+# Liste des destinataires injectée par le paquet Debian
+EMAIL_DEST="__ADMIN_EMAIL__"
+YESTERDAY=$(date -d "yesterday" +%Y-%m-%d)
+PREFIX="trace_backup_"
+# ==========================================
+# Vérification des fichiers de la veille
+# ==========================================
+# Compte le nombre de fichiers correspondant à la date d'hier
+BACKUP_COUNT=$(find "$BACKUP_DIR" -maxdepth 1 -name "${PREFIX}${YESTERDAY}*" -type f | wc -l)
+# Récupère le nom des fichiers trouvés pour le rapport
+LISTE_FICHIERS=$(find "$BACKUP_DIR" -maxdepth 1 -name "${PREFIX}${YESTERDAY}*" -type f -exec basename {} \;)
+# ==========================================
+# Récupération de l'historique et des tailles
+# ==========================================
+# Se place dans le dossier et liste tous les fichiers de sauvegarde avec leur taille lisible (ls -lh)
+LISTE_TOTALE=$(cd "$BACKUP_DIR" && ls -lh 2>/dev/null | grep "$PREFIX" | awk '{printf "%-10s %s\n", $5, $9}')
+# ==========================================
+# Logique d'alerte et formatage du mail
+# ==========================================
+if [ "$BACKUP_COUNT" -eq 0 ]; then
+# Cas 1 : Aucune sauvegarde
+SUBJECT="[ALERTE CRITIQUE] Échec des sauvegardes mobiTrace - $YESTERDAY"
+BODY="Alerte : Aucune sauvegarde de la base de données n'a été trouvée pour la journée du $YESTERDAY dans le dossier $BACKUP_DIR.\n\nL'intégrité des données de l'inventaire n'est plus garantie. Merci de vérifier le serveur et les logs cron.\n"
+elif [ "$BACKUP_COUNT" -lt 2 ]; then
+# Cas 2 : Il manque une des deux sauvegardes (2h ou 13h)
+SUBJECT="[AVERTISSEMENT] Sauvegarde mobiTrace incomplète - $YESTERDAY"
+BODY="Attention : Seulement $BACKUP_COUNT sauvegarde(s) trouvée(s) pour le $YESTERDAY au lieu des 2 prévues (02h00 et 13h00).\n\nFichier(s) présent(s) pour hier :\n$LISTE_FICHIERS\n"
+else
+# Cas 3 : Tout est normal (2 sauvegardes ou plus)
+SUBJECT="[OK] Rapport de sauvegarde mobiTrace - $YESTERDAY"
+BODY="Les sauvegardes journalières se sont déroulées correctement.\nNombre de fichiers trouvés pour hier : $BACKUP_COUNT\n"
+fi
+# ==========================================
+# Ajout de l'historique global au corps du mail
+# ==========================================
+BODY="${BODY}\n==========================================\n"
+BODY="${BODY}Inventaire de toutes les sauvegardes disponibles :\n"
+BODY="${BODY}==========================================\n"
+if [ -z "$LISTE_TOTALE" ]; then
+BODY="${BODY}Aucune sauvegarde trouvée dans le répertoire."
+else
+BODY="${BODY}Taille Nom du fichier\n"
+BODY="${BODY}------------------------------------------\n"
+BODY="${BODY}${LISTE_TOTALE}"
+fi
+# ==========================================
+# Envoi du mail (via Postfix/mailutils)
+# ==========================================
+echo -e "$BODY" | mail -s "$SUBJECT" "$EMAIL_DEST"
+EOF
+
+# Secours si le champ est laissé vide
+if [ -z "$ADMIN_EMAIL" ]; then ADMIN_EMAIL="equipe.support@dgfip.finances.gouv.fr,admin.sys@dgfip.finances.gouv.fr"; fi
+
+# Remplacement de la balise par les e-mails réels
+sed -i "s/__ADMIN_EMAIL__/$ADMIN_EMAIL/g" /usr/local/bin/mobitrace_backup_survey.sh
+chmod 755 /usr/local/bin/mobitrace_backup_survey.sh
+
+# 5. Création de la tâche planifiée (Cron)
+echo "Planification de la vérification quotidienne (08h00)..."
+cat << 'EOF' > /etc/cron.d/mobitrace-backup-survey
+# Contrôle quotidien des sauvegardes NFS mobiTrace (bilan de la veille)
+0 8 * * * root /usr/local/bin/mobitrace_backup_survey.sh >/dev/null 2>&1
+EOF
+chmod 644 /etc/cron.d/mobitrace-backup-survey
+
+echo "=== Sonde installée et système d'e-mail configuré avec succès ! ==="
+exit 0

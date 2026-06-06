@@ -1,0 +1,11 @@
+Package: trace-backup-server-survey
+Version: 1.0.0
+Architecture: all
+Maintainer: Admin mobiTrace <admin@dgfip.finances.gouv.fr>
+Depends: trace-backup-server, mailutils, postfix, debconf
+Section: admin
+Priority: optional
+Description: Module de surveillance des sauvegardes mobiTrace.
+ Installe une sonde (Cron) qui vérifie quotidiennement la présence
+ de sauvegardes récentes dans le partage NFS et lève une alerte
+ par e-mail en cas de défaillance via le proxy interne.

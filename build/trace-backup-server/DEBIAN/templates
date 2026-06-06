@@ -1,0 +1,6 @@
+Template: trace-backup/client_ip
+Type: string
+Description: Adresse IP du serveur TRACE (Client) :
+ Veuillez indiquer l'adresse IP du serveur hébergeant l'application TRACE.
+ Ce serveur sera le seul autorisé à se connecter à ce partage NFS pour
+ y déposer ses sauvegardes de base de données.

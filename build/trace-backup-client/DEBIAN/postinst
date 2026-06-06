@@ -1,0 +1,53 @@
+#!/bin/bash
+set -e
+
+echo "=== Installation du module de sauvegarde NFS pour TRACE ==="
+
+MOUNT_POINT="/mnt/savetrace"
+FSTAB="/etc/fstab"
+
+DEFAULT_NFS="192.168.1.40:/var/nfs/backupTRACE"
+NFS_SHARE=""
+
+echo ""
+echo "------------------------------------------------------------"
+if [ -t 1 ]; then
+    read -p "Chemin du partage NFS serveur [$DEFAULT_NFS] : " NFS_SHARE < /dev/tty
+fi
+
+if [ -z "$NFS_SHARE" ]; then
+    NFS_SHARE=$DEFAULT_NFS
+    echo "Aucune saisie. Utilisation de la cible par défaut : $NFS_SHARE"
+else
+    echo "Cible enregistrée : $NFS_SHARE"
+fi
+echo "------------------------------------------------------------"
+echo ""
+
+# 1. Création du point de montage
+echo "Vérification du répertoire cible $MOUNT_POINT..."
+mkdir -p "$MOUNT_POINT"
+
+# 2. Injection sécurisée dans fstab
+FSTAB_LINE="${NFS_SHARE} ${MOUNT_POINT} nfs noauto,x-systemd.automount,x-systemd.idle-timeout=600,_netdev 0 0"
+
+# On vérifie que la ligne n'existe pas déjà pour éviter les doublons
+if ! grep -q "[[:space:]]${MOUNT_POINT}[[:space:]]" "$FSTAB"; then
+    echo "Sauvegarde du fichier fstab original..."
+    cp "$FSTAB" "${FSTAB}.bak_trace"
+    
+    echo "Ajout de la règle de montage automatique..."
+    echo "$FSTAB_LINE" >> "$FSTAB"
+else
+    echo "Une configuration pour $MOUNT_POINT existe déjà dans fstab. Ignoré."
+fi
+
+# 3. Activation de la magie SystemD
+echo "Rechargement des démons système..."
+systemctl daemon-reload
+
+# Systemd crée automatiquement un service "automount" basé sur le chemin du dossier
+systemctl restart mnt-savetrace.automount || true
+
+echo "=== Client NFS configuré avec succès ! ==="
+exit 0
