@@ -962,9 +962,9 @@ const GabaritCtrl = {
         State.gabarit.data.forEach(gab => {
             const tr = document.createElement('tr');
             
-            const actionButtonGab = State.user.role === 'lecteur'
-                ? '<td><span class="fr-badge fr-badge--sm fr-badge--info fr-icon-lock-line"> Protégé</span></td>'
-                : '<td><button class="fr-btn fr-btn--secondary fr-btn--sm btn-edit-gab">Éditer</button></td>';
+            const actionButtonGab = State.user.role === 'administrateur'
+                ? '<td><button class="fr-btn fr-btn--secondary fr-btn--sm btn-edit-gab">Éditer</button></td>'
+                : '<td><span class="fr-badge fr-badge--sm fr-badge--info fr-icon-lock-line"> Lecture seule</span></td>';
             const photoHtml = gab.photo_base64 
                 ? `<img src="${gab.photo_base64}" alt="Photo" style="width: 300px; height: 300px; object-fit: cover; border-radius: 4px; border: 1px solid var(--border-default-grey);">` 
                 : `<span class="fr-icon-image-line" style="color: var(--text-mention-grey); font-size: 1.5rem;" aria-hidden="true"></span>`;
@@ -2210,13 +2210,18 @@ const App = {
         if (State.user.role === 'administrateur') {
             document.getElementById('tab-admin').style.display = 'block';
             document.getElementById('btn-delete-mob').style.display = 'inline-flex';
-        } else if (State.user.role === 'lecteur') {
-            // Masquer les boutons de modification pour le consultant
+        } else {
+            // Pour l'Agent et le Lecteur : on masque la création de gabarit
+            const btnCreateGab = document.getElementById('btn-nav-create-gab');
+            if (btnCreateGab) btnCreateGab.style.display = 'none';
+        }
+
+        if (State.user.role === 'lecteur') {
+            // Masquer les boutons d'inventaire uniquement pour le consultant
             const actionsToHide = [
                 'btn-nav-create-mob', 
                 'btn-nav-scan', 
-                'btn-nav-import',
-                'btn-nav-create-gab'
+                'btn-nav-import'
             ];
             actionsToHide.forEach(id => {
                 const el = document.getElementById(id);
