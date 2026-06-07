@@ -564,42 +564,41 @@ const MobilierCtrl = {
         };
         const quantite = parseInt(document.getElementById('new-mob-quantite').value) || 1;
 
-        if (quantite > 100 && !confirm(`Créer ${quantite} équipements identiques ?`)) {
-            if (submitBtn) { submitBtn.disabled = false; submitBtn.innerText = "Enregistrer le lot"; }
-            return;
-        }
+        const executerCreation = async () => {
+            try {
+                const payloads = Array(quantite).fill(payload);
+                const res = await API.fetch(`/mobiliers`, { method: 'POST', headers: API.getHeaders(), body: JSON.stringify(payloads) });
+                
+                if (!res.ok) throw new Error("Erreur lors de la création.");
+                
+                const data = await res.json();
+                const idsCrees = data.map(m => m.id_metier).sort();
+                
+                let messageDetail = "";
+                if (idsCrees.length === 1) {
+                    messageDetail = ` Numéro affecté : ${idsCrees[0]}.`;
+                } else if (idsCrees.length > 1) {
+                    messageDetail = ` Série affectée : de ${idsCrees[0]} à ${idsCrees[idsCrees.length - 1]}.`;
+                }
 
-        try {
-            const payloads = Array(quantite).fill(payload);
-            const res = await API.fetch(`/mobiliers`, { method: 'POST', headers: API.getHeaders(), body: JSON.stringify(payloads) });
-            
-            if (!res.ok) throw new Error("Erreur lors de la création.");
-            
-            // 2. EXTRACTION DES IDENTIFIANTS GÉNÉRÉS
-            const data = await res.json();
-            // On extrait les id_metier et on les trie par ordre alphabétique/numérique
-            const idsCrees = data.map(m => m.id_metier).sort();
-            
-            // 3. FORMATAGE DU MESSAGE DE RETOUR
-            let messageDetail = "";
-            if (idsCrees.length === 1) {
-                messageDetail = ` Numéro affecté : ${idsCrees[0]}.`;
-            } else if (idsCrees.length > 1) {
-                messageDetail = ` Série affectée : de ${idsCrees[0]} à ${idsCrees[idsCrees.length - 1]}.`;
+                UI.showAlert("Succès", `${quantite} équipement(s) créé(s).${messageDetail}`, "success");
+                
+                await this.loadData();
+                UI.showView('view-mobilier-list', 'panel-mobilier');
+            } catch (err) { 
+                UI.showAlert("Erreur", err.message, "error"); 
+            } finally {
+                if (submitBtn) {
+                    submitBtn.disabled = false;
+                    submitBtn.innerText = "Enregistrer le lot";
+                }
             }
+        };
 
-            UI.showAlert("Succès", `${quantite} équipement(s) créé(s).${messageDetail}`, "success");
-            
-            await this.loadData();
-            UI.showView('view-mobilier-list', 'panel-mobilier');
-        } catch (err) { 
-            UI.showAlert("Erreur", err.message, "error"); 
-        } finally {
-            // 4. Libération du bouton quoi qu'il arrive (succès ou erreur)
-            if (submitBtn) {
-                submitBtn.disabled = false;
-                submitBtn.innerText = "Enregistrer le lot";
-            }
+        if (quantite > 100) {
+            UI.confirm("Création en masse", `Créer ${quantite} équipements identiques ?`, executerCreation);
+        } else {
+            executerCreation();
         }
     },
     
@@ -1314,12 +1313,15 @@ const AdminCtrl = {
     },
     
     async deleteUser(email) {
-        if (!confirm(`Révoquer l'accès pour ${email} ?`)) return;
-        try {
-            await API.fetch(`/utilisateurs?email=eq.${email}`, { method: 'DELETE', headers: API.getHeaders() });
-            UI.showAlert("Succès", "Compte supprimé.", "success");
-            this.loadUsers();
-        } catch (err) { UI.showAlert("Erreur", "Suppression impossible.", "error"); }
+        UI.confirm("Révocation", `Révoquer l'accès pour ${email} ?`, async () => {
+            try {
+                await API.fetch(`/utilisateurs?email=eq.${email}`, { method: 'DELETE', headers: API.getHeaders() });
+                UI.showAlert("Succès", "Compte supprimé.", "success");
+                this.loadUsers();
+            } catch (err) { 
+                UI.showAlert("Erreur", "Suppression impossible.", "error"); 
+            }
+        });
     },
 
     async resetUserPwd(email) {
@@ -1769,65 +1771,61 @@ const AdminCtrl = {
         e.preventDefault();
         const fileInput = document.getElementById('recyclage-file-upload');
         if (!fileInput.files[0]) { UI.showAlert("Attention", "Sélectionnez un fichier .txt", "warning"); return; }
-        if (!confirm("Confirmer le recyclage de ces identifiants vers le gabarit tampon ?")) return;
-
-        // Préparation des données d'écrasement
-        const payload = {
-            gabarit_id: parseInt(document.getElementById('recyclage-gabarit').value),
-            statut: document.getElementById('recyclage-statut').value,
-            remarques: document.getElementById('recyclage-remarques').value
-        };
         
-        const uaVal = document.getElementById('recyclage-ua').value;
-        const lieuVal = document.getElementById('recyclage-lieu').value;
-        if (uaVal) payload.code_sages = uaVal;
-        if (lieuVal) payload.lieu_id = parseInt(lieuVal);
+        UI.confirm("Recyclage", "Confirmer le recyclage de ces identifiants vers le modèle tampon ?", () => {
+            const payload = {
+                gabarit_id: parseInt(document.getElementById('recyclage-gabarit').value),
+                statut: document.getElementById('recyclage-statut').value,
+                remarques: document.getElementById('recyclage-remarques').value
+            };
+            
+            const uaVal = document.getElementById('recyclage-ua').value;
+            const lieuVal = document.getElementById('recyclage-lieu').value;
+            if (uaVal) payload.code_sages = uaVal;
+            if (lieuVal) payload.lieu_id = parseInt(lieuVal);
 
-        const btn = document.getElementById('btn-exec-recyclage');
-        const originalText = btn.innerHTML;
-        btn.disabled = true;
-        btn.innerHTML = '<span class="fr-icon-refresh-line fr-btn--icon-left" aria-hidden="true"></span> Recyclage en cours...';
+            const btn = document.getElementById('btn-exec-recyclage');
+            const originalText = btn.innerHTML;
+            btn.disabled = true;
+            btn.innerHTML = '<span class="fr-icon-refresh-line fr-btn--icon-left" aria-hidden="true"></span> Recyclage en cours...';
 
-        const reader = new FileReader();
-        reader.onload = async (ev) => {
-            // Extraction et nettoyage des identifiants (MOB-XXXXXX)
-            const ids = ev.target.result.split(/\r?\n/).map(id => id.trim().toUpperCase()).filter(id => /^MOB-\d{6}$/.test(id));
-            if (ids.length === 0) { 
-                UI.showAlert("Erreur", "Aucun identifiant valide trouvé dans le fichier.", "error"); 
-                btn.disabled = false; btn.innerHTML = originalText;
-                return; 
-            }
-
-            try {
-                UI.showAlert("Traitement", `Recyclage de ${ids.length} identifiants...`, "info");
-                const CHUNK_SIZE = 100; // Envoi par lots de 100 pour ne pas saturer l'API
-                let successCount = 0;
-
-                for (let i = 0; i < ids.length; i += CHUNK_SIZE) {
-                    const chunk = ids.slice(i, i + CHUNK_SIZE);
-                    const res = await API.fetch(`/mobiliers?id_metier=in.(${chunk.join(',')})`, {
-                        method: 'PATCH', 
-                        headers: API.getHeaders({ 'Prefer': 'return=representation' }), 
-                        body: JSON.stringify(payload)
-                    });
-                    if (!res.ok) throw new Error("Erreur lors du traitement d'un lot d'identifiants.");
-                    const data = await res.json();
-                    successCount += data.length;
+            const reader = new FileReader();
+            reader.onload = async (ev) => {
+                const ids = ev.target.result.split(/\r?\n/).map(id => id.trim().toUpperCase()).filter(id => /^MOB-\d{6}$/.test(id));
+                if (ids.length === 0) { 
+                    UI.showAlert("Erreur", "Aucun identifiant valide trouvé dans le fichier.", "error"); 
+                    btn.disabled = false; btn.innerHTML = originalText;
+                    return; 
                 }
 
-                UI.showAlert("Succès total", `${successCount} identifiants réinitialisés et recyclés.`, "success");
-                MobilierCtrl.loadData(); // Mise à jour de l'inventaire en arrière-plan
-                document.getElementById('form-admin-recyclage').reset();
-            } catch (err) {
-                UI.showAlert("Erreur", err.message, "error");
-            } finally {
-                btn.disabled = false;
-                btn.innerHTML = originalText;
-            }
-        };
-        reader.readAsText(fileInput.files[0]);
-    },
+                try {
+                    UI.showAlert("Traitement", `Recyclage de ${ids.length} identifiants...`, "info");
+                    const CHUNK_SIZE = 100;
+                    let successCount = 0;
 
+                    for (let i = 0; i < ids.length; i += CHUNK_SIZE) {
+                        const chunk = ids.slice(i, i + CHUNK_SIZE);
+                        const res = await API.fetch(`/mobiliers?id_metier=in.(${chunk.join(',')})`, {
+                            method: 'PATCH', headers: API.getHeaders({ 'Prefer': 'return=representation' }), body: JSON.stringify(payload)
+                        });
+                        if (!res.ok) throw new Error("Erreur lors du traitement d'un lot d'identifiants.");
+                        const data = await res.json();
+                        successCount += data.length;
+                    }
+
+                    UI.showAlert("Succès total", `${successCount} identifiants réinitialisés et recyclés.`, "success");
+                    MobilierCtrl.loadData();
+                    document.getElementById('form-admin-recyclage').reset();
+                } catch (err) {
+                    UI.showAlert("Erreur", err.message, "error");
+                } finally {
+                    btn.disabled = false; btn.innerHTML = originalText;
+                }
+            };
+            reader.readAsText(fileInput.files[0]);
+        });
+    },
+    
     renderAudit() {
         const tbody = document.getElementById('table-audit-body');
         tbody.innerHTML = '';
@@ -1923,41 +1921,39 @@ const AdminCtrl = {
     processRebut() {
         const fileInput = document.getElementById('rebut-file-upload');
         if (!fileInput.files[0]) { UI.showAlert("Attention", "Sélectionnez un fichier .txt", "warning"); return; }
-        if (!confirm("ATTENTION : Cette action est irréversible. Générer le PV et supprimer ?")) return;
+        
+        UI.confirm("Alerte de destruction", "ATTENTION : Cette action est irréversible. Générer le PV et supprimer définitivement ?", () => {
+            const reader = new FileReader();
+            reader.onload = async (e) => {
+                const ids = e.target.result.split(/\r?\n/).map(id => id.trim().toUpperCase()).filter(id => /^MOB-\d{6}$/.test(id));
+                if (ids.length === 0) { UI.showAlert("Erreur", "Aucun identifiant valide.", "error"); return; }
 
-        const reader = new FileReader();
-        reader.onload = async (e) => {
-            const ids = e.target.result.split(/\r?\n/).map(id => id.trim().toUpperCase()).filter(id => /^MOB-\d{6}$/.test(id));
-            if (ids.length === 0) { UI.showAlert("Erreur", "Aucun identifiant valide.", "error"); return; }
+                try {
+                    UI.showAlert("Traitement", `Analyse et suppression de ${ids.length} équipements...`, "info");
+                    const CHUNK_SIZE = 100;
+                    let itemsToRebut = [];
 
-            try {
-                UI.showAlert("Traitement", `Analyse et suppression de ${ids.length} équipements...`, "info");
-                const CHUNK_SIZE = 100;
-                let itemsToRebut = [];
+                    for (let i = 0; i < ids.length; i += CHUNK_SIZE) {
+                        const chunk = ids.slice(i, i + CHUNK_SIZE);
+                        const res = await API.fetch(`/vue_mobiliers_recherche?id_metier=in.(${chunk.join(',')})`, { headers: API.getHeaders() });
+                        if (res.ok) itemsToRebut = itemsToRebut.concat(await res.json());
+                    }
 
-                // 1. Récupération des données intégrales pour le PV
-                for (let i = 0; i < ids.length; i += CHUNK_SIZE) {
-                    const chunk = ids.slice(i, i + CHUNK_SIZE);
-                    const res = await API.fetch(`/vue_mobiliers_recherche?id_metier=in.(${chunk.join(',')})`, { headers: API.getHeaders() });
-                    if (res.ok) itemsToRebut = itemsToRebut.concat(await res.json());
-                }
+                    if (itemsToRebut.length === 0) { UI.showAlert("Erreur", "Aucun équipement trouvé en base.", "error"); return; }
+                    const validIds = itemsToRebut.map(item => item.id_metier);
 
-                if (itemsToRebut.length === 0) { UI.showAlert("Erreur", "Aucun équipement trouvé en base.", "error"); return; }
-                const validIds = itemsToRebut.map(item => item.id_metier);
+                    for (let i = 0; i < validIds.length; i += CHUNK_SIZE) {
+                        const chunk = validIds.slice(i, i + CHUNK_SIZE);
+                        await API.fetch(`/mobiliers?id_metier=in.(${chunk.join(',')})`, { method: 'DELETE', headers: API.getHeaders() });
+                    }
 
-                // 2. Suppression physique par lots
-                for (let i = 0; i < validIds.length; i += CHUNK_SIZE) {
-                    const chunk = validIds.slice(i, i + CHUNK_SIZE);
-                    await API.fetch(`/mobiliers?id_metier=in.(${chunk.join(',')})`, { method: 'DELETE', headers: API.getHeaders() });
-                }
-
-                // 3. Génération PDF
-                this.generateRebutPDF(itemsToRebut);
-                UI.showAlert("Succès", `${validIds.length} supprimés. PV généré.`, "success");
-                MobilierCtrl.loadData();
-            } catch (err) { UI.showAlert("Erreur critique", err.message, "error"); }
-        };
-        reader.readAsText(fileInput.files[0]);
+                    this.generateRebutPDF(itemsToRebut);
+                    UI.showAlert("Succès", `${validIds.length} supprimés. PV généré.`, "success");
+                    MobilierCtrl.loadData();
+                } catch (err) { UI.showAlert("Erreur critique", err.message, "error"); }
+            };
+            reader.readAsText(fileInput.files[0]);
+        });
     },
 
     async generateRebutPDF(data) {
@@ -2126,89 +2122,55 @@ const AdminCtrl = {
 
 
     async doPrinterAction(action, jobId = null) {
-
-        if (action === 'cancel_all' && !confirm("Voulez-vous annuler TOUTES les impressions en attente ?")) return;
-
-        
-
-        try {
-
-            const res = await fetch('/imprimante/action', {
-
-                method: 'POST',
-
-                headers: { 'Content-Type': 'application/json' },
-
-                body: JSON.stringify({ action: action, job_id: jobId })
-
-            });
-
-            if (res.ok) {
-
-                UI.showAlert("Succès", "L'action a été transmise à l'imprimante.", "success");
-
-                this.loadPrinterStatus(); 
-
-            } else {
-
-                UI.showAlert("Erreur", "Impossible de contrôler l'imprimante.", "error");
-
+        const executerAction = async () => {
+            try {
+                const res = await fetch('/imprimante/action', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ action: action, job_id: jobId })
+                });
+                if (res.ok) {
+                    UI.showAlert("Succès", "L'action a été transmise à l'imprimante.", "success");
+                    this.loadPrinterStatus(); 
+                } else {
+                    UI.showAlert("Erreur", "Impossible de contrôler l'imprimante.", "error");
+                }
+            } catch (e) {
+                UI.showAlert("Erreur réseau", e.message, "error");
             }
+        };
 
-        } catch (e) {
-
-            UI.showAlert("Erreur réseau", e.message, "error");
-
+        if (action === 'cancel_all') {
+            UI.confirm("Attention", "Voulez-vous annuler TOUTES les impressions en attente ?", executerAction);
+        } else {
+            executerAction();
         }
-
     },
-
 
     async savePrinterConfig(e) {
-
         e.preventDefault();
-
         const newIp = document.getElementById('admin-printer-ip').value.trim();
-
-        if (!confirm(`Rediriger les futures impressions vers l'IP ${newIp} ?`)) return;
-
-
-        try {
-
-            const res = await fetch('/imprimante/config', {
-
-                method: 'POST',
-
-                headers: { 'Content-Type': 'application/json' },
-
-                body: JSON.stringify({ ip: newIp })
-
-            });
-
-            
-
-            if (res.ok) {
-
-                UI.showAlert("Succès", `La nouvelle IP (${newIp}) a été paramétrée sur le serveur.`, "success");
-
-                this.loadPrinterStatus();
-
-            } else {
-
-                const err = await res.json();
-
-                UI.showAlert("Erreur de configuration", err.erreur, "error");
-
+        
+        UI.confirm("Configuration réseau", `Rediriger les futures impressions vers l'IP ${newIp} ?`, async () => {
+            try {
+                const res = await fetch('/imprimante/config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ ip: newIp })
+                });
+                
+                if (res.ok) {
+                    UI.showAlert("Succès", `La nouvelle IP (${newIp}) a été paramétrée sur le serveur.`, "success");
+                    this.loadPrinterStatus();
+                } else {
+                    const err = await res.json();
+                    UI.showAlert("Erreur de configuration", err.erreur, "error");
+                }
+            } catch (e) {
+                UI.showAlert("Erreur réseau", e.message, "error");
             }
-
-        } catch (e) {
-
-            UI.showAlert("Erreur réseau", e.message, "error");
-
-        }
-
+        });
     },
-
     // ==========================================
 
 
