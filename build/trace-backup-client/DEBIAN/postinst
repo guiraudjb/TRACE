@@ -1,28 +1,27 @@
 #!/bin/bash
 set -e
 
+. /usr/share/debconf/confmodule
+
+db_get trace-backup/nfs_share || true
+NFS_SHARE="$RET"
+
+db_stop || true
+
+# Debconf intercepte stdout dans les scripts postinst.
+exec 1>&2
+
 echo "=== Installation du module de sauvegarde NFS pour TRACE ==="
 
 MOUNT_POINT="/mnt/savetrace"
 FSTAB="/etc/fstab"
 
-DEFAULT_NFS="192.168.1.40:/var/nfs/backupTRACE"
-NFS_SHARE=""
-
-echo ""
-echo "------------------------------------------------------------"
-if [ -t 1 ]; then
-    read -p "Chemin du partage NFS serveur [$DEFAULT_NFS] : " NFS_SHARE < /dev/tty
-fi
-
 if [ -z "$NFS_SHARE" ]; then
-    NFS_SHARE=$DEFAULT_NFS
+    NFS_SHARE="192.168.1.40:/var/nfs/backupTRACE"
     echo "Aucune saisie. Utilisation de la cible par défaut : $NFS_SHARE"
-else
-    echo "Cible enregistrée : $NFS_SHARE"
 fi
-echo "------------------------------------------------------------"
-echo ""
+
+echo "Cible NFS : $NFS_SHARE"
 
 # 1. Création du point de montage
 echo "Vérification du répertoire cible $MOUNT_POINT..."

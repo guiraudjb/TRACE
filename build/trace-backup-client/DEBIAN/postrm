@@ -27,4 +27,11 @@ if [ "$1" = "remove" ] || [ "$1" = "purge" ]; then
     echo "Nettoyage terminé."
 fi
 
+if [ "$1" = "purge" ]; then
+    if [ -f /usr/share/debconf/confmodule ]; then
+        . /usr/share/debconf/confmodule
+        db_purge || true
+    fi
+fi
+
 exit 0

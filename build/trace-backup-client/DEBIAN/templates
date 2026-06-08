@@ -1,0 +1,7 @@
+Template: trace-backup/nfs_share
+Type: string
+Default: 192.168.1.40:/var/nfs/backupTRACE
+Description: Chemin du partage NFS serveur :
+ Veuillez indiquer le chemin complet du partage NFS du serveur de sauvegarde.
+ Format attendu : IP_SERVEUR:/chemin/du/partage
+ Exemple : 192.168.1.40:/var/nfs/backupTRACE

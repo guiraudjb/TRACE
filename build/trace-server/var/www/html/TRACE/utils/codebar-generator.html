@@ -1,0 +1,292 @@
+<!DOCTYPE html>
+<html lang="fr" data-fr-theme="light">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>mobiTrace - Générateur Séquentiel de Codes-Barres</title>
+
+    <link rel="stylesheet" href="../dsfr-v1.14.3/dist/dsfr.min.css">
+    <link rel="stylesheet" href="../dsfr-v1.14.3/dist/utility/utility.main.min.css">
+
+    <style>
+        body {
+            background-color: #f6f6f6;
+        }
+        .trace-card {
+            background: #ffffff;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            padding: 2rem;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+        }
+        .preview-zone {
+            background-color: #eaeded;
+            border: 2px dashed #bdc3c7;
+            border-radius: 4px;
+            min-height: 180px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        .barcode-preview-card {
+            background: #ffffff;
+            border: 1px solid #95a5a6;
+            padding: 12px;
+            text-align: center;
+            box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+            display: inline-block;
+        }
+        #hidden-canvas {
+            display: none;
+        }
+    </style>
+
+    <script src="./jspdf.umd.min.js"></script>
+    <script src="./JsBarcode.all.min.js"></script>
+</head>
+
+<body>
+    <header role="banner" class="fr-header">
+        <div class="fr-header__body">
+            <div class="fr-container">
+                <div class="fr-header__body-row">
+                    <div class="fr-header__brand">
+                        <div class="fr-header__brand-top">
+                            <div class="fr-header__logo">
+                                <p class="fr-logo">République<br>Française</p>
+                            </div>
+                        </div>
+                        <div class="fr-header__service">
+                            <p class="fr-header__service-title">mobiTrace</p>
+                            <p class="fr-header__service-tagline">Impression séquentielle pour Dymo LabelWriter 550</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main role="main" class="fr-container fr-my-6w">
+        <div class="fr-grid-row fr-grid-row--gutters">
+            
+            <div class="fr-col-12 fr-col-md-6">
+                <div class="trace-card">
+                    <h2 class="fr-h4 fr-mb-3w"><span class="fr-icon-settings-5-line" aria-hidden="true"></span> Paramètres de la série</h2>
+                    
+                    <form id="form-generator">
+                        <div class="fr-select-group">
+                            <label class="fr-label" for="select-label-size">Format de l'étiquette Dymo</label>
+                            <select class="fr-select" id="select-label-size" required>
+                                <option value="11354" selected>Dymo 11354 - Multi-usages (57mm × 32mm)</option>
+                                <option value="30252">Dymo 30252 - Adresse & Code-barres (89mm × 28mm)</option>
+                                <option value="30336">Dymo 30336 - Petite étiquette (54mm × 25mm)</option>
+                            </select>
+                        </div>
+
+                        <div class="fr-grid-row fr-grid-row--gutters fr-mb-2w">
+                            <div class="fr-col-12 fr-col-sm-6">
+                                <div class="fr-input-group">
+                                    <label class="fr-label" for="input-start-num">Premier numéro</label>
+                                    <span class="fr-hint-text">Ex: 42 pour MOB-000042</span>
+                                    <input class="fr-input" type="number" id="input-start-num" min="1" max="999999" value="1" required>
+                                </div>
+                            </div>
+                            <div class="fr-col-12 fr-col-sm-6">
+                                <div class="fr-input-group">
+                                    <label class="fr-label" for="input-count">Nombre d'étiquettes</label>
+                                    <span class="fr-hint-text">Quantité totale à réaliser</span>
+                                    <input class="fr-input" type="number" id="input-count" min="1" max="2000" value="10" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="fr-fieldset fr-mb-3w">
+                            <div class="fr-fieldset__content">
+                                <div class="fr-checkbox-group fr-checkbox-group--sm">
+                                    <input type="checkbox" id="opt-include-header" checked>
+                                    <label class="fr-label" for="opt-include-header">Inclure l'en-tête de l'administration (DGFIP)</label>
+                                </div>
+                                <div class="fr-checkbox-group fr-checkbox-group--sm">
+                                    <input type="checkbox" id="opt-display-value" checked>
+                                    <label class="fr-label" for="opt-display-value">Afficher l'identifiant en texte sous les barres</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button type="submit" class="fr-btn fr-icon-file-pdf-line fr-btn--icon-left" style="width: 100%;">
+                            Générer la série PDF
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="fr-col-12 fr-col-md-6">
+                <div class="trace-card" style="height: 100%; min-height: 400px;">
+                    <h3 class="fr-h4 fr-mb-2w"><span class="fr-icon-eye-line" aria-hidden="true"></span> Aperçu du premier code (Code 128)</h3>
+                    <p class="fr-text--sm text-muted" id="text-series-info">Série configurée : Aucun identifiant généré.</p>
+                    
+                    <div class="preview-zone" id="preview-zone">
+                        <div id="preview-placeholder">En attente de configuration valide...</div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <canvas id="hidden-canvas"></canvas>
+
+    <script>
+        // Configuration dimensionnelle stricte des étiquettes Dymo (Largeur, Hauteur en mm)
+        const LABEL_PROFILES = {
+            "11354": { width: 57, height: 32, name: "Dymo 11354" },
+            "30252": { width: 89, height: 28, name: "Dymo 30252" },
+            "30336": { width: 54, height: 25, name: "Dymo 30336" }
+        };
+
+        const inputStartNum = document.getElementById('input-start-num');
+        const inputCount = document.getElementById('input-count');
+        const previewZone = document.getElementById('preview-zone');
+        const textSeriesInfo = document.getElementById('text-series-info');
+        const formGenerator = document.getElementById('form-generator');
+        const selectLabelSize = document.getElementById('select-label-size');
+        const optIncludeHeader = document.getElementById('opt-include-header');
+        const optDisplayValue = document.getElementById('opt-display-value');
+        const hiddenCanvas = document.getElementById('hidden-canvas');
+
+        // Génération programmatique de la suite d'identifiants séquentiels
+        function generateSequentialIds() {
+            const startNum = parseInt(inputStartNum.value, 10);
+            const count = parseInt(inputCount.value, 10);
+            
+            if (isNaN(startNum) || isNaN(count) || startNum < 1 || count < 1) {
+                return [];
+            }
+
+            const ids = [];
+            // Sécurité matérielle pour éviter un plantage du navigateur à la génération de l'objet Blob
+            const maxCount = Math.min(count, 2000); 
+
+            for (let i = 0; i < maxCount; i++) {
+                const currentNum = startNum + i;
+                if (currentNum > 999999) break; // Respect strict de la taille du masque à 6 chiffres
+                const paddedNum = String(currentNum).padStart(6, '0');
+                ids.push(`MOB-${paddedNum}`);
+            }
+            return ids;
+        }
+
+        // Mise à jour de l'aperçu graphique et du descriptif textuel de la série
+        function updateLivePreview() {
+            const sequentialIds = generateSequentialIds();
+            
+            if (sequentialIds.length === 0) {
+                textSeriesInfo.innerText = "Série configurée : Configuration invalide.";
+                previewZone.innerHTML = '<div id="preview-placeholder">Veuillez saisir un premier numéro et une quantité valides.</div>';
+                return;
+            }
+
+            const totalGenerated = sequentialIds.length;
+            const firstId = sequentialIds[0];
+            const lastId = sequentialIds[totalGenerated - 1];
+            const sizeProfile = LABEL_PROFILES[selectLabelSize.value];
+            
+            // Mise à jour de la légende informative de la plage d'impression
+            textSeriesInfo.innerHTML = `Série de <strong>${totalGenerated}</strong> étiquette(s) : de <span class="fr-badge fr-badge--sm fr-badge--info">${firstId}</span> à <span class="fr-badge fr-badge--sm fr-badge--info">${lastId}</span>`;
+
+            // Rendu de la carte d'aperçu aux dimensions proportionnelles
+            previewZone.innerHTML = `
+                <div class="barcode-preview-card" style="width: ${sizeProfile.width * 4}px; height: ${sizeProfile.height * 4}px; display: flex; flex-direction: column; justify-content: center; align-items: center; border-radius: 4px;">
+                    ${optIncludeHeader.checked ? '<span style="font-family: Arial, sans-serif; font-size: 11px; font-weight: bold; letter-spacing: 0.5px; margin-bottom: 2px;">DGFIP - mobiTrace</span>' : ''}
+                    <svg id="preview-svg"></svg>
+                </div>
+            `;
+
+            // Injection du code-barres vectoriel Code 128
+            JsBarcode("#preview-svg", firstId, {
+                format: "CODE128",
+                width: sizeProfile.value === "30252" ? 1.8 : 1.5,
+                height: sizeProfile.height === 25 ? 35 : 45,
+                displayValue: optDisplayValue.checked,
+                fontSize: 13,
+                font: "Arial",
+                textMargin: 4,
+                margin: 0
+            });
+        }
+
+        // Attachement des observateurs pour réactivité immédiate à la saisie de l'opérateur
+        inputStartNum.addEventListener('input', updateLivePreview);
+        inputCount.addEventListener('input', updateLivePreview);
+        selectLabelSize.addEventListener('change', updateLivePreview);
+        optIncludeHeader.addEventListener('change', updateLivePreview);
+        optDisplayValue.addEventListener('change', updateLivePreview);
+
+        // Initialisation de la vue au chargement de la page
+        document.addEventListener('DOMContentLoaded', updateLivePreview);
+
+        // Export final vers le flux PDF dimensionné pour le pilote de la Dymo
+        formGenerator.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const sequentialIds = generateSequentialIds();
+
+            if (sequentialIds.length === 0) {
+                alert("Erreur : Impossible de générer la série avec les paramètres actuels.");
+                return;
+            }
+
+            const profile = LABEL_PROFILES[selectLabelSize.value];
+            const includeHeader = optIncludeHeader.checked;
+            const displayValue = optDisplayValue.checked;
+
+            const { jsPDF } = window.jspdf;
+            
+            // Instanciation au format 1:1 de l'étiquette en mode paysage
+            const doc = new jsPDF({
+                orientation: 'landscape',
+                unit: 'mm',
+                format: [profile.width, profile.height]
+            });
+
+            for (let i = 0; i < sequentialIds.length; i++) {
+                const currentId = sequentialIds[i];
+
+                if (i > 0) {
+                    doc.addPage([profile.width, profile.height], 'landscape');
+                }
+
+                const ctx = hiddenCanvas.getContext('2d');
+                ctx.clearRect(0, 0, hiddenCanvas.width, hiddenCanvas.height);
+
+                // Dessin du code-barres sur le canvas invisible
+                JsBarcode(hiddenCanvas, currentId, {
+                    format: "CODE128",
+                    width: profile.value === "30252" ? 3 : 2.5,
+                    height: profile.height === 25 ? 50 : 65,
+                    displayValue: displayValue,
+                    fontSize: 14,
+                    font: "Arial",
+                    textMargin: 5,
+                    margin: 10
+                });
+
+                const barcodeImgData = hiddenCanvas.toDataURL('image/jpeg', 1.0);
+
+                if (includeHeader) {
+                    doc.setFont("Helvetica", "bold");
+                    doc.setFontSize(8);
+                    doc.text("DGFIP - mobiTrace", profile.width / 2, 4, { align: "center" });
+                    doc.addImage(barcodeImgData, 'JPEG', 2, 5, profile.width - 4, profile.height - 7);
+                } else {
+                    doc.addImage(barcodeImgData, 'JPEG', 2, 2, profile.width - 4, profile.height - 4);
+                }
+            }
+
+            const filenameDate = new Date().toISOString().split('T')[0];
+            doc.save(`DYMO_SERIE_CODEBARS_${filenameDate}.pdf`);
+        });
+    </script>
+</body>
+
+</html>

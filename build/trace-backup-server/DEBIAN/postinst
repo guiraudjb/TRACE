@@ -10,10 +10,8 @@ CLIENT_IP="$RET"
 # 2. On dit au revoir à debconf
 db_stop || true
 
-# ======================================================================
-# LA SOLUTION DÉFINITIVE :
-# Redirige TOUTE la sortie standard (1) vers la sortie d'erreur (2).
-# ======================================================================
+# Debconf intercepte stdout dans les scripts postinst.
+# On redirige stdout vers stderr pour que les messages echo soient visibles.
 exec 1>&2
 
 SHARE_DIR="/var/nfs/backupTRACE"
@@ -22,7 +20,7 @@ echo "=== Configuration du serveur NFS pour TRACE ==="
 
 mkdir -p "$SHARE_DIR"
 chown nobody:nogroup "$SHARE_DIR"
-chmod 777 "$SHARE_DIR"
+chmod 700 "$SHARE_DIR"
 
 if [ -z "$CLIENT_IP" ]; then
     echo "ATTENTION : Aucune IP n'a été saisie. Le partage NFS est suspendu."
@@ -33,7 +31,7 @@ touch /etc/exports
 
 # Ajout du partage
 if ! grep -q "$SHARE_DIR $CLIENT_IP" /etc/exports; then
-    echo "$SHARE_DIR $CLIENT_IP(rw,sync,no_subtree_check,no_root_squash)" >> /etc/exports
+    echo "$SHARE_DIR $CLIENT_IP(rw,sync,no_subtree_check,all_squash)" >> /etc/exports
 fi
 
 # Application de la configuration

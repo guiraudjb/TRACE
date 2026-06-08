@@ -1,0 +1,398 @@
+<!DOCTYPE html>
+<html lang="fr" data-fr-theme="light">
+
+<head>
+    <meta charset="utf-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1, shrink-to-fit=no">
+    <title>mobiTrace - Édition Séquentielle COPYTOP</title>
+
+    <link rel="stylesheet" href="../dsfr-v1.14.3/dist/dsfr.min.css">
+    <link rel="stylesheet" href="../dsfr-v1.14.3/dist/utility/utility.main.min.css">
+
+    <style>
+        body { background-color: #f6f6f6; }
+        .trace-card {
+            background: #ffffff;
+            border: 1px solid #e0e0e0;
+            border-radius: 4px;
+            padding: 2rem;
+            box-shadow: 0 2px 6px rgba(0, 0, 0, 0.04);
+        }
+        .preview-zone {
+            background-color: #eaeded;
+            border: 2px dashed #bdc3c7;
+            border-radius: 4px;
+            min-height: 350px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            overflow: hidden;
+        }
+        /* Échelle pour la prévisualisation (50mm = 300px) */
+        .print-canvas {
+            width: 300px;
+            height: 300px;
+            background: #ffffff;
+            position: relative;
+            box-shadow: 0 4px 12px rgba(0,0,0,0.1);
+        }
+        /* Marges et Repères COPYTOP */
+        .guide-bleed {
+            position: absolute;
+            top: 0; left: 0; right: 0; bottom: 0;
+            border: 2px solid rgba(255, 0, 0, 0.3);
+            pointer-events: none;
+        }
+        .guide-cut-square {
+            position: absolute;
+            top: 10%; left: 10%; right: 10%; bottom: 10%; /* 5mm sur 50mm */
+            border: 1px solid #000000;
+            pointer-events: none;
+        }
+        .guide-safe-square {
+            position: absolute;
+            top: 16%; left: 16%; right: 16%; bottom: 16%; /* 8mm sur 50mm */
+            border: 1px dashed #2ecc71;
+            pointer-events: none;
+        }
+        .guide-cut-round {
+            position: absolute;
+            top: 10%; left: 10%; right: 10%; bottom: 10%;
+            border: 1px solid #000000;
+            border-radius: 50%;
+            pointer-events: none;
+        }
+        .guide-safe-round {
+            position: absolute;
+            top: 16%; left: 16%; right: 16%; bottom: 16%;
+            border: 1px dashed #2ecc71;
+            border-radius: 50%;
+            pointer-events: none;
+        }
+        
+        .content-container {
+            position: absolute;
+            top: 16%; left: 16%; right: 16%; bottom: 16%;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        #hidden-qrcode { display: none; }
+        
+        .legend-list li { margin-bottom: 0.5rem; font-size: 0.9rem; }
+        .legend-color { display: inline-block; width: 12px; height: 12px; margin-right: 8px; }
+
+        /* Animation de rotation pour le chargement */
+        @keyframes spin { 
+            100% { transform: rotate(360deg); } 
+        }
+        .loading-spinner {
+            animation: spin 2s linear infinite;
+            display: inline-block;
+        }
+    </style>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/qrcodejs/1.0.0/qrcode.min.js"></script>
+</head>
+
+<body>
+    <header role="banner" class="fr-header">
+        <div class="fr-header__body">
+            <div class="fr-container">
+                <div class="fr-header__body-row">
+                    <div class="fr-header__brand">
+                        <div class="fr-header__brand-top">
+                            <div class="fr-header__logo">
+                                <p class="fr-logo">République<br>Française</p>
+                            </div>
+                        </div>
+                        <div class="fr-header__service">
+                            <p class="fr-header__service-title">mobiTrace</p>
+                            <p class="fr-header__service-tagline">Générateur séquentiel d'étiquettes (COPYTOP)</p>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </div>
+    </header>
+
+    <main role="main" class="fr-container fr-my-6w">
+        
+        <div class="fr-notice fr-notice--info fr-mb-4w">
+            <div class="fr-container">
+                <div class="fr-notice__body">
+                    <p class="fr-notice__title">
+                        Ce module génère une série d'étiquettes QR Code au format PDF (50x50mm avec fond perdu inclus) conforme aux gabarits industriels COPYTOP.
+                    </p>
+                </div>
+            </div>
+        </div>
+
+        <div class="fr-grid-row fr-grid-row--gutters">
+            <div class="fr-col-12 fr-col-md-5">
+                <div class="trace-card">
+                    <h2 class="fr-h4 fr-mb-3w"><span class="fr-icon-settings-5-line" aria-hidden="true"></span> Paramètres de la série</h2>
+                    
+                    <form id="form-generator">
+                        <div class="fr-select-group">
+                            <label class="fr-label" for="select-format">Format final (après découpe)</label>
+                            <select class="fr-select" id="select-format" required>
+                                <option value="square" selected>Carré 40x40 mm</option>
+                                <option value="round">Rond Ø 40 mm</option>
+                            </select>
+                        </div>
+
+                        <div class="fr-grid-row fr-grid-row--gutters fr-mb-2w">
+                            <div class="fr-col-12 fr-col-sm-6">
+                                <div class="fr-input-group">
+                                    <label class="fr-label" for="input-start-num">Premier numéro</label>
+                                    <span class="fr-hint-text">Ex: 1 pour MOB-000001</span>
+                                    <input class="fr-input" type="number" id="input-start-num" min="1" max="999999" value="1" required>
+                                </div>
+                            </div>
+                            <div class="fr-col-12 fr-col-sm-6">
+                                <div class="fr-input-group">
+                                    <label class="fr-label" for="input-count">Nombre d'étiquettes</label>
+                                    <span class="fr-hint-text">Quantité totale (max 2000)</span>
+                                    <input class="fr-input" type="number" id="input-count" min="1" max="2000" value="10" required>
+                                </div>
+                            </div>
+                        </div>
+
+                        <div class="fr-fieldset fr-mb-3w">
+                            <div class="fr-fieldset__content">
+                                <div class="fr-checkbox-group fr-checkbox-group--sm">
+                                    <input type="checkbox" id="opt-guides" checked>
+                                    <label class="fr-label" for="opt-guides">Afficher les repères de coupe sur le PDF (Désactiver pour l'envoi à l'imprimeur)</label>
+                                </div>
+                            </div>
+                        </div>
+
+                        <button type="submit" id="btn-submit-generator" class="fr-btn fr-icon-file-pdf-line fr-btn--icon-left fr-mt-2w" style="width: 100%;">
+                            Générer la série PDF COPYTOP
+                        </button>
+                    </form>
+                </div>
+            </div>
+
+            <div class="fr-col-12 fr-col-md-7">
+                <div class="trace-card" style="height: 100%;">
+                    <h3 class="fr-h4 fr-mb-2w"><span class="fr-icon-eye-line" aria-hidden="true"></span> Aperçu du premier gabarit</h3>
+                    
+                    <p class="fr-text--sm text-muted fr-mb-2w" id="text-series-info">Série configurée : Aucun identifiant généré.</p>
+                    
+                    <ul class="legend-list fr-mb-3w" style="list-style:none; padding:0;">
+                        <li><span class="legend-color" style="background: rgba(255,0,0,0.3);"></span><strong>Fond perdu (50x50mm) :</strong> Périmètre physique du PDF.</li>
+                        <li><span class="legend-color" style="background: #000;"></span><strong>Format final (40x40mm) :</strong> Ligne de découpe de la lame.</li>
+                        <li><span class="legend-color" style="background: #2ecc71;"></span><strong>Zone tranquille (34x34mm) :</strong> Limite de sécurité des éléments.</li>
+                    </ul>
+                    
+                    <div class="preview-zone" id="preview-zone">
+                        <div class="print-canvas">
+                            <div class="guide-bleed"></div>
+                            <div id="guide-cut" class="guide-cut-square"></div>
+                            <div id="guide-safe" class="guide-safe-square"></div>
+                            
+                            <div class="content-container">
+                                <img id="preview-qr-img" src="" alt="QR" style="width: 55%; height: auto; margin-bottom: 8px;">
+                                <div id="preview-text" style="font-family: Arial, sans-serif; font-size: 14px; font-weight: bold;">MOB-000001</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+
+        </div>
+    </main>
+
+    <div id="hidden-qrcode"></div>
+
+    <script>
+        const inputStartNum = document.getElementById('input-start-num');
+        const inputCount = document.getElementById('input-count');
+        const selectFormat = document.getElementById('select-format');
+        const optGuides = document.getElementById('opt-guides');
+        const formGenerator = document.getElementById('form-generator');
+        const btnSubmitGenerator = document.getElementById('btn-submit-generator');
+        
+        const guideCut = document.getElementById('guide-cut');
+        const guideSafe = document.getElementById('guide-safe');
+        const previewQrImg = document.getElementById('preview-qr-img');
+        const previewText = document.getElementById('preview-text');
+        const textSeriesInfo = document.getElementById('text-series-info');
+
+        // Génération programmatique de la suite d'identifiants séquentiels
+        function generateSequentialIds() {
+            const startNum = parseInt(inputStartNum.value, 10);
+            const count = parseInt(inputCount.value, 10);
+            
+            if (isNaN(startNum) || isNaN(count) || startNum < 1 || count < 1) {
+                return [];
+            }
+
+            const ids = [];
+            const maxCount = Math.min(count, 2000); 
+
+            for (let i = 0; i < maxCount; i++) {
+                const currentNum = startNum + i;
+                if (currentNum > 999999) break; // Respect strict du masque à 6 chiffres
+                const paddedNum = String(currentNum).padStart(6, '0');
+                ids.push(`MOB-${paddedNum}`);
+            }
+            return ids;
+        }
+
+        // Configuration géométrique selon la forme de l'étiquette
+        function updateGuides() {
+            if (selectFormat.value === 'square') {
+                guideCut.className = 'guide-cut-square';
+                guideSafe.className = 'guide-safe-square';
+                previewQrImg.style.width = '65%';
+            } else {
+                guideCut.className = 'guide-cut-round';
+                guideSafe.className = 'guide-safe-round';
+                previewQrImg.style.width = '50%';
+            }
+            updateLivePreview();
+        }
+
+        // Génère un QR Code unique en base64
+        function generateQRCodeBase64(text) {
+            return new Promise((resolve) => {
+                document.getElementById('hidden-qrcode').innerHTML = '';
+                new QRCode(document.getElementById('hidden-qrcode'), {
+                    text: text,
+                    width: 256,
+                    height: 256,
+                    colorDark : "#000000",
+                    colorLight : "#ffffff",
+                    correctLevel : QRCode.CorrectLevel.H
+                });
+                
+                setTimeout(() => {
+                    const canvas = document.querySelector('#hidden-qrcode canvas');
+                    resolve(canvas.toDataURL("image/jpeg"));
+                }, 50);
+            });
+        }
+
+        // Rafraîchissement de la vue d'aperçu dynamique
+        async function updateLivePreview() {
+            const sequentialIds = generateSequentialIds();
+            
+            if (sequentialIds.length === 0) {
+                textSeriesInfo.innerText = "Série configurée : Paramètres invalides.";
+                previewText.innerText = "INVALIDE";
+                previewQrImg.src = "";
+                return;
+            }
+
+            const total = sequentialIds.length;
+            const firstId = sequentialIds[0];
+            const lastId = sequentialIds[total - 1];
+            
+            textSeriesInfo.innerHTML = `Série de <strong>${total}</strong> étiquette(s) : de <span class="fr-badge fr-badge--sm fr-badge--info">${firstId}</span> à <span class="fr-badge fr-badge--sm fr-badge--info">${lastId}</span>`;
+            
+            previewText.innerText = firstId;
+            previewQrImg.src = await generateQRCodeBase64(firstId);
+        }
+
+        // Écouteurs pour la mise à jour à la volée
+        inputStartNum.addEventListener('input', updateLivePreview);
+        inputCount.addEventListener('input', updateLivePreview);
+        selectFormat.addEventListener('change', updateGuides);
+        
+        // Initialisation à l'ouverture
+        document.addEventListener('DOMContentLoaded', updateGuides);
+
+        // Moteur d'export de masse pour COPYTOP sécurisé
+        formGenerator.addEventListener('submit', async function(e) {
+            e.preventDefault();
+            const sequentialIds = generateSequentialIds();
+
+            if (sequentialIds.length === 0) {
+                alert("Erreur : Configuration de série de numéros invalide.");
+                return;
+            }
+
+            // Verrouillage de l'interface graphique contre le multi-clic
+            const originalBtnHtml = btnSubmitGenerator.innerHTML;
+            btnSubmitGenerator.disabled = true;
+            btnSubmitGenerator.innerHTML = '<span class="fr-icon-refresh-line fr-btn--icon-left loading-spinner" aria-hidden="true"></span> Génération en cours...';
+
+            try {
+                const format = selectFormat.value;
+                const drawGuides = optGuides.checked;
+                const { jsPDF } = window.jspdf;
+                
+                // Initialisation au format de fond perdu brut réglementaire : 50x50 mm
+                const doc = new jsPDF({
+                    orientation: 'portrait',
+                    unit: 'mm',
+                    format: [50, 50]
+                });
+
+                for (let i = 0; i < sequentialIds.length; i++) {
+                    const currentId = sequentialIds[i];
+
+                    if (i > 0) {
+                        doc.addPage([50, 50], 'portrait');
+                    }
+
+                    const qrBase64 = await generateQRCodeBase64(currentId);
+
+                    // Dessin optionnel des repères d'alignement pour épreuve de contrôle
+                    if (drawGuides) {
+                        doc.setDrawColor(200, 200, 200);
+                        doc.setLineWidth(0.2);
+                        if (format === 'square') {
+                            doc.rect(5, 5, 40, 40); // Ligne de découpe à 5mm du bord
+                            doc.setDrawColor(46, 204, 113);
+                            doc.rect(8, 8, 34, 34); // Zone tranquille à 8mm du bord
+                        } else {
+                            doc.circle(25, 25, 20); // Cercle de découpe Rayon 20mm
+                            doc.setDrawColor(46, 204, 113);
+                            doc.circle(25, 25, 17); // Cercle de sécurité Rayon 17mm
+                        }
+                    }
+
+                    // Ajustement géométrique fin pour le centrage parfait
+                    let qrSize, qrY, textY;
+                    if (format === 'square') {
+                        qrSize = 22;
+                        qrY = 12;
+                        textY = 38;
+                    } else {
+                        qrSize = 17; // Plus resserré pour éviter la courbure de la découpe ronde
+                        qrY = 13;
+                        textY = 35;
+                    }
+                    
+                    const qrX = 25 - (qrSize / 2);
+                    doc.addImage(qrBase64, 'JPEG', qrX, qrY, qrSize, qrSize);
+                    
+                    doc.setFont("Helvetica", "bold");
+                    doc.setFontSize(10);
+                    doc.text(currentId, 25, textY, { align: "center" });
+                }
+
+                const timestamp = new Date().toISOString().split('T')[0];
+                doc.save(`COPYTOP_SERIE_${format.toUpperCase()}_${timestamp}.pdf`);
+                
+            } catch (error) {
+                console.error("Erreur de génération PDF :", error);
+                alert("Une erreur technique est survenue lors de la création du fichier.");
+            } finally {
+                // Libération systématique de l'interface
+                btnSubmitGenerator.disabled = false;
+                btnSubmitGenerator.innerHTML = originalBtnHtml;
+            }
+        });
+    </script>
+</body>
+
+</html>

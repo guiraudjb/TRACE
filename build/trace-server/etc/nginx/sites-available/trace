@@ -1,0 +1,49 @@
+server {
+    listen 80;
+    server_name _;
+    return 301 https://$host$request_uri;
+}
+
+server {
+    listen 443 ssl;
+    http2 on;
+    server_name _;
+
+    ssl_certificate /etc/ssl/trace/trace.crt;
+    ssl_certificate_key /etc/ssl/trace/trace.key;
+
+    # CORRECTION : Le chemin pointe bien vers le dossier TRACE
+    root /var/www/html/;
+    index index.html;
+
+    location / {
+        try_files $uri $uri/ /index.html;
+    }
+
+    location = /api/rpc/login {
+        limit_req zone=login_limit burst=5 nodelay;
+        proxy_set_header Authorization "";
+        proxy_pass http://127.0.0.1:3000/rpc/login;
+        proxy_set_header Host $host;
+        proxy_hide_header X-Powered-By;
+        server_tokens off;
+    }
+
+    location /api/ {
+        set $auth_header "";
+
+        if ($http_cookie ~* "trace_token=([^;]+)") {
+            set $auth_header "Bearer $1";
+        }
+
+        proxy_set_header Authorization $auth_header;
+
+        proxy_pass http://127.0.0.1:3000/;
+
+        proxy_cookie_path / "/api/; HttpOnly; Secure; SameSite=Strict";
+        proxy_set_header Host $host;
+        proxy_hide_header X-Powered-By;
+        server_tokens off;
+    }
+}
+

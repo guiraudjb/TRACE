@@ -34,7 +34,7 @@ echo "Configuration CUPS..."
 
 lpadmin -p Zebra_Trace -E -v socket://${ZEBRA_IP}:9100 -m raw || true
 
-cupsctl --remote-admin --remote-any --share-printers || true
+cupsctl --remote-admin --no-remote-any --share-printers || true
 
 if command -v ufw > /dev/null; then ufw allow 631/tcp > /dev/null || true; fi
 
@@ -71,12 +71,14 @@ app = Flask(__name__)
 
 PRINTER = "Zebra_Trace"
 
+JOB_ID_RE = re.compile(r'^[A-Za-z0-9_-]{1,64}$')
+
 
 def run_cmd(cmd):
 
     try:
 
-        res = subprocess.run(cmd, shell=True, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
+        res = subprocess.run(cmd, shell=False, check=True, stdout=subprocess.PIPE, stderr=subprocess.PIPE, text=True)
 
         return True, res.stdout
 
@@ -92,8 +94,6 @@ def imprimer_zpl():
     zpl_data = request.data.decode('utf-8')
 
     if not zpl_data.startswith('^XA'): return jsonify({"erreur": "Format ZPL invalide."}), 400
-
-    ok, err = run_cmd(f"lp -d {PRINTER} -o raw") # On passe les datas via stdin en prod
 
     try:
 
@@ -116,11 +116,9 @@ def status():
 
     # Lit l'état de l'imprimante
 
-    ok_s, stat = run_cmd(f"lpstat -p {PRINTER}")
+    ok_s, stat = run_cmd(["lpstat", "-p", PRINTER])
 
-    # Lit la file d'attente
-
-    ok_q, queue = run_cmd(f"lpstat -o {PRINTER}")
+    ok_q, queue = run_cmd(["lpstat", "-o", PRINTER])
 
     
 
@@ -151,13 +149,19 @@ def action():
 
     
 
-    if act == 'pause': ok, err = run_cmd(f"sudo cupsdisable {PRINTER}")
+    if act == 'pause': ok, err = run_cmd(["sudo", "cupsdisable", PRINTER])
 
-    elif act == 'resume': ok, err = run_cmd(f"sudo cupsenable {PRINTER}")
+    elif act == 'resume': ok, err = run_cmd(["sudo", "cupsenable", PRINTER])
 
-    elif act == 'cancel_all': ok, err = run_cmd(f"sudo cancel -a {PRINTER}")
+    elif act == 'cancel_all': ok, err = run_cmd(["sudo", "cancel", "-a", PRINTER])
 
-    elif act == 'cancel_job': ok, err = run_cmd(f"sudo cancel {job_id}")
+    elif act == 'cancel_job':
+
+        if not JOB_ID_RE.match(job_id):
+
+            return jsonify({"erreur": "Identifiant de job invalide"}), 400
+
+        ok, err = run_cmd(["sudo", "cancel", job_id])
 
     else: return jsonify({"erreur": "Action invalide"}), 400
 
@@ -180,7 +184,7 @@ def config():
 
     # Change l'IP au niveau du système Linux
 
-    ok, err = run_cmd(f"sudo lpadmin -p {PRINTER} -v socket://{ip}:9100")
+    ok, err = run_cmd(["sudo", "lpadmin", "-p", PRINTER, "-v", f"socket://{ip}:9100"])
 
     return jsonify({"succes": True}) if ok else jsonify({"erreur": err}), 500
 

@@ -2,7 +2,7 @@ Package: trace-backup-client
 Version: 1.0.0
 Architecture: all
 Maintainer: Admin TRACE <admin@dgfip.finances.gouv.fr>
-Depends: nfs-common
+Depends: nfs-common, debconf
 Section: utils
 Priority: optional
 Description: Client de sauvegarde NFS pour mobiTrace.
