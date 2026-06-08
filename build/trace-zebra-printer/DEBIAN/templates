@@ -1,0 +1,7 @@
+Template: trace-zebra/printer_ip
+Type: string
+Default: 192.168.1.99
+Description: Adresse IP de l'imprimante Zebra :
+ Veuillez indiquer l'adresse IP de l'imprimante Zebra (port 9100).
+ Format attendu : X.X.X.X
+ Exemple : 192.168.1.99

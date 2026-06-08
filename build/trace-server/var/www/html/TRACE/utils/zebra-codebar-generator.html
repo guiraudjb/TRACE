@@ -438,6 +438,7 @@
                     body: zplOutput
                 });
 
+                if (response.status === 401) throw new Error("Session expirée. Veuillez vous reconnecter.");
                 if (!response.ok) throw new Error("Le serveur d'impression n'a pas répondu.");
                 
                 alert("Succès : Les étiquettes ont été envoyées à l'imprimante Zebra !");

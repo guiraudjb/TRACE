@@ -1,11 +1,18 @@
 #!/bin/bash
 set -e
 
+if [ -f /usr/share/debconf/confmodule ]; then
+    . /usr/share/debconf/confmodule
+fi
+
 if [ "$1" = "remove" ] || [ "$1" = "purge" ]; then
     systemctl disable mobitrace-print || true
 fi
 
 if [ "$1" = "purge" ]; then
+    if [ -f /usr/share/debconf/confmodule ]; then
+        db_purge || true
+    fi
     echo "=== PURGE : Nettoyage du module d'impression Zebra ==="
 
     # 1. Nettoyage des fichiers applicatifs
@@ -19,10 +26,12 @@ if [ "$1" = "purge" ]; then
     # 3. Retrait des droits sudo
     rm -f /etc/sudoers.d/mobitrace-print || true
 
-    # 4. Retrait de la route dans Nginx
+    # 4. Retrait des routes d'impression dans Nginx
     NGINX_CONF="/etc/nginx/sites-available/trace"
     if [ -f "$NGINX_CONF" ]; then
+        sed -i '/location = \/_zebra-auth {/,/}/d' "$NGINX_CONF"
         sed -i '/location \/imprimer-zpl {/,/}/d' "$NGINX_CONF"
+        sed -i '/location \/imprimante\/ {/,/}/d' "$NGINX_CONF"
         systemctl reload nginx || true
     fi
 

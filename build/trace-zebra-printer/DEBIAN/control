@@ -2,7 +2,7 @@ Package: trace-zebra-printer
 Version: 1.0.0
 Architecture: all
 Maintainer: Admin TRACE <admin@dgfip.finances.gouv.fr>
-Depends: trace-server, cups, python3-flask, python3-gunicorn, gunicorn
+Depends: trace-server, cups, python3-flask, python3-gunicorn, gunicorn, debconf
 Section: utils
 Priority: optional
 Description: Module d'impression natif ZPL pour mobiTrace.
