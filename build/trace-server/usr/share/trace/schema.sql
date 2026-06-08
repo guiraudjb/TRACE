@@ -7,6 +7,10 @@ CREATE EXTENSION IF NOT EXISTS pgcrypto;
 CREATE EXTENSION IF NOT EXISTS pg_trgm;
 
 CREATE SCHEMA IF NOT EXISTS auth;
+
+CREATE TABLE auth.secrets (key TEXT PRIMARY KEY, value TEXT NOT NULL);
+INSERT INTO auth.secrets (key, value) VALUES ('jwt_secret', '__JWT_SECRET__');
+
 CREATE TYPE public.statut_mobilier AS ENUM ('en_service', 'en_maintenance', 'dispo_reemploi', 'au_rebut');
 CREATE TYPE public.jwt_token AS (token text);
 
@@ -57,7 +61,7 @@ BEGIN
   
   IF _role IS NULL THEN RAISE EXCEPTION 'Identifiants incorrects'; END IF;
   
-  _token := auth.sign_jwt(json_build_object('role', _role, 'user_id', _id, 'email', login.email, 'exp', extract(epoch from now())::integer + 28800), '__JWT_SECRET__');
+  _token := auth.sign_jwt(json_build_object('role', _role, 'user_id', _id, 'email', login.email, 'exp', extract(epoch from now())::integer + 28800), (SELECT value FROM auth.secrets WHERE key = 'jwt_secret'));
   
   -- On définit l'en-tête Set-Cookie pour PostgREST
   -- Note: PostgREST permet de définir des headers via 'response.headers'
@@ -199,7 +203,7 @@ CREATE TABLE public.audit_logs (id SERIAL PRIMARY KEY, date_action TIMESTAMP WIT
 REVOKE ALL ON TABLE public.audit_logs FROM PUBLIC, agent, administrateur, lecteur;
 
 -- Seuls les administrateurs et le compte système peuvent LIRE le journal
-GRANT SELECT ON public.audit_logs TO divagil, administrateur;
+GRANT SELECT ON public.audit_logs TO administrateur;
 
 -- Règles d'immuabilité strictes (Bloque physiquement l'altération des logs au niveau SQL)
 CREATE RULE no_update_audit AS ON UPDATE TO public.audit_logs DO INSTEAD NOTHING;
