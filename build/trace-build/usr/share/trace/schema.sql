@@ -155,10 +155,10 @@ GRANT USAGE ON SCHEMA public TO divagil, agent, administrateur, lecteur;
 -- Droits du Lecteur (Consultation seule sur toutes les tables)
 GRANT SELECT ON ALL TABLES IN SCHEMA public TO lecteur;
 
--- Droits de l'Agent (Consultation, Ajout, Modification - MAIS AUCUNE SUPPRESSION)
-GRANT SELECT, INSERT, UPDATE ON TABLE public.mobiliers TO agent;
+-- Droits de l'Agent (Consultation et Modification partielle uniquement)
+GRANT SELECT, UPDATE ON TABLE public.mobiliers TO agent;
 GRANT SELECT ON TABLE public.gabarits, public.lieux, public.structures TO agent;
-GRANT USAGE, SELECT ON SEQUENCE public.seq_mobilier_id TO agent;
+-- (On supprime l'accès à la séquence seq_mobilier_id qui ne sert qu'à la création)
 
 -- Droits de l'Administrateur (Contrôle total sur les tables métiers)
 GRANT SELECT, INSERT, UPDATE, DELETE ON ALL TABLES IN SCHEMA public TO administrateur;

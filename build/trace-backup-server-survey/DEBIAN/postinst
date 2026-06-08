@@ -57,7 +57,7 @@ LISTE_TOTALE=$(cd "$BACKUP_DIR" && ls -lh 2>/dev/null | grep "$PREFIX" | awk '{p
 # ==========================================
 if [ "$BACKUP_COUNT" -eq 0 ]; then
 # Cas 1 : Aucune sauvegarde
-SUBJECT="[ALERTE CRITIQUE] Échec des sauvegardes mobiTrace - $YESTERDAY"
+SUBJECT="[ALERTE CRITIQUE] Echec des sauvegardes mobiTrace - $YESTERDAY"
 BODY="Alerte : Aucune sauvegarde de la base de données n'a été trouvée pour la journée du $YESTERDAY dans le dossier $BACKUP_DIR.\n\nL'intégrité des données de l'inventaire n'est plus garantie. Merci de vérifier le serveur et les logs cron.\n"
 elif [ "$BACKUP_COUNT" -lt 2 ]; then
 # Cas 2 : Il manque une des deux sauvegardes (2h ou 13h)

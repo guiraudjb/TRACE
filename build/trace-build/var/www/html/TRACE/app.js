@@ -168,6 +168,18 @@ const UI = {
         div.textContent = str;
         return div.innerHTML;
     },
+    
+    // Gestion du thème
+    toggleTheme() {
+        const current = document.documentElement.getAttribute('data-fr-theme');
+        const next = current === 'dark' ? 'light' : 'dark';
+        document.documentElement.setAttribute('data-fr-theme', next);
+        localStorage.setItem('trace-theme', next);
+    },
+    initTheme() {
+        const saved = localStorage.getItem('trace-theme') || 'light';
+        document.documentElement.setAttribute('data-fr-theme', saved);
+    },
 
     showAlert(titre, message, type) {
         const c = document.getElementById('alert-container');
@@ -2184,6 +2196,9 @@ const App = {
     eventsBound: false,
 
     async start() {
+        // Initialisation du thème avant tout autre rendu
+        UI.initTheme();
+        
         // 2. AJOUT DE LA CONDITION ICI :
         if (!this.eventsBound) {
             this.bindEvents();
@@ -2211,17 +2226,22 @@ const App = {
             document.getElementById('tab-admin').style.display = 'block';
             document.getElementById('btn-delete-mob').style.display = 'inline-flex';
         } else {
-            // Pour l'Agent et le Lecteur : on masque la création de gabarit
-            const btnCreateGab = document.getElementById('btn-nav-create-gab');
-            if (btnCreateGab) btnCreateGab.style.display = 'none';
+            // Pour l'Agent et le Lecteur : on masque la création de gabarit ET de mobilier
+            const elementsToHide = [
+                'btn-nav-create-gab', // Nouveau gabarit
+                'btn-nav-create-mob', // Nouveau mobilier unitaire/masse
+                //'btn-nav-import'      // Import de fichier (création en masse)
+            ];
+            elementsToHide.forEach(id => {
+                const el = document.getElementById(id);
+                if (el) el.style.display = 'none';
+            });
         }
 
         if (State.user.role === 'lecteur') {
-            // Masquer les boutons d'inventaire uniquement pour le consultant
+            // Masquer les outils de modification (ex: scan) uniquement pour le lecteur
             const actionsToHide = [
-                'btn-nav-create-mob', 
-                'btn-nav-scan', 
-                'btn-nav-import'
+                'btn-nav-scan'
             ];
             actionsToHide.forEach(id => {
                 const el = document.getElementById(id);
@@ -2245,6 +2265,8 @@ const App = {
             document.getElementById('form-login').addEventListener('submit', (e) => AuthCtrl.login(e));
         }
         document.getElementById('btn-logout')?.addEventListener('click', () => AuthCtrl.logout());
+        // Ajout dans App.bindEvents
+        document.getElementById('btn-theme-toggle')?.addEventListener('click', () => UI.toggleTheme());
 
         // Mobilier: Navigation & Filtres
         document.getElementById('btn-reset-filters')?.addEventListener('click', () => MobilierCtrl.resetFilters());
