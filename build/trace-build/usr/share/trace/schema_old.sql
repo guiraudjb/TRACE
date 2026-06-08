@@ -203,20 +203,7 @@ GRANT SELECT ON public.audit_logs TO divagil, administrateur;
 
 -- Règles d'immuabilité strictes (Bloque physiquement l'altération des logs au niveau SQL)
 CREATE RULE no_update_audit AS ON UPDATE TO public.audit_logs DO INSTEAD NOTHING;
-CREATE OR REPLACE FUNCTION public.protect_audit_delete()
-RETURNS TRIGGER AS $$
-BEGIN
-    IF current_user != 'postgres' THEN
-        RAISE EXCEPTION 'audit_logs : suppression non autorisée (utilisateur: %)', current_user;
-    END IF;
-    RETURN OLD;
-END;
-$$ LANGUAGE plpgsql;
-
-  CREATE TRIGGER trig_protect_audit_delete
-  BEFORE DELETE ON public.audit_logs
-  FOR EACH ROW EXECUTE FUNCTION public.protect_audit_delete();
-
+CREATE RULE no_delete_audit AS ON DELETE TO public.audit_logs DO INSTEAD NOTHING;
 
 CREATE OR REPLACE FUNCTION public.log_mobilier_action() RETURNS TRIGGER AS $$
 DECLARE
