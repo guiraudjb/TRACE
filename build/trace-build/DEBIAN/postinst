@@ -103,6 +103,7 @@ server-host = "127.0.0.1"
 EOF
 
 chmod 600 /etc/trace-api.conf
+chown www-data:www-data /etc/trace-api.conf
 
 # ==============================================================================
 # 5. CONFIGURATION SSL ET WEB
@@ -134,6 +135,8 @@ echo "Mise en place de la sécurisation anti-bruteforce (Nginx + Fail2Ban)..."
 cat << EOF > /etc/nginx/conf.d/trace-ratelimit.conf
 # Zone mémoire pour limiter les tentatives de connexion TRACE (10Mo = ~160 000 IPs)
 limit_req_zone \$binary_remote_addr zone=login_limit:10m rate=3r/s;
+# Retourne 429 Too Many Requests au lieu du 503 par défaut
+limit_req_status 429;
 EOF
 
 # Note : L'installation de Fail2Ban est désormais gérée par les dépendances (DEBIAN/control)
@@ -141,7 +144,7 @@ EOF
 # 6.2 Création du filtre de détection Fail2Ban (Erreurs 401 sur le login)
 cat << EOF > /etc/fail2ban/filter.d/mobitrace-login.conf
 [Definition]
-failregex = ^<HOST> \- \- \[.*\] "POST /api/rpc/login HTTP.*" (400|401) .+$
+failregex = ^<HOST> \- \- \[.*\] "POST /api/rpc/login HTTP.*" (400|401|429) .+$
 ignoreregex =
 EOF
 
