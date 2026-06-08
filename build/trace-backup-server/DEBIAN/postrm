@@ -8,20 +8,21 @@ fi
 
 SHARE_DIR="/var/nfs/backupTRACE"
 
-if [ "$1" = "purge" ]; then
-    echo "Purge demandée : Nettoyage de la configuration NFS TRACE..."
-    
-    # On ordonne à debconf d'oublier toutes les réponses liées à ce paquet
-    if [ -f /usr/share/debconf/confmodule ]; then
-        db_purge || true
-    fi
+if [ "$1" = "remove" ] || [ "$1" = "purge" ]; then
+    echo "Nettoyage de la configuration NFS TRACE..."
 
-    # Nettoyage de la configuration NFS
     sed -i '\|^/var/nfs/backupTRACE |d' /etc/exports || true
     exportfs -ra || true
     systemctl restart nfs-kernel-server || true
-    
+
     echo "Configuration NFS retirée. Note: Les fichiers de sauvegarde ont été conservés."
+fi
+
+if [ "$1" = "purge" ]; then
+    if [ -f /usr/share/debconf/confmodule ]; then
+        . /usr/share/debconf/confmodule
+        db_purge || true
+    fi
 fi
 
 exit 0
