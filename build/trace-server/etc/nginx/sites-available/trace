@@ -40,7 +40,6 @@ server {
 
         proxy_pass http://127.0.0.1:3000/;
 
-        proxy_cookie_path / "/api/; HttpOnly; Secure; SameSite=Strict";
         proxy_set_header Host $host;
         proxy_hide_header X-Powered-By;
         server_tokens off;

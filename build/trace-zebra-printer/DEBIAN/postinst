@@ -31,6 +31,45 @@ lpadmin -p Zebra_Trace -E -v socket://${ZEBRA_IP}:9100 -m raw || true
 
 cupsctl --remote-admin --no-remote-any --share-printers || true
 
+# cupsctl active l'écoute sur toutes les interfaces mais laisse les ACL à @LOCAL,
+# ce qui bloque les sous-réseaux routés du bâtiment. On ouvre l'accès admin
+# à tous les hôtes (le réseau du bâtiment est le périmètre de sécurité).
+CUPS_CONF="/etc/cups/cupsd.conf"
+if [ -f "$CUPS_CONF" ]; then
+    python3 - "$CUPS_CONF" << 'PYEOF'
+import sys, re, subprocess, ipaddress
+
+path = sys.argv[1]
+
+# Détection du réseau local du serveur (première interface avec portée globale)
+network = None
+try:
+    out = subprocess.check_output(['ip', '-o', '-f', 'inet', 'addr', 'show'], text=True)
+    for line in out.splitlines():
+        if 'scope global' in line:
+            cidr = line.split()[3]  # ex: 10.1.2.3/8
+            network = str(ipaddress.ip_interface(cidr).network)  # ex: 10.0.0.0/8
+            break
+except Exception:
+    pass
+
+allow_rule = f'Allow {network}' if network else 'Allow all'
+
+with open(path) as f:
+    content = f.read()
+
+content = re.sub(
+    r'(<Location\s+(?:/|/admin)>.*?)(Allow\s+@LOCAL)(.*?</Location>)',
+    lambda m: m.group(1) + allow_rule + m.group(3),
+    content,
+    flags=re.DOTALL | re.IGNORECASE
+)
+
+with open(path, 'w') as f:
+    f.write(content)
+PYEOF
+fi
+
 if command -v ufw > /dev/null; then ufw allow 631/tcp > /dev/null || true; fi
 
 

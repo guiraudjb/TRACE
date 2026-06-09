@@ -185,10 +185,10 @@
     <script>
         // Configuration dimensionnelle et géométrique (Densité standard Zebra 8 dots/mm - 203 dpi)
         const LABEL_PROFILES = {
-            "50x25": { width: 50, height: 25, dotsW: 406, dotsH: 203, name: "Zebra 50x25" },
+            "50x25": { width: 50, height: 25, dotsW: 400, dotsH: 200, name: "Zebra 50x25" },
             "51x25": { width: 51, height: 25, dotsW: 408, dotsH: 200, name: "Zebra 51x25" },
-            "60x30": { width: 60, height: 30, dotsW: 488, dotsH: 244, name: "Zebra 60x30" },
-            "40x20": { width: 40, height: 20, dotsW: 325, dotsH: 162, name: "Zebra 40x20" }
+            "60x30": { width: 60, height: 30, dotsW: 480, dotsH: 240, name: "Zebra 60x30" },
+            "40x20": { width: 40, height: 20, dotsW: 320, dotsH: 160, name: "Zebra 40x20" }
         };
 
         const inputStartNum = document.getElementById('input-start-num');
@@ -417,7 +417,7 @@
 
                 let barcodeY = includeHeader ? 65 : 35;
                 let barcodeHeight = profile.height === 20 ? 55 : 85;
-                let moduleWidth = profile.width <= 40 ? 2 : 3; 
+                let moduleWidth = profile.width >= 60 ? 3 : 2;
 
                 zplOutput += `^BY${moduleWidth},3.0,${barcodeHeight}\n`;
                 
