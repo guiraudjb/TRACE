@@ -63,4 +63,19 @@ if [ "$CONFIRM" != "OUI" ]; then echo "Annulé."; exit 0; fi
 sudo -u postgres psql -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '$DB_NAME' AND pid <> pg_backend_pid();"
 sudo -u postgres pg_restore --clean --if-exists -d "$DB_NAME" "$SELECTED_FILE"
 
-if [ $? -eq 0 ]; then echo -e "\n\e[1;32m=== RESTAURATION TERMINÉE ===\e[0m"; else echo -e "\n\e[1;31m=== ERREUR ===\e[0m"; fi
+if [ $? -ne 0 ]; then echo -e "\n\e[1;31m=== ERREUR LORS DE LA RESTAURATION ===\e[0m"; exit 1; fi
+
+echo -e "\n\e[1;32m=== RESTAURATION TERMINÉE ===\e[0m"
+
+# Resynchronisation du secret JWT entre la base restaurée et PostgREST.
+# Sans cette étape, login() signe les tokens avec l'ancien secret (celui de la
+# sauvegarde) alors que PostgREST les valide avec celui de l'installation courante.
+echo "Synchronisation du secret JWT..."
+JWT_FROM_DB=$(sudo -u postgres psql -d "$DB_NAME" -t -A -c "SELECT value FROM auth.secrets WHERE key = 'jwt_secret';")
+if [ -n "$JWT_FROM_DB" ]; then
+    sed -i "s|^jwt-secret = .*|jwt-secret = \"$JWT_FROM_DB\"|" /etc/trace-api.conf
+    systemctl restart trace-api
+    echo -e "\e[1;32mSecret JWT synchronisé — service trace-api redémarré.\e[0m"
+else
+    echo -e "\e[1;31mATTENTION : Impossible de lire le secret JWT depuis la base restaurée. Vérifiez manuellement /etc/trace-api.conf.\e[0m"
+fi
