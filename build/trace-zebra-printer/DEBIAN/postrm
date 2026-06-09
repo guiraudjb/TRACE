@@ -29,9 +29,47 @@ if [ "$1" = "purge" ]; then
     # 4. Retrait des routes d'impression dans Nginx
     NGINX_CONF="/etc/nginx/sites-available/trace"
     if [ -f "$NGINX_CONF" ]; then
-        sed -i '/location = \/_zebra-auth {/,/}/d' "$NGINX_CONF"
-        sed -i '/location \/imprimer-zpl {/,/}/d' "$NGINX_CONF"
-        sed -i '/location \/imprimante\/ {/,/}/d' "$NGINX_CONF"
+        python3 - "$NGINX_CONF" << 'PYEOF'
+import sys, re
+
+path = sys.argv[1]
+with open(path) as f:
+    content = f.read()
+
+# Supprime un bloc location en comptant les accolades (gère les if imbriqués)
+def remove_location(text, pattern):
+    m = re.search(pattern, text)
+    if not m:
+        return text
+    start = m.start()
+    depth = 0
+    i = m.start()
+    while i < len(text):
+        if text[i] == '{':
+            depth += 1
+        elif text[i] == '}':
+            depth -= 1
+            if depth == 0:
+                # Recule pour inclure l'éventuel saut de ligne précédant le bloc
+                block_start = start
+                while block_start > 0 and text[block_start - 1] in (' ', '\t'):
+                    block_start -= 1
+                if block_start > 0 and text[block_start - 1] == '\n':
+                    block_start -= 1
+                return text[:block_start] + text[i + 1:]
+        i += 1
+    return text
+
+for pattern in [
+    r'location\s*=\s*/_zebra-auth\s*\{',
+    r'location\s+/imprimer-zpl\s*\{',
+    r'location\s+/imprimante/\s*\{',
+]:
+    content = remove_location(content, pattern)
+
+with open(path, 'w') as f:
+    f.write(content)
+PYEOF
         systemctl reload nginx || true
     fi
 

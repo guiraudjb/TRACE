@@ -115,8 +115,9 @@ openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
     -keyout "$SSL_DIR/trace.key" -out "$SSL_DIR/trace.crt" \
     -subj "/C=FR/ST=Paris/L=Paris/O=DGFIP/OU=TRACE/CN=localhost" 2>/dev/null
 
-chown postgres:postgres "$SSL_DIR/trace.key" "$SSL_DIR/trace.crt"
-chmod 600 "$SSL_DIR/trace.key"
+chown root:www-data "$SSL_DIR/trace.key"
+chown root:root "$SSL_DIR/trace.crt"
+chmod 640 "$SSL_DIR/trace.key"
 chmod 644 "$SSL_DIR/trace.crt"
 chmod 755 "$SSL_DIR"
 
