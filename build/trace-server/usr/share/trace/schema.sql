@@ -65,7 +65,7 @@ BEGIN
   
   -- On définit l'en-tête Set-Cookie pour PostgREST
   -- Note: PostgREST permet de définir des headers via 'response.headers'
-  perform set_config('response.headers', '[{"Set-Cookie": "trace_token=' || _token || '; Path=/api; HttpOnly; Secure; SameSite=Strict"}]', true);
+  perform set_config('response.headers', '[{"Set-Cookie": "trace_token=' || _token || '; Path=/; HttpOnly; Secure; SameSite=Strict"}, {"Set-Cookie": "trace_token=; Path=/api; HttpOnly; Secure; SameSite=Strict; Max-Age=0"}]', true);
 
   result.token := 'Session démarrée'; -- Le contenu importe peu, le token est dans le cookie
   RETURN result;
@@ -74,7 +74,7 @@ END;$$ LANGUAGE plpgsql SECURITY DEFINER;
 CREATE OR REPLACE FUNCTION public.logout() RETURNS void AS $$
 BEGIN
   -- On renvoie un en-tête Set-Cookie qui écrase l'ancien et expire immédiatement (Max-Age=0)
-  perform set_config('response.headers', '[{"Set-Cookie": "trace_token=; Path=/api; HttpOnly; Secure; SameSite=Strict; Max-Age=0"}]', true);
+  perform set_config('response.headers', '[{"Set-Cookie": "trace_token=; Path=/; HttpOnly; Secure; SameSite=Strict; Max-Age=0"}, {"Set-Cookie": "trace_token=; Path=/api; HttpOnly; Secure; SameSite=Strict; Max-Age=0"}]', true);
 END;
 $$ LANGUAGE plpgsql SECURITY DEFINER;
 
@@ -83,14 +83,13 @@ DECLARE
   _email text;
   _role text;
 BEGIN
-  -- PostgREST lit automatiquement le cookie et peuple ces variables
   _email := current_setting('request.jwt.claims', true)::json->>'email';
   _role := current_setting('request.jwt.claims', true)::json->>'role';
-  
-  IF _email IS NULL THEN 
-      RETURN NULL;
+
+  IF _email IS NULL THEN
+      RAISE EXCEPTION 'Not authenticated' USING ERRCODE = 'PT401';
   END IF;
-  
+
   RETURN json_build_object('email', _email, 'role', _role);
 END;
 $$ LANGUAGE plpgsql;

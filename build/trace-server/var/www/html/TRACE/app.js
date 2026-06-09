@@ -307,6 +307,7 @@ const AuthCtrl = {
         }
 
         // Nettoyage local
+        clearInterval(AdminCtrl.printerRefreshTimer);
         State.user = null;
         if (msg) alert(msg);
         location.reload(); // Redirige vers l'écran de connexion
@@ -2059,7 +2060,12 @@ const AdminCtrl = {
 
         try {
 
-            const res = await fetch('/imprimante/status');
+            const res = await fetch('/imprimante/status', { credentials: 'same-origin' });
+
+            if (res.status === 401) {
+                clearInterval(this.printerRefreshTimer);
+                throw new Error("Session expirée, veuillez vous reconnecter.");
+            }
 
             if (!res.ok) throw new Error("Serveur d'impression injoignable");
 
@@ -2138,6 +2144,7 @@ const AdminCtrl = {
             try {
                 const res = await fetch('/imprimante/action', {
                     method: 'POST',
+                    credentials: 'same-origin',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ action: action, job_id: jobId })
                 });
@@ -2167,6 +2174,7 @@ const AdminCtrl = {
             try {
                 const res = await fetch('/imprimante/config', {
                     method: 'POST',
+                    credentials: 'same-origin',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({ ip: newIp })
                 });

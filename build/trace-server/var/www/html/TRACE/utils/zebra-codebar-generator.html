@@ -434,6 +434,7 @@
             try {
                 const response = await fetch('/imprimer-zpl', {
                     method: 'POST',
+                    credentials: 'same-origin',
                     headers: { 'Content-Type': 'text/plain' },
                     body: zplOutput
                 });
