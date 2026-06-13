@@ -48,7 +48,7 @@
 </head>
 <body>
     <div class="fr-container fr-mt-4w fr-mb-8w">
-        <h1 class="fr-h4">Impression d'étiquettes mobiTrace (Format 51x25mm)</h1>
+        <h1 class="fr-h4">Génération d'étiquettes mobiTrace — Multi-formats</h1>
         
         <div class="fr-grid-row fr-grid-row--gutters">
             
@@ -163,6 +163,9 @@
     </div>
 
     <script>
+        const LABEL_W = 408; // 51mm × 8 dots/mm (203 dpi)
+        const LABEL_H = 200; // 25mm × 8 dots/mm
+
         const canvas = document.getElementById('canvasPreview');
         const typeSelect = document.getElementById('typeSelect');
         const adminHeader = document.getElementById('adminHeader');
@@ -203,9 +206,15 @@
             const reader = new FileReader();
             reader.onload = function(event) {
                 const text = event.target.result;
-                fileItemsArray = text.split(/\r?\n/)
-                                     .map(line => line.trim())
-                                     .filter(line => line.length > 0);
+                const allLines = text.split(/\r?\n/).map(l => l.trim()).filter(l => l.length > 0);
+                fileItemsArray = [...new Set(allLines
+                    .map(id => id.toUpperCase())
+                    .filter(id => /^MOB-\d{6}$/.test(id)))];
+                if (fileItemsArray.length === 0) {
+                    alert("Aucun identifiant au format MOB-XXXXXX n'a été trouvé dans ce fichier.");
+                } else if (fileItemsArray.length < allLines.length) {
+                    alert(`${allLines.length - fileItemsArray.length} ligne(s) ignorée(s) : format attendu MOB-XXXXXX.`);
+                }
                 updatePreview();
             };
             reader.readAsText(file);
@@ -244,8 +253,8 @@
         // Moteur de composition graphique (WYSIWYG) gérant 1D et 2D
         function renderLabelToCanvas(targetCanvas, type, data, adminText) {
             const ctx = targetCanvas.getContext('2d');
-            targetCanvas.width = 408;
-            targetCanvas.height = 200;
+            targetCanvas.width = LABEL_W;
+            targetCanvas.height = LABEL_H;
             
             ctx.fillStyle = "white";
             ctx.fillRect(0, 0, targetCanvas.width, targetCanvas.height);
@@ -339,10 +348,11 @@
                 zpl += "^XA\n";
                 zpl += `~SD${darkness}\n`;
                 zpl += `^PR${speed}\n`;
-                zpl += "^PW408\n^LL200\n"; 
-                
+                zpl += `^PW${LABEL_W}\n^LL${LABEL_H}\n^LH0,0\n`;
+
                 switch (type) {
                     case 'qrcode':
+                        // ^FDQA : Q = correction 25% (Quartile), A = encodage automatique
                         zpl += `^FO20,25^BQN,2,4^FDQA,${item}^FS\n`;
                         zpl += `^FO160,40^A0N,28,28^FD${adminText}^FS\n`;
                         zpl += `^FO160,100^A0N,34,34^FD${item}^FS\n`;
@@ -352,18 +362,24 @@
                         zpl += `^FO160,40^A0N,28,28^FD${adminText}^FS\n`;
                         zpl += `^FO160,100^A0N,34,34^FD${item}^FS\n`;
                         break;
-                    case 'code39':
-                        zpl += `^FO40,50^B3N,N,70,Y,N^FD${item}^FS\n`;
+                    case 'code39': {
+                        // narrow=1 : MOB-XXXXXX ≈ 191 dots — centrage correct sur 408 dots
+                        const x39 = Math.max(10, Math.floor((LABEL_W - 191) / 2));
+                        zpl += `^BY1,3.0,70\n`;
+                        zpl += `^FO${x39},50^B3N,N,70,Y,N^FD${item}^FS\n`;
                         break;
-                    case 'code128':
-                        zpl += `^FO40,50^BCN,70,Y,N,N^FD${item}^FS\n`;
+                    }
+                    case 'code128': {
+                        // narrow=2 : MOB-XXXXXX ≈ 290 dots — centrage correct sur 408 dots
+                        const x128 = Math.max(10, Math.floor((LABEL_W - 290) / 2));
+                        zpl += `^BY2,3.0,70\n`;
+                        zpl += `^FO${x128},50^BCN,70,Y,N,N^FD${item}^FS\n`;
                         break;
+                    }
                 }
                 
                 zpl += "^XZ\n";
             });
-
-            console.log("Transmission du flux ZPL optimisé : \n", zpl);
 
             try {
                 const response = await fetch('/imprimer-zpl', {
