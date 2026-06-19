@@ -353,28 +353,30 @@
                 switch (type) {
                     case 'qrcode':
                         // ^FDQA : Q = correction 25% (Quartile), A = encodage automatique
-                        zpl += `^FO20,25^BQN,2,4^FDQA,${item}^FS\n`;
-                        zpl += `^FO160,40^A0N,28,28^FD${adminText}^FS\n`;
-                        zpl += `^FO160,100^A0N,34,34^FD${item}^FS\n`;
+                        zpl += `^FO20,0^BQN,2,5^FDQA,${item}^FS\n`;
+                        zpl += `^FO180,60^A0N,28,28^FD${adminText}^FS\n`;
+                        zpl += `^FO180,120^A0N,34,34^FD${item}^FS\n`;
                         break;
                     case 'datamatrix':
-                        zpl += `^FO20,30^BXN,5,200^FD${item}^FS\n`;
-                        zpl += `^FO160,40^A0N,28,28^FD${adminText}^FS\n`;
-                        zpl += `^FO160,100^A0N,34,34^FD${item}^FS\n`;
+                        zpl += `^FO20,40^BXN,9,200^FD${item}^FS\n`;
+                        zpl += `^FO180,60^A0N,28,28^FD${adminText}^FS\n`;
+                        zpl += `^FO180,120^A0N,34,34^FD${item}^FS\n`;
                         break;
                     case 'code39': {
                         // narrow=1 : MOB-XXXXXX ≈ 191 dots — centrage correct sur 408 dots
-                        const x39 = Math.max(10, Math.floor((LABEL_W - 191) / 2));
-                        zpl += `^BY1,3.0,70\n`;
-                        zpl += `^FO${x39},50^B3N,N,70,Y,N^FD${item}^FS\n`;
+                        zpl += `^BY3,2.0,70\n`;
+                        zpl += `^FO5,50^B3N,N,70,N,N^FD${item}^FS\n`;
+			zpl += `^FO102,140^A0N,34,34^FD${item}^FS\n`;
                         break;
                     }
                     case 'code128': {
                         // narrow=2 : MOB-XXXXXX ≈ 290 dots — centrage correct sur 408 dots
                         const x128 = Math.max(10, Math.floor((LABEL_W - 290) / 2));
                         zpl += `^BY2,3.0,70\n`;
-                        zpl += `^FO${x128},50^BCN,70,Y,N,N^FD${item}^FS\n`;
-                        break;
+                        zpl += `^FO${x128},50^BCN,70,N,N,N^FD${item}^FS\n`;
+			zpl += `^FO102,140^A0N,34,34^FD${item}^FS\n`;
+
+			break;
                     }
                 }
                 
