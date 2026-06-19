@@ -54,20 +54,6 @@
             
             <div class="fr-col-md-6">
                 
-                <div class="fr-select-group">
-                    <label class="fr-label" for="typeSelect">Mise en page & Symbologie</label>
-                    <select id="typeSelect" class="fr-select">
-                        <optgroup label="Formats 2D (Haute densité)">
-                            <option value="qrcode">QR Code</option>
-                            <option value="datamatrix">DataMatrix (Ultra-compact)</option>
-                        </optgroup>
-                        <optgroup label="Formats 1D (Linéaires)">
-                            <option value="code128">Code 128 (Standard Zebra)</option>
-                            <option value="code39">Code 39 (Standard Administration)</option>
-                        </optgroup>
-                    </select>
-                </div>
-
                 <div class="fr-input-group fr-mt-2w">
                     <label class="fr-label" for="adminHeader">En-tête Administration</label>
                     <input type="text" id="adminHeader" class="fr-input" value="DGFiP">
@@ -167,7 +153,6 @@
         const LABEL_H = 200; // 25mm × 8 dots/mm
 
         const canvas = document.getElementById('canvasPreview');
-        const typeSelect = document.getElementById('typeSelect');
         const adminHeader = document.getElementById('adminHeader');
         const batchInfo = document.getElementById('batchInfo');
         
@@ -250,63 +235,40 @@
             }
         }
 
-        // Moteur de composition graphique (WYSIWYG) gérant 1D et 2D
-        function renderLabelToCanvas(targetCanvas, type, data, adminText) {
+        // Moteur de composition graphique (WYSIWYG) — DataMatrix uniquement
+        function renderLabelToCanvas(targetCanvas, data, adminText) {
             const ctx = targetCanvas.getContext('2d');
             targetCanvas.width = LABEL_W;
             targetCanvas.height = LABEL_H;
-            
+
             ctx.fillStyle = "white";
             ctx.fillRect(0, 0, targetCanvas.width, targetCanvas.height);
             ctx.fillStyle = "black";
 
             if (!data) data = "MOBI-TRACE";
 
-            const is2D = (type === 'qrcode' || type === 'datamatrix');
+            ctx.font = "bold 28px sans-serif";
+            ctx.fillText(adminText, 160, 65);
+            ctx.font = "34px sans-serif";
+            ctx.fillText(data, 160, 125);
 
-            if (is2D) {
-                ctx.font = "bold 28px sans-serif";
-                ctx.fillText(adminText, 160, 65); 
-                ctx.font = "34px sans-serif";
-                ctx.fillText(data, 160, 125); 
-
-                try {
-                    let tempCanvas = document.createElement('canvas');
-                    bwipjs.toCanvas(tempCanvas, { 
-                        bcid: type, 
-                        text: data, 
-                        scale: type === 'qrcode' ? 4 : 5 
-                    });
-                    
-                    const imgSize = type === 'datamatrix' ? 100 : 120;
-                    const yPos = (200 - imgSize) / 2;
-                    ctx.drawImage(tempCanvas, 20, yPos, imgSize, imgSize); 
-                } catch (e) { console.error(e); }
-            } else {
-                try {
-                    let tempCanvas = document.createElement('canvas');
-                    bwipjs.toCanvas(tempCanvas, {
-                        bcid: type, 
-                        text: data, 
-                        scale: 3, 
-                        height: 12, 
-                        includetext: true, 
-                        textxalign: 'center'
-                    });
-                    ctx.drawImage(tempCanvas, 40, 50, 328, 100);
-                } catch (e) { console.error(e); }
-            }
+            try {
+                let tempCanvas = document.createElement('canvas');
+                bwipjs.toCanvas(tempCanvas, { bcid: 'datamatrix', text: data, scale: 5 });
+                const imgSize = 100;
+                const yPos = (200 - imgSize) / 2;
+                ctx.drawImage(tempCanvas, 20, yPos, imgSize, imgSize);
+            } catch (e) { console.error(e); }
         }
 
         // Mise à jour de l'interface
         function updatePreview() {
-            const type = typeSelect.value;
             const adminText = adminHeader.value || "";
             const items = getItemsToProcess();
             const mode = document.querySelector('input[name="importMode"]:checked').value;
-            
+
             const firstItem = items.length > 0 ? items[0] : "MOBI-TRACE";
-            renderLabelToCanvas(canvas, type, firstItem, adminText);
+            renderLabelToCanvas(canvas, firstItem, adminText);
 
             if (items.length === 0) {
                 batchInfo.className = "fr-text--sm fr-mt-2w fr-badge fr-badge--warning";
@@ -328,7 +290,6 @@
          * Génération du code ZPL enrichi avec la sécurité du token
          */
         document.getElementById('btnGenerate').addEventListener('click', async () => {
-            const type = typeSelect.value;
             const adminText = adminHeader.value;
             const items = getItemsToProcess();
             
@@ -349,37 +310,9 @@
                 zpl += `~SD${darkness}\n`;
                 zpl += `^PR${speed}\n`;
                 zpl += `^PW${LABEL_W}\n^LL${LABEL_H}\n^LH0,0\n`;
-
-                switch (type) {
-                    case 'qrcode':
-                        // ^FDQA : Q = correction 25% (Quartile), A = encodage automatique
-                        zpl += `^FO20,0^BQN,2,5^FDQA,${item}^FS\n`;
-                        zpl += `^FO180,60^A0N,28,28^FD${adminText}^FS\n`;
-                        zpl += `^FO180,120^A0N,34,34^FD${item}^FS\n`;
-                        break;
-                    case 'datamatrix':
-                        zpl += `^FO20,40^BXN,9,200^FD${item}^FS\n`;
-                        zpl += `^FO180,60^A0N,28,28^FD${adminText}^FS\n`;
-                        zpl += `^FO180,120^A0N,34,34^FD${item}^FS\n`;
-                        break;
-                    case 'code39': {
-                        // narrow=1 : MOB-XXXXXX ≈ 191 dots — centrage correct sur 408 dots
-                        zpl += `^BY3,2.0,70\n`;
-                        zpl += `^FO5,50^B3N,N,70,N,N^FD${item}^FS\n`;
-			zpl += `^FO102,140^A0N,34,34^FD${item}^FS\n`;
-                        break;
-                    }
-                    case 'code128': {
-                        // narrow=2 : MOB-XXXXXX ≈ 290 dots — centrage correct sur 408 dots
-                        const x128 = Math.max(10, Math.floor((LABEL_W - 290) / 2));
-                        zpl += `^BY2,3.0,70\n`;
-                        zpl += `^FO${x128},50^BCN,70,N,N,N^FD${item}^FS\n`;
-			zpl += `^FO102,140^A0N,34,34^FD${item}^FS\n`;
-
-			break;
-                    }
-                }
-                
+                zpl += `^FO20,40^BXN,9,200^FD${item}^FS\n`;
+                zpl += `^FO180,60^A0N,28,28^FD${adminText}^FS\n`;
+                zpl += `^FO180,120^A0N,34,34^FD${item}^FS\n`;
                 zpl += "^XZ\n";
             });
 
@@ -411,7 +344,6 @@
 
         // Export PDF
         document.getElementById('btnPdf').addEventListener('click', () => {
-            const type = typeSelect.value;
             const adminText = adminHeader.value || "";
             const items = getItemsToProcess();
             
@@ -423,7 +355,7 @@
 
             for (let i = 0; i < items.length; i++) {
                 if (i > 0) doc.addPage();
-                renderLabelToCanvas(tempCanvas, type, items[i], adminText);
+                renderLabelToCanvas(tempCanvas, items[i], adminText);
                 const imgData = tempCanvas.toDataURL('image/png');
                 doc.addImage(imgData, 'PNG', 0, 0, 51, 25);
             }
@@ -434,7 +366,6 @@
         barcodeData.addEventListener('input', updatePreview);
         adminHeader.addEventListener('input', updatePreview);
         batchQty.addEventListener('input', updatePreview);
-        typeSelect.addEventListener('change', updatePreview);
         
         window.addEventListener('DOMContentLoaded', updatePreview);
     </script>
