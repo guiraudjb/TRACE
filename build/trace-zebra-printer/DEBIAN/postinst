@@ -27,7 +27,7 @@ echo "Adresse IP de l'imprimante : $ZEBRA_IP"
 
 echo "Configuration CUPS..."
 
-lpadmin -p Zebra_Trace -E -v socket://${ZEBRA_IP}:9100 -m raw || true
+lpadmin -p Zebra_Trace -E -v "ipps://${ZEBRA_IP}/" -m raw -o printer-is-shared=true || true
 
 cupsctl --remote-admin --remote-any --share-printers || true
 
@@ -206,7 +206,7 @@ def config():
 
     # Change l'IP au niveau du système Linux
 
-    ok, err = run_cmd(["sudo", "lpadmin", "-p", PRINTER, "-v", f"socket://{ip}:9100"])
+    ok, err = run_cmd(["sudo", "lpadmin", "-p", PRINTER, "-v", f"ipps://{ip}/", "-o", "printer-is-shared=true"])
 
     if ok: return jsonify({"succes": True})
     return jsonify({"erreur": err}), 500

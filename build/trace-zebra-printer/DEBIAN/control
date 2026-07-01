@@ -1,5 +1,5 @@
 Package: trace-zebra-printer
-Version: 1.0.0
+Version: 1.0.1
 Architecture: all
 Maintainer: Admin TRACE <admin@dgfip.finances.gouv.fr>
 Depends: trace-server, cups, python3-flask, python3-gunicorn, gunicorn, debconf
