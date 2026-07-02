@@ -570,7 +570,7 @@ pdf.probleme_bloc(
     resolution="1. Attendre 1 heure (le ban expire automatiquement). "
                "2. Si l'urgence le justifie, demander à N2 de débloquer manuellement.",
     niveau="N2",
-    code_block="# Débloquer une IP bannie par Fail2Ban\nsudo fail2ban-client set nginx-trace unbanip <ADRESSE_IP>\n\n# Vérifier les IPs actuellement bannies\nsudo fail2ban-client status nginx-trace",
+    code_block="# Débloquer une IP bannie par Fail2Ban\nsudo fail2ban-client set mobitrace-login unbanip <ADRESSE_IP>\n\n# Vérifier les IPs actuellement bannies\nsudo fail2ban-client status mobitrace-login",
     escalade=None
 )
 
