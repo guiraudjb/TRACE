@@ -204,4 +204,4 @@ Le projet ne requiert aucune étape de build complexe (pas de Webpack ni de Vite
 
 Le schéma PostgreSQL source se trouve dans `build/trace-server/usr/share/trace/schema.sql`.
 
-Ce projet s'inscrit dans une démarche "Public Money, Public Code". Le code source est rendu public et auditable, publié sous licence **Creative Commons (CC BY-NC-SA)**. L'objectif est d'offrir ce bien commun numérique à toute structure publique souhaitant moderniser sa gestion d'inventaire.
+Le projet suit une démarche « Public Money, Public Code » : le code source est public et auditable, sous licence Creative Commons (CC BY-NC-SA), pour que toute structure publique puisse le reprendre et moderniser sa gestion d'inventaire.
