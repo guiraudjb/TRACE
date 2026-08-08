@@ -156,15 +156,7 @@ pdf.set_author("mobiTrace / DGFiP")
 # ─────────────────────────────────────────────────────────────────────────────
 pdf.add_page()
 
-pdf.set_y(24)
-pdf.set_font("Sans", "B", 10)
-pdf.set_text_color(*BLUE_DARK)
-pdf.cell(0, 7, "RÉPUBLIQUE FRANÇAISE", align="C",
-         new_x=XPos.LMARGIN, new_y=YPos.NEXT)
-pdf.set_font("Sans", "I", 8)
-pdf.cell(0, 5, "Liberté  •  Égalité  •  Fraternité",
-         align="C", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
-pdf.set_text_color(*BLACK)
+pdf.set_y(30)
 
 pdf.ln(5)
 pdf.set_draw_color(*BLUE_DARK)
@@ -192,7 +184,6 @@ meta = [
     ("Référence",  "TRACE-PCA-2026"),
     ("Version",    "1.0"),
     ("Date",       TODAY),
-    ("Diffusion",  "Restreinte — Usage interne"),
     ("Auteur",     "Équipe technique mobiTrace / DGFiP"),
 ]
 cw = [52, CONTENT_W - 52]

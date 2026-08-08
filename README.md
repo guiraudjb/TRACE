@@ -178,10 +178,12 @@ Le dossier `utils/` embarqué dans `trace-server` fournit des outils HTML autono
 
 | Fichier | Rôle |
 |---|---|
-| `zebra-codebar-generator.html` | Générateur de codes-barres ZPL pour imprimantes Zebra |
-| `zebra-codebar-generator-finetune.html` | Version affinée du générateur (réglages avancés) |
-| `JsBarcode.all.min.js` | Bibliothèque de génération de codes-barres (embarquée) |
+| `zebra2.html` | Générateur d'étiquettes ZPL actif, symbologie **DataMatrix** (via bwip-js) — lié depuis Administration → Édition étiquettes |
+| `bwip-js-min.js` | Bibliothèque de génération de codes-barres DataMatrix (embarquée, utilisée par `zebra2.html`) |
 | `jspdf.umd.min.js` | Bibliothèque de génération PDF côté client (embarquée) |
+| `zebra-codebar-generator.html` | Ancien générateur (Code 128, via JsBarcode) — conservé dans `utils/` mais plus référencé par l'interface |
+| `zebra-codebar-generator-finetune.html` | Variante affinée de l'ancien générateur — idem, non référencée |
+| `JsBarcode.all.min.js` | Bibliothèque de génération de codes-barres Code 128 (embarquée, utilisée uniquement par l'ancien générateur) |
 | `archives/` | Versions archivées des anciens générateurs (QR codes, étiquettes) |
 
 ---

@@ -240,15 +240,7 @@ pdf.set_author("mobiTrace / DGFiP")
 # ─────────────────────────────────────────────────────────────────────────────
 pdf.add_page()
 
-pdf.set_y(24)
-pdf.set_font("Sans", "B", 10)
-pdf.set_text_color(*BLUE_DARK)
-pdf.cell(0, 7, "RÉPUBLIQUE FRANÇAISE", align="C",
-         new_x=XPos.LMARGIN, new_y=YPos.NEXT)
-pdf.set_font("Sans", "I", 8)
-pdf.cell(0, 5, "Liberté  •  Égalité  •  Fraternité",
-         align="C", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
-pdf.set_text_color(*BLACK)
+pdf.set_y(30)
 
 pdf.ln(5)
 pdf.set_draw_color(*BLUE_DARK)
@@ -276,7 +268,6 @@ meta = [
     ("Référence",  "TRACE-SEC-DATA-2026"),
     ("Version",    "1.0"),
     ("Date",       TODAY),
-    ("Diffusion",  "Restreinte — Usage interne"),
     ("Auteur",     "Équipe technique mobiTrace / DGFiP"),
 ]
 cw = [52, CONTENT_W - 52]
@@ -304,8 +295,8 @@ resume = (
     "L'analyse suit la grille CIA (Confidentialité / Intégrité / Disponibilité) et les niveaux "
     "de classification ANSSI (Public / Interne / Sensible / Critique).\n\n"
     "Résultat : mobiTrace traite principalement des données de niveau Interne à Sensible, "
-    "sans secret d'État ni donnée financière. Deux actifs ressortent au niveau Critique — "
-    "le secret JWT et les dumps de sauvegarde — et constituent les priorités de sécurisation "
+    "sans secret d'État ni donnée financière. Deux actifs ressortent au niveau Critique : "
+    "le secret JWT et les dumps de sauvegarde. Ce sont les priorités de sécurisation "
     "immédiates. Trois points de risque structurels sont identifiés avec leurs remédiations."
 )
 pdf.set_x(MARGIN_L)

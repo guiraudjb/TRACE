@@ -51,7 +51,7 @@ class PDF(FPDF):
         self.set_y(2)
         self.set_font("Sans", "B", 8.5)
         self.set_text_color(*WHITE)
-        self.cell(0, 9, "mobiTrace — Guide d'assistance — Usage interne équipes support", align="C")
+        self.cell(0, 9, "mobiTrace — Document confidentiel interne", align="C")
         self.set_text_color(*BLACK)
         self.set_y(20)
 
@@ -294,15 +294,7 @@ pdf.set_author("mobiTrace / DGFiP")
 # ─────────────────────────────────────────────────────────────────────────────
 pdf.add_page()
 
-pdf.set_y(24)
-pdf.set_font("Sans", "B", 10)
-pdf.set_text_color(*BLUE_DARK)
-pdf.cell(0, 7, "RÉPUBLIQUE FRANÇAISE", align="C",
-         new_x=XPos.LMARGIN, new_y=YPos.NEXT)
-pdf.set_font("Sans", "I", 8)
-pdf.cell(0, 5, "Liberté  •  Égalité  •  Fraternité",
-         align="C", new_x=XPos.LMARGIN, new_y=YPos.NEXT)
-pdf.set_text_color(*BLACK)
+pdf.set_y(30)
 
 pdf.ln(5)
 pdf.set_draw_color(*BLUE_DARK)
@@ -331,7 +323,6 @@ for label, val in [
     ("Version",     "1.0"),
     ("Date",        TODAY),
     ("Public cible","Équipes d'assistance N1 / N2 / N3"),
-    ("Diffusion",   "Interne — Équipes support DGFiP"),
 ]:
     pdf.set_x(MARGIN_L + 18)
     pdf.set_font("Sans", "B", 9)
