@@ -1977,7 +1977,7 @@ const AdminCtrl = {
 
         try {
             const img = new Image();
-            img.src = 'dsfr-v1.14.3/dist/favicon/apple-touch-icon.png';
+            img.src = 'dsfr-v1.15.2/dist/favicon/apple-touch-icon.png';
             await new Promise((resolve, reject) => { img.onload = resolve; img.onerror = reject; });
             const canvas = document.createElement('canvas');
             canvas.width = img.width; canvas.height = img.height;

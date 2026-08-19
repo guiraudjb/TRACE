@@ -1,8 +1,10 @@
 #!/bin/bash
+set -e
 echo "Build all"
-dpkg-deb --build trace-server trace-server_1.0.0_all.deb
-dpkg-deb --build trace-backup-client trace-backup-client_1.0.0_all.deb
-dpkg-deb --build trace-backup-server trace-backup-server_1.0.0_all.deb
-dpkg-deb --build trace-backup-server-survey trace-backup-server-survey_1.0.0_all.deb
-dpkg-deb --build trace-zebra-printer trace-zebra-printer_1.0.1_all.deb
+cd "$(dirname "$0")"
 
+for paquet in trace-server trace-backup-client trace-backup-server trace-backup-server-survey trace-zebra-printer; do
+    version=$(sed -n 's/^Version:[[:space:]]*//p' "$paquet/DEBIAN/control")
+    architecture=$(sed -n 's/^Architecture:[[:space:]]*//p' "$paquet/DEBIAN/control")
+    dpkg-deb --build "$paquet" "${paquet}_${version}_${architecture}.deb"
+done
