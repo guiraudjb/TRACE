@@ -17,6 +17,8 @@ DB_PASS=$(tr -dc 'A-Za-z0-9_-' < /dev/urandom | head -c 24)
 JWT_SECRET=$(tr -dc 'A-Za-z0-9_-' < /dev/urandom | head -c 48)
 ADMIN_EMAIL="admin@gouv.fr"
 ADMIN_PASS=$(tr -dc 'A-Za-z0-9' < /dev/urandom | head -c 16)
+MIGRATIONS_DIR="/usr/share/trace/migrations"
+ANCIENNE_VERSION="${2:-}"
 
 # ==============================================================================
 # 1. PRÉPARATION DU RÉPERTOIRE DE SAUVEGARDE
@@ -58,6 +60,31 @@ echo "Initialisation de la base de données..."
 
 PG_VERSION=$(pg_lsclusters -h 2>/dev/null | awk 'NR==1{print $1}')
 pg_ctlcluster "${PG_VERSION:-17}" main start || systemctl start postgresql || true
+
+# Mise à jour : la base et /etc/trace-api.conf existent déjà -> on les conserve.
+# (Jusqu'en 1.0.2, chaque exécution du postinst supprimait et recréait la base.)
+MODE="installation"
+if [ "$1" = "configure" ] && [ -n "$ANCIENNE_VERSION" ] && [ -f /etc/trace-api.conf ] \
+   && sudo -u postgres psql -tAc "SELECT 1 FROM pg_database WHERE datname = '$DB_NAME'" 2>/dev/null | grep -q 1; then
+    MODE="mise_a_jour"
+fi
+echo "Mode : $MODE${ANCIENNE_VERSION:+ (version précédente : $ANCIENNE_VERSION)}"
+
+if [ "$MODE" = "mise_a_jour" ]; then
+    SAUVEGARDE="/var/backups/trace/parc_mobilier-avant-maj-depuis-${ANCIENNE_VERSION}-$(date +%Y%m%d-%H%M%S).dump"
+    echo "Sauvegarde préalable de la base : $SAUVEGARDE"
+    install -d -m 700 -o postgres -g postgres /var/backups/trace
+    sudo -u postgres pg_dump -Fc -f "$SAUVEGARDE" "$DB_NAME"
+
+    echo "Application des migrations de schéma..."
+    for MIGRATION in $(ls "$MIGRATIONS_DIR"/*.sql 2>/dev/null | sort -V); do
+        VERSION_MIGRATION=$(basename "$MIGRATION" .sql)
+        if dpkg --compare-versions "$ANCIENNE_VERSION" lt "$VERSION_MIGRATION"; then
+            echo "  -> migration $VERSION_MIGRATION"
+            sudo -u postgres psql -v ON_ERROR_STOP=1 -q -d "$DB_NAME" -f "$MIGRATION"
+        fi
+    done
+else
 
 sudo -u postgres psql -c "SELECT pg_terminate_backend(pid) FROM pg_stat_activity WHERE datname = '$DB_NAME' AND pid <> pg_backend_pid();" > /dev/null 2>&1 || true
 sudo -u postgres psql -c "DROP DATABASE IF EXISTS $DB_NAME;"
@@ -106,14 +133,20 @@ EOF
 chmod 600 /etc/trace-api.conf
 chown www-data:www-data /etc/trace-api.conf
 
+fi # fin du bloc réservé à la première installation
+
 # ==============================================================================
 # 5. CONFIGURATION SSL ET WEB
 # ==============================================================================
 echo "Génération des certificats SSL..."
 mkdir -p "$SSL_DIR"
+if [ ! -f "$SSL_DIR/trace.key" ] || [ ! -f "$SSL_DIR/trace.crt" ]; then
 openssl req -x509 -nodes -days 365 -newkey rsa:2048 \
     -keyout "$SSL_DIR/trace.key" -out "$SSL_DIR/trace.crt" \
     -subj "/C=FR/ST=Paris/L=Paris/O=DGFIP/OU=TRACE/CN=localhost" 2>/dev/null
+else
+    echo "Certificat existant conservé."
+fi
 
 chown root:www-data "$SSL_DIR/trace.key"
 chown root:root "$SSL_DIR/trace.crt"
@@ -173,7 +206,12 @@ systemctl stop trace-api || true
 systemctl start trace-api || true
 systemctl restart nginx
 
-echo "=== Installation de TRACE terminée avec succès ! ==="
-echo "=== Identifiant : $ADMIN_EMAIL ==="
-echo "=== Mot de passe : $ADMIN_PASS ==="
+if [ "$MODE" = "installation" ]; then
+    echo "=== Installation de TRACE terminée avec succès ! ==="
+    echo "=== Identifiant : $ADMIN_EMAIL ==="
+    echo "=== Mot de passe : $ADMIN_PASS ==="
+else
+    echo "=== Mise à jour de TRACE terminée (données, secrets et certificat conservés) ==="
+    echo "=== Sauvegarde préalable : $SAUVEGARDE ==="
+fi
 exit 0

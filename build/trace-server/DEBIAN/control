@@ -1,8 +1,8 @@
 Package: trace-server
-Version: 1.0.2
+Version: 1.0.3
 Architecture: all
 Maintainer: Admin TRACE <admin@dgfip.finances.gouv.fr>
-Depends: postgresql, postgresql-contrib, nginx, openssl, sudo, fail2ban
+Depends: postgresql, postgresql-contrib, postgresql-17 (>= 17.12-0+deb13u1), nginx (>= 1.26.3-3+deb13u11), openssl, sudo, fail2ban
 Section: web
 Priority: optional
 Description: TRACE - Traçabilité, Réemploi et Affectation Circulaire des Équipements.

@@ -40,7 +40,9 @@ Le projet est distribué sous forme de **5 paquets Debian indépendants**, à in
 
 ### `trace-server` — Paquet principal (obligatoire)
 
-**Dépendances :** `postgresql`, `postgresql-contrib`, `nginx`, `openssl`, `sudo`, `fail2ban`
+**Dépendances :** `postgresql`, `postgresql-contrib`, `postgresql-17 (>= 17.12-0+deb13u1)`, `nginx (>= 1.26.3-3+deb13u11)`, `openssl`, `sudo`, `fail2ban`
+
+Les versions minimales imposent les correctifs de sécurité Debian : le dépôt `trixie-security` doit être actif.
 
 Paquet tout-en-un qui déploie et configure automatiquement l'intégralité de l'application :
 
@@ -52,10 +54,19 @@ Paquet tout-en-un qui déploie et configure automatiquement l'intégralité de l
 - Tâches Cron : sauvegarde quotidienne vers `/mnt/savetrace` (02h00 et 13h00) et purge des logs Nginx
 
 ```bash
-sudo apt install ./trace-server_1.0.0_all.deb
+sudo apt install ./trace-server_1.0.3_all.deb
 ```
 
 A l'issue de l'installation, les identifiants du compte administrateur initial sont affichés dans le terminal.
+
+**Mise à jour d'une installation existante** (depuis la 1.0.3) : la base, les secrets et le certificat sont conservés. Le `postinst` sauvegarde d'abord la base dans `/var/backups/trace/`, puis applique les scripts de `/usr/share/trace/migrations/`.
+
+```bash
+sudo apt update && sudo apt upgrade
+sudo apt install ./trace-server_1.0.3_all.deb ./trace-zebra-printer_1.0.2_all.deb
+```
+
+> ⚠️ Les versions **1.0.0 à 1.0.2** recréaient la base à chaque exécution du `postinst`. La mise à jour vers la 1.0.3 est sûre (c'est le `postinst` de la 1.0.3 qui s'exécute), mais faites tout de même une sauvegarde manuelle (`trace_backup.sh`) avant.
 
 ---
 
@@ -112,7 +123,7 @@ Module optionnel pour l'impression directe d'étiquettes ZPL sur imprimantes Zeb
 - Règle sudoers `/etc/sudoers.d/mobitrace-print` : `www-data` peut piloter CUPS sans mot de passe
 
 ```bash
-sudo apt install ./trace-zebra-printer_1.0.0_all.deb
+sudo apt install ./trace-zebra-printer_1.0.2_all.deb
 ```
 
 ---
@@ -182,9 +193,7 @@ Le dossier `utils/` embarqué dans `trace-server` fournit des outils HTML autono
 | `bwip-js-min.js` | Bibliothèque de génération de codes-barres DataMatrix (embarquée, utilisée par `zebra2.html`) |
 | `jspdf.umd.min.js` | Bibliothèque de génération PDF côté client (embarquée) |
 | `zebra-codebar-generator.html` | Ancien générateur (Code 128, via JsBarcode) — conservé dans `utils/` mais plus référencé par l'interface |
-| `zebra-codebar-generator-finetune.html` | Variante affinée de l'ancien générateur — idem, non référencée |
 | `JsBarcode.all.min.js` | Bibliothèque de génération de codes-barres Code 128 (embarquée, utilisée uniquement par l'ancien générateur) |
-| `archives/` | Versions archivées des anciens générateurs (QR codes, étiquettes) |
 
 ---
 
@@ -197,6 +206,8 @@ mobiTrace maintient un "Bill of Materials" (BOM) strict pour sa veille de sécur
 - **Bruteforce :** Fail2Ban surveille les codes 401/429 sur `POST /api/rpc/login` (5 tentatives → ban 1h)
 - **Rate limiting :** zone Nginx `login_limit` (3 req/s, réponse 429)
 - **SSL :** certificat auto-signé généré à l'installation (à remplacer par un certificat institutionnel en production)
+- **Rôle anonyme PostgREST :** `divagil` est `NOINHERIT` ; il ne peut que basculer (`SET ROLE`) vers le rôle porté par le JWT. Sans jeton, seuls `rpc/login`, `rpc/me`, `rpc/logout` et les quelques objets accordés explicitement à `divagil` sont accessibles
+- **SBOM :** `sbom/trace-sbom-cyclonedx.json` (CycloneDX 1.6), régénéré à chaque release
 
 ---
 

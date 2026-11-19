@@ -1,10 +1,10 @@
 {
   "bomFormat": "CycloneDX",
   "specVersion": "1.6",
-  "serialNumber": "urn:uuid:9c2e4f1a-6b3d-4e7a-9f5c-2d8a1b6e4c7f",
+  "serialNumber": "urn:uuid:af92c254-96eb-43d0-87ad-05e708fae4f2",
   "version": 1,
   "metadata": {
-    "timestamp": "2026-08-19T00:00:00Z",
+    "timestamp": "2026-11-19T00:00:00Z",
     "lifecycles": [
       {
         "phase": "build"
@@ -15,7 +15,7 @@
         {
           "type": "application",
           "name": "trace-sbom-generator",
-          "version": "1.0"
+          "version": "1.1"
         }
       ]
     },
@@ -38,17 +38,21 @@
       {
         "name": "trace:deployment-topology",
         "value": "2 machines : Machine TRACE (trace-server, trace-backup-client, trace-zebra-printer) et Machine NFS (trace-backup-server, trace-backup-server-survey)"
+      },
+      {
+        "name": "trace:release-2026-11-19",
+        "value": "Release de sécurité : trace-server 1.0.3, trace-zebra-printer 1.0.2 (autres paquets inchangés). Versions Debian de postgresql-17 (17.12-0+deb13u1), nginx (1.26.3-3+deb13u11) et python3.13 (3.13.5-2+deb13u5) relevées sur trixie-security le 19/11/2026 (qa.debian.org/madison) et imposées par les Depends versionnés. Vulnérabilités des paquets Debian vérifiées par OSV.dev (écosystème Debian:13) le 19/11/2026 : aucun autre correctif publié pour trixie, les CVE restantes sont non corrigées en amont Debian (no-dsa / unimportant)."
       }
     ]
   },
   "components": [
     {
       "type": "application",
-      "bom-ref": "trace:trace-server@1.0.2",
+      "bom-ref": "trace:trace-server@1.0.3",
       "name": "trace-server",
-      "version": "1.0.2",
-      "description": "Paquet principal : PostgreSQL, Nginx, API PostgREST, catalogue applicatif, anti-bruteforce Fail2Ban.",
-      "purl": "pkg:deb/trace/trace-server@1.0.2?arch=all",
+      "version": "1.0.3",
+      "description": "Paquet principal : PostgreSQL, Nginx, API PostgREST, catalogue applicatif, anti-bruteforce Fail2Ban. 1.0.3 (19/11/2026) : role anonyme divagil NOINHERIT (TRACE-2026-001), postinst sans DROP DATABASE en mise a jour + migrations (TRACE-2026-002), fichiers root:root (TRACE-2026-003), retrait de utils/archives/ (jsPDF 2.5.1), Depends minimales postgresql-17/nginx corrigees.",
+      "purl": "pkg:deb/trace/trace-server@1.0.3?arch=all",
       "properties": [
         {
           "name": "trace:architecture",
@@ -62,7 +66,7 @@
       "hashes": [
         {
           "alg": "SHA-256",
-          "content": "0d8ae93799bd0fcd5a1db54f3128c2eb7249a1c68bca9de1a7b13b49cc85bee9"
+          "content": "0ada743c8a35e86a1ff085f6b2996fd2d6513e6b89fc14257be426a5f54e6e58"
         }
       ]
     },
@@ -92,11 +96,11 @@
     },
     {
       "type": "application",
-      "bom-ref": "trace:trace-zebra-printer@1.0.1",
+      "bom-ref": "trace:trace-zebra-printer@1.0.2",
       "name": "trace-zebra-printer",
-      "version": "1.0.1",
-      "description": "Module d'impression Zebra : microservice Flask/Gunicorn + CUPS pour l'impression ZPL directe.",
-      "purl": "pkg:deb/trace/trace-zebra-printer@1.0.1?arch=all",
+      "version": "1.0.2",
+      "description": "Module d'impression Zebra : microservice Flask/Gunicorn + CUPS pour l'impression ZPL directe. 1.0.2 (19/11/2026) : Depends python3.13 (>= 3.13.5-2+deb13u5) et trace-server (>= 1.0.3).",
+      "purl": "pkg:deb/trace/trace-zebra-printer@1.0.2?arch=all",
       "properties": [
         {
           "name": "trace:architecture",
@@ -110,7 +114,7 @@
       "hashes": [
         {
           "alg": "SHA-256",
-          "content": "a5d66d6084df7f1d49bc03585088e9c58fe2b09efd984544e2f9920df62efdf7"
+          "content": "4fe00a7391bdb7bac95f4229bb2e3685b568315311f4f7ae4b287da62da47919"
         }
       ]
     },
@@ -194,6 +198,18 @@
           "type": "distribution",
           "url": "https://github.com/PostgREST/postgrest/releases/tag/v14.8"
         }
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "7ad519f0d1616e216ee767266a2b9c562b7095ed7362dde3285ca2c4d94f6391"
+        }
+      ],
+      "properties": [
+        {
+          "name": "trace:hash-file",
+          "value": "/usr/local/bin/postgrest"
+        }
       ]
     },
     {
@@ -214,6 +230,18 @@
         {
           "type": "vcs",
           "url": "https://github.com/GouvernementFR/dsfr"
+        }
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "3682d614d53a22e4092a22bc4f8143eb0e526929ee4ebec10f9d1bad66399bd3"
+        }
+      ],
+      "properties": [
+        {
+          "name": "trace:hash-file",
+          "value": "/var/www/html/TRACE/dsfr-v1.15.2/dist/dsfr.module.min.js"
         }
       ]
     },
@@ -236,6 +264,18 @@
           "type": "vcs",
           "url": "https://github.com/metafloor/bwip-js"
         }
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "1f5db9c2173c4b31e4cc624dde8db5c621cfb5270d8809edd549077f9bb8c5ef"
+        }
+      ],
+      "properties": [
+        {
+          "name": "trace:hash-file",
+          "value": "/var/www/html/TRACE/utils/bwip-js-min.js"
+        }
       ]
     },
     {
@@ -256,6 +296,18 @@
         {
           "type": "vcs",
           "url": "https://github.com/lindell/JsBarcode"
+        }
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "e307d9489aca4985f8e1c9bc246e8c275a091953c539e2b7b50b511efea59509"
+        }
+      ],
+      "properties": [
+        {
+          "name": "trace:hash-file",
+          "value": "/var/www/html/TRACE/utils/JsBarcode.all.min.js"
         }
       ]
     },
@@ -278,6 +330,18 @@
           "type": "vcs",
           "url": "https://github.com/parallax/jsPDF"
         }
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "e6551fcdc32f09d6853b2c5126d18d01d9447e0da618a41a11ebeee0f6c20d54"
+        }
+      ],
+      "properties": [
+        {
+          "name": "trace:hash-file",
+          "value": "/var/www/html/TRACE/utils/jspdf.umd.min.js"
+        }
       ]
     },
     {
@@ -298,6 +362,18 @@
         {
           "type": "vcs",
           "url": "https://github.com/simonbengtsson/jsPDF-AutoTable"
+        }
+      ],
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "a65dff2c6a8296b16aff24e69f7683cd7dbaed4a4ec26b507d6840ee27d54649"
+        }
+      ],
+      "properties": [
+        {
+          "name": "trace:hash-file",
+          "value": "/var/www/html/TRACE/utils/jspdf.plugin.autotable.min.js"
         }
       ]
     },
@@ -320,47 +396,17 @@
           "type": "vcs",
           "url": "https://github.com/mebjas/html5-qrcode"
         }
-      ]
-    },
-    {
-      "bom-ref": "js-qrcode-styling-archive",
-      "type": "library",
-      "name": "qr-code-styling",
-      "version": "1.6.0-rc.1",
-      "purl": "pkg:npm/qr-code-styling@1.6.0-rc.1",
-      "licenses": [
+      ],
+      "hashes": [
         {
-          "license": {
-            "id": "MIT"
-          }
+          "alg": "SHA-256",
+          "content": "660b12437b1d747e3e68b8be0685c08cb728140110ad213f167b14b66f8b1d8e"
         }
       ],
-      "description": "Rendu de QR codes personnalises (utils/archives/qr-code-styling.js). Archive, retire du bundle actif (remplace par les generateurs Zebra ZPL). Version confirmee le 19/08/2026 par comparaison octet pour octet avec le tarball npm officiel (dist/lib/qr-code-styling.js) - correspondance exacte. Aucune CVE connue (historique complet OSV.dev vide pour ce paquet) ; derniere version amont 1.9.2.",
       "properties": [
         {
-          "name": "trace:status",
-          "value": "archive - non charge par l'interface active"
-        }
-      ]
-    },
-    {
-      "bom-ref": "js-qrcodejs-archive",
-      "type": "library",
-      "name": "qrcodejs (davidshimjs)",
-      "version": "1.0.0",
-      "purl": "pkg:npm/qrcodejs@1.0.0",
-      "licenses": [
-        {
-          "license": {
-            "id": "MIT"
-          }
-        }
-      ],
-      "description": "Generation de QR codes (utils/archives/qrcode.min.js). Archive, retire du bundle actif (remplace par JsBarcode + ZPL). Version confirmee le 19/08/2026 par comparaison octet pour octet avec le mirroir npm \"qrcodejs\" v1.0.0 et avec la branche master du depot GitHub officiel davidshimjs/qrcodejs - correspondance exacte dans les deux cas. Aucune CVE connue. Bibliotheque sans release taguee depuis l'origine (~2012) : le mirroir npm 1.0.0 est le seul identifiant de version verifiable disponible.",
-      "properties": [
-        {
-          "name": "trace:status",
-          "value": "archive - non charge par l'interface active"
+          "name": "trace:hash-file",
+          "value": "TRACE-SCAN/html5-qrcode.min.js"
         }
       ]
     },
@@ -4268,10 +4314,10 @@
     },
     {
       "type": "library",
-      "bom-ref": "deb:machine-trace:libpq5@17.11-0+deb13u1:amd64",
+      "bom-ref": "deb:machine-trace:libpq5@17.12-0+deb13u1:amd64",
       "name": "libpq5",
-      "version": "17.11-0+deb13u1",
-      "purl": "pkg:deb/debian/libpq5@17.11-0+deb13u1?arch=amd64&distro=debian-13",
+      "version": "17.12-0+deb13u1",
+      "purl": "pkg:deb/debian/libpq5@17.12-0+deb13u1?arch=amd64&distro=debian-13",
       "properties": [
         {
           "name": "trace:debian-suite",
@@ -4376,10 +4422,10 @@
     },
     {
       "type": "library",
-      "bom-ref": "deb:machine-trace:libpython3.13-minimal@3.13.5-2+deb13u4:amd64",
+      "bom-ref": "deb:machine-trace:libpython3.13-minimal@3.13.5-2+deb13u5:amd64",
       "name": "libpython3.13-minimal",
-      "version": "3.13.5-2+deb13u4",
-      "purl": "pkg:deb/debian/libpython3.13-minimal@3.13.5-2+deb13u4?arch=amd64&distro=debian-13",
+      "version": "3.13.5-2+deb13u5",
+      "purl": "pkg:deb/debian/libpython3.13-minimal@3.13.5-2+deb13u5?arch=amd64&distro=debian-13",
       "properties": [
         {
           "name": "trace:debian-suite",
@@ -4397,10 +4443,10 @@
     },
     {
       "type": "library",
-      "bom-ref": "deb:machine-trace:libpython3.13-stdlib@3.13.5-2+deb13u4:amd64",
+      "bom-ref": "deb:machine-trace:libpython3.13-stdlib@3.13.5-2+deb13u5:amd64",
       "name": "libpython3.13-stdlib",
-      "version": "3.13.5-2+deb13u4",
-      "purl": "pkg:deb/debian/libpython3.13-stdlib@3.13.5-2+deb13u4?arch=amd64&distro=debian-13",
+      "version": "3.13.5-2+deb13u5",
+      "purl": "pkg:deb/debian/libpython3.13-stdlib@3.13.5-2+deb13u5?arch=amd64&distro=debian-13",
       "properties": [
         {
           "name": "trace:debian-suite",
@@ -5873,10 +5919,10 @@
     },
     {
       "type": "library",
-      "bom-ref": "deb:machine-trace:nginx@1.26.3-3+deb13u7:amd64",
+      "bom-ref": "deb:machine-trace:nginx@1.26.3-3+deb13u11:amd64",
       "name": "nginx",
-      "version": "1.26.3-3+deb13u7",
-      "purl": "pkg:deb/debian/nginx@1.26.3-3+deb13u7?arch=amd64&distro=debian-13",
+      "version": "1.26.3-3+deb13u11",
+      "purl": "pkg:deb/debian/nginx@1.26.3-3+deb13u11?arch=amd64&distro=debian-13",
       "properties": [
         {
           "name": "trace:debian-suite",
@@ -5896,10 +5942,10 @@
     },
     {
       "type": "library",
-      "bom-ref": "deb:machine-trace:nginx-common@1.26.3-3+deb13u7:all",
+      "bom-ref": "deb:machine-trace:nginx-common@1.26.3-3+deb13u11:all",
       "name": "nginx-common",
-      "version": "1.26.3-3+deb13u7",
-      "purl": "pkg:deb/debian/nginx-common@1.26.3-3+deb13u7?arch=all&distro=debian-13",
+      "version": "1.26.3-3+deb13u11",
+      "purl": "pkg:deb/debian/nginx-common@1.26.3-3+deb13u11?arch=all&distro=debian-13",
       "properties": [
         {
           "name": "trace:debian-suite",
@@ -6175,10 +6221,10 @@
     },
     {
       "type": "library",
-      "bom-ref": "deb:machine-trace:postgresql-17@17.11-0+deb13u1:amd64",
+      "bom-ref": "deb:machine-trace:postgresql-17@17.12-0+deb13u1:amd64",
       "name": "postgresql-17",
-      "version": "17.11-0+deb13u1",
-      "purl": "pkg:deb/debian/postgresql-17@17.11-0+deb13u1?arch=amd64&distro=debian-13",
+      "version": "17.12-0+deb13u1",
+      "purl": "pkg:deb/debian/postgresql-17@17.12-0+deb13u1?arch=amd64&distro=debian-13",
       "properties": [
         {
           "name": "trace:debian-suite",
@@ -6198,10 +6244,10 @@
     },
     {
       "type": "library",
-      "bom-ref": "deb:machine-trace:postgresql-client-17@17.11-0+deb13u1:amd64",
+      "bom-ref": "deb:machine-trace:postgresql-client-17@17.12-0+deb13u1:amd64",
       "name": "postgresql-client-17",
-      "version": "17.11-0+deb13u1",
-      "purl": "pkg:deb/debian/postgresql-client-17@17.11-0+deb13u1?arch=amd64&distro=debian-13",
+      "version": "17.12-0+deb13u1",
+      "purl": "pkg:deb/debian/postgresql-client-17@17.12-0+deb13u1?arch=amd64&distro=debian-13",
       "properties": [
         {
           "name": "trace:debian-suite",
@@ -6631,10 +6677,10 @@
     },
     {
       "type": "library",
-      "bom-ref": "deb:machine-trace:python3.13@3.13.5-2+deb13u4:amd64",
+      "bom-ref": "deb:machine-trace:python3.13@3.13.5-2+deb13u5:amd64",
       "name": "python3.13",
-      "version": "3.13.5-2+deb13u4",
-      "purl": "pkg:deb/debian/python3.13@3.13.5-2+deb13u4?arch=amd64&distro=debian-13",
+      "version": "3.13.5-2+deb13u5",
+      "purl": "pkg:deb/debian/python3.13@3.13.5-2+deb13u5?arch=amd64&distro=debian-13",
       "properties": [
         {
           "name": "trace:debian-suite",
@@ -6648,10 +6694,10 @@
     },
     {
       "type": "library",
-      "bom-ref": "deb:machine-trace:python3.13-minimal@3.13.5-2+deb13u4:amd64",
+      "bom-ref": "deb:machine-trace:python3.13-minimal@3.13.5-2+deb13u5:amd64",
       "name": "python3.13-minimal",
-      "version": "3.13.5-2+deb13u4",
-      "purl": "pkg:deb/debian/python3.13-minimal@3.13.5-2+deb13u4?arch=amd64&distro=debian-13",
+      "version": "3.13.5-2+deb13u5",
+      "purl": "pkg:deb/debian/python3.13-minimal@3.13.5-2+deb13u5?arch=amd64&distro=debian-13",
       "properties": [
         {
           "name": "trace:debian-suite",
@@ -9074,10 +9120,10 @@
     },
     {
       "type": "library",
-      "bom-ref": "deb:machine-nfs:libpq5@17.11-0+deb13u1:amd64",
+      "bom-ref": "deb:machine-nfs:libpq5@17.12-0+deb13u1:amd64",
       "name": "libpq5",
-      "version": "17.11-0+deb13u1",
-      "purl": "pkg:deb/debian/libpq5@17.11-0+deb13u1?arch=amd64&distro=debian-13",
+      "version": "17.12-0+deb13u1",
+      "purl": "pkg:deb/debian/libpq5@17.12-0+deb13u1?arch=amd64&distro=debian-13",
       "properties": [
         {
           "name": "trace:debian-suite",
@@ -9128,10 +9174,10 @@
     },
     {
       "type": "library",
-      "bom-ref": "deb:machine-nfs:libpython3.13@3.13.5-2+deb13u4:amd64",
+      "bom-ref": "deb:machine-nfs:libpython3.13@3.13.5-2+deb13u5:amd64",
       "name": "libpython3.13",
-      "version": "3.13.5-2+deb13u4",
-      "purl": "pkg:deb/debian/libpython3.13@3.13.5-2+deb13u4?arch=amd64&distro=debian-13",
+      "version": "3.13.5-2+deb13u5",
+      "purl": "pkg:deb/debian/libpython3.13@3.13.5-2+deb13u5?arch=amd64&distro=debian-13",
       "properties": [
         {
           "name": "trace:debian-suite",
@@ -9149,10 +9195,10 @@
     },
     {
       "type": "library",
-      "bom-ref": "deb:machine-nfs:libpython3.13-minimal@3.13.5-2+deb13u4:amd64",
+      "bom-ref": "deb:machine-nfs:libpython3.13-minimal@3.13.5-2+deb13u5:amd64",
       "name": "libpython3.13-minimal",
-      "version": "3.13.5-2+deb13u4",
-      "purl": "pkg:deb/debian/libpython3.13-minimal@3.13.5-2+deb13u4?arch=amd64&distro=debian-13",
+      "version": "3.13.5-2+deb13u5",
+      "purl": "pkg:deb/debian/libpython3.13-minimal@3.13.5-2+deb13u5?arch=amd64&distro=debian-13",
       "properties": [
         {
           "name": "trace:debian-suite",
@@ -9170,10 +9216,10 @@
     },
     {
       "type": "library",
-      "bom-ref": "deb:machine-nfs:libpython3.13-stdlib@3.13.5-2+deb13u4:amd64",
+      "bom-ref": "deb:machine-nfs:libpython3.13-stdlib@3.13.5-2+deb13u5:amd64",
       "name": "libpython3.13-stdlib",
-      "version": "3.13.5-2+deb13u4",
-      "purl": "pkg:deb/debian/libpython3.13-stdlib@3.13.5-2+deb13u4?arch=amd64&distro=debian-13",
+      "version": "3.13.5-2+deb13u5",
+      "purl": "pkg:deb/debian/libpython3.13-stdlib@3.13.5-2+deb13u5?arch=amd64&distro=debian-13",
       "properties": [
         {
           "name": "trace:debian-suite",
@@ -10627,25 +10673,73 @@
           "url": "http://zlib.net/"
         }
       ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "js-jspdf-2.5.1-trace-scan-ref",
+      "name": "jspdf",
+      "version": "2.5.1",
+      "purl": "pkg:npm/jspdf@2.5.1",
+      "description": "Copie presente dans TRACE-SCAN/ref code générator/ (generateur d'etiquettes de reference zebra2.html), suivie dans git mais non chargee par la PWA ni mise en cache par sw.js. Vulnerable : a retirer ou a mettre a jour en 4.2.1.",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "98ccf17aa10c20bb1301762618fcc9b6ab3a4e7f26b6071d64d0b41154df3875"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ],
+      "properties": [
+        {
+          "name": "trace:status",
+          "value": "reference - hors paquet, non charge par l'interface active"
+        }
+      ]
+    },
+    {
+      "type": "library",
+      "bom-ref": "js-bwip-js-3.0.0-trace-scan-ref",
+      "name": "bwip-js",
+      "version": "3.0.0",
+      "purl": "pkg:npm/bwip-js@3.0.0",
+      "description": "Copie presente dans TRACE-SCAN/ref code générator/ (identique a utils/bwip-js-min.js de trace-server).",
+      "hashes": [
+        {
+          "alg": "SHA-256",
+          "content": "1f5db9c2173c4b31e4cc624dde8db5c621cfb5270d8809edd549077f9bb8c5ef"
+        }
+      ],
+      "licenses": [
+        {
+          "license": {
+            "id": "MIT"
+          }
+        }
+      ]
     }
   ],
   "dependencies": [
     {
       "ref": "trace-application",
       "dependsOn": [
-        "trace:trace-server@1.0.2",
+        "trace:trace-server@1.0.3",
         "trace:trace-backup-client@1.0.0",
-        "trace:trace-zebra-printer@1.0.1",
+        "trace:trace-zebra-printer@1.0.2",
         "trace:trace-backup-server@1.0.0",
         "trace:trace-backup-server-survey@1.0.0",
         "trace-scan-application"
       ]
     },
     {
-      "ref": "trace:trace-server@1.0.2",
+      "ref": "trace:trace-server@1.0.3",
       "dependsOn": [
         "deb:machine-trace:postgresql@17+278:all",
-        "deb:machine-trace:nginx@1.26.3-3+deb13u7:amd64",
+        "deb:machine-trace:nginx@1.26.3-3+deb13u11:amd64",
         "deb:machine-trace:openssl@3.5.6-1~deb13u2:amd64",
         "deb:machine-trace:sudo@1.9.16p2-3+deb13u2:amd64",
         "deb:machine-trace:fail2ban@1.1.0-8:all",
@@ -10654,26 +10748,28 @@
         "js-bwip-js-3.0.0",
         "js-jsbarcode-3.11.5",
         "js-jspdf-4.2.1",
-        "js-jspdf-autotable-5.0.8"
+        "js-jspdf-autotable-5.0.8",
+        "deb:machine-trace:postgresql-17@17.12-0+deb13u1:amd64"
       ]
     },
     {
       "ref": "trace:trace-backup-client@1.0.0",
       "dependsOn": [
-        "trace:trace-server@1.0.2",
+        "trace:trace-server@1.0.3",
         "deb:machine-trace:nfs-common@1:2.8.3-1:amd64",
         "deb:machine-trace:debconf@1.5.91:all"
       ]
     },
     {
-      "ref": "trace:trace-zebra-printer@1.0.1",
+      "ref": "trace:trace-zebra-printer@1.0.2",
       "dependsOn": [
-        "trace:trace-server@1.0.2",
+        "trace:trace-server@1.0.3",
         "deb:machine-trace:cups@2.4.10-3+deb13u2:amd64",
         "deb:machine-trace:python3-flask@3.1.1-1:all",
         "deb:machine-trace:python3-gunicorn@23.0.0-1:all",
         "deb:machine-trace:gunicorn@23.0.0-1:all",
-        "deb:machine-trace:debconf@1.5.91:all"
+        "deb:machine-trace:debconf@1.5.91:all",
+        "deb:machine-trace:python3.13@3.13.5-2+deb13u5:amd64"
       ]
     },
     {
@@ -10696,11 +10792,133 @@
       "ref": "trace-scan-application",
       "dependsOn": [
         "js-dsfr-trace-1.15.2",
-        "js-html5-qrcode-2.3.8"
+        "js-html5-qrcode-2.3.8",
+        "js-jspdf-2.5.1-trace-scan-ref",
+        "js-bwip-js-3.0.0-trace-scan-ref"
       ]
     }
   ],
   "vulnerabilities": [
+    {
+      "bom-ref": "TRACE-2026-001",
+      "id": "TRACE-2026-001",
+      "source": {
+        "name": "TRACE"
+      },
+      "ratings": [
+        {
+          "severity": "critical",
+          "method": "other"
+        }
+      ],
+      "cwes": [
+        269
+      ],
+      "description": "Le role anonyme PostgREST divagil heritait (INHERIT) des roles agent/administrateur/lecteur : toute requete sans jeton sur /api/ s'executait avec les droits administrateur (lecture des haches de mots de passe, creation de comptes administrateur, lecture du journal d'audit, suppression de mobilier).",
+      "affects": [
+        {
+          "ref": "trace:trace-server@1.0.3",
+          "versions": [
+            {
+              "range": "vers:deb/<1.0.3",
+              "status": "affected"
+            },
+            {
+              "version": "1.0.3",
+              "status": "unaffected"
+            }
+          ]
+        }
+      ],
+      "analysis": {
+        "state": "resolved",
+        "response": [
+          "update"
+        ],
+        "detail": "Corrige en 1.0.3 : divagil NOINHERIT, appartenances GRANT ... WITH INHERIT FALSE, SET TRUE ; migration /usr/share/trace/migrations/1.0.3.sql appliquee a la mise a jour. Verifie le 19/11/2026 contre PostgreSQL 17 + PostgREST 14.8 : anonyme 401 sur utilisateurs/audit_logs/creer_utilisateur/DELETE mobiliers, parcours admin et agent inchanges. Apres mise a jour, controler la liste des comptes et le journal d'audit."
+      },
+      "published": "2026-11-19T00:00:00Z"
+    },
+    {
+      "bom-ref": "TRACE-2026-002",
+      "id": "TRACE-2026-002",
+      "source": {
+        "name": "TRACE"
+      },
+      "ratings": [
+        {
+          "severity": "high",
+          "method": "other"
+        }
+      ],
+      "cwes": [
+        1188
+      ],
+      "description": "Le postinst de trace-server supprimait et recreait la base parc_mobilier (DROP DATABASE) a chaque execution, y compris lors d'une mise a jour ou d'un dpkg-reconfigure : perte totale des donnees, regeneration des secrets et du certificat.",
+      "affects": [
+        {
+          "ref": "trace:trace-server@1.0.3",
+          "versions": [
+            {
+              "range": "vers:deb/<1.0.3",
+              "status": "affected"
+            },
+            {
+              "version": "1.0.3",
+              "status": "unaffected"
+            }
+          ]
+        }
+      ],
+      "analysis": {
+        "state": "resolved",
+        "response": [
+          "update"
+        ],
+        "detail": "Corrige en 1.0.3 : en mise a jour (base et /etc/trace-api.conf existants), sauvegarde pg_dump dans /var/backups/trace puis migrations versionnees ; secrets et certificat conserves."
+      },
+      "published": "2026-11-19T00:00:00Z"
+    },
+    {
+      "bom-ref": "TRACE-2026-003",
+      "id": "TRACE-2026-003",
+      "source": {
+        "name": "TRACE"
+      },
+      "ratings": [
+        {
+          "severity": "high",
+          "method": "other"
+        }
+      ],
+      "cwes": [
+        276
+      ],
+      "description": "Les fichiers de trace-server etaient livres avec l'uid/gid du poste de build (1000) : sur la cible, l'utilisateur d'uid 1000 pouvait modifier le service systemd trace-api, le binaire postgrest, la configuration nginx et les scripts de sauvegarde (elevation de privileges).",
+      "affects": [
+        {
+          "ref": "trace:trace-server@1.0.3",
+          "versions": [
+            {
+              "range": "vers:deb/<1.0.3",
+              "status": "affected"
+            },
+            {
+              "version": "1.0.3",
+              "status": "unaffected"
+            }
+          ]
+        }
+      ],
+      "analysis": {
+        "state": "resolved",
+        "response": [
+          "update"
+        ],
+        "detail": "Corrige en 1.0.3 : construction avec dpkg-deb --root-owner-group, droits sans ecriture groupe/autres."
+      },
+      "published": "2026-11-19T00:00:00Z"
+    },
     {
       "bom-ref": "vuln-CVE-2025-68428",
       "id": "CVE-2025-68428",
@@ -10728,16 +10946,15 @@
       "description": "jsPDF - inclusion de fichier local / traversee de chemin (Local File Inclusion/Path Traversal). Corrige en 4.0.0.",
       "affects": [
         {
-          "ref": "js-jspdf-4.2.1"
+          "ref": "js-jspdf-2.5.1-trace-scan-ref"
         }
       ],
       "analysis": {
-        "state": "resolved",
-        "justification": "code_not_present",
+        "state": "exploitable",
         "response": [
           "update"
         ],
-        "detail": "Corrige le 20/08/2026 : fichier vendorise mis a jour de jsPDF 2.5.1 (vulnerable) vers 4.2.1 (trace-server 1.0.2), qui integre le correctif amont pour cette CVE. jsPDF-AutoTable mis a jour en parallele vers 5.0.8 (compatibilite jsPDF 4.x). Verifie fonctionnel en conditions reelles (navigateur, doc.autoTable() + generation de blob PDF)."
+        "detail": "jsPDF 2.5.1 : remplace par 4.2.1 dans trace-server 1.0.2 (utils/), mais une copie 2.5.1 restait dans utils/archives/ et etait servie par nginx jusqu'a trace-server 1.0.2 inclus ; retiree en 1.0.3 (19/11/2026). Reste une copie dans TRACE-SCAN/ref code générator/ (hors paquet, non chargee par la PWA) : a retirer ou mettre a jour."
       },
       "recommendation": "Corrige - jsPDF 4.2.1 vendorise depuis le 20/08/2026 (trace-server 1.0.2).",
       "updated": "2026-08-20T00:00:00Z"
@@ -10769,16 +10986,15 @@
       "description": "jsPDF - injection HTML dans les chemins de nouvelle fenetre, CVSS 3.1 7.6 (AV:N/AC:L/PR:N/UI:R/S:C/C:H/I:H/A:L). Corrige en 4.2.1.",
       "affects": [
         {
-          "ref": "js-jspdf-4.2.1"
+          "ref": "js-jspdf-2.5.1-trace-scan-ref"
         }
       ],
       "analysis": {
-        "state": "resolved",
-        "justification": "code_not_present",
+        "state": "exploitable",
         "response": [
           "update"
         ],
-        "detail": "Corrige le 20/08/2026 : fichier vendorise mis a jour de jsPDF 2.5.1 (vulnerable) vers 4.2.1 (trace-server 1.0.2), qui integre le correctif amont pour cette CVE. jsPDF-AutoTable mis a jour en parallele vers 5.0.8 (compatibilite jsPDF 4.x). Verifie fonctionnel en conditions reelles (navigateur, doc.autoTable() + generation de blob PDF)."
+        "detail": "jsPDF 2.5.1 : remplace par 4.2.1 dans trace-server 1.0.2 (utils/), mais une copie 2.5.1 restait dans utils/archives/ et etait servie par nginx jusqu'a trace-server 1.0.2 inclus ; retiree en 1.0.3 (19/11/2026). Reste une copie dans TRACE-SCAN/ref code générator/ (hors paquet, non chargee par la PWA) : a retirer ou mettre a jour."
       },
       "recommendation": "Corrige - jsPDF 4.2.1 vendorise depuis le 20/08/2026 (trace-server 1.0.2).",
       "updated": "2026-08-20T00:00:00Z"
@@ -10810,16 +11026,15 @@
       "description": "jsPDF - deni de service via dimensions GIF malveillantes (addImage/html). Corrige en 4.2.0.",
       "affects": [
         {
-          "ref": "js-jspdf-4.2.1"
+          "ref": "js-jspdf-2.5.1-trace-scan-ref"
         }
       ],
       "analysis": {
-        "state": "resolved",
-        "justification": "code_not_present",
+        "state": "exploitable",
         "response": [
           "update"
         ],
-        "detail": "Corrige le 20/08/2026 : fichier vendorise mis a jour de jsPDF 2.5.1 (vulnerable) vers 4.2.1 (trace-server 1.0.2), qui integre le correctif amont pour cette CVE. jsPDF-AutoTable mis a jour en parallele vers 5.0.8 (compatibilite jsPDF 4.x). Verifie fonctionnel en conditions reelles (navigateur, doc.autoTable() + generation de blob PDF)."
+        "detail": "jsPDF 2.5.1 : remplace par 4.2.1 dans trace-server 1.0.2 (utils/), mais une copie 2.5.1 restait dans utils/archives/ et etait servie par nginx jusqu'a trace-server 1.0.2 inclus ; retiree en 1.0.3 (19/11/2026). Reste une copie dans TRACE-SCAN/ref code générator/ (hors paquet, non chargee par la PWA) : a retirer ou mettre a jour."
       },
       "recommendation": "Corrige - jsPDF 4.2.1 vendorise depuis le 20/08/2026 (trace-server 1.0.2).",
       "updated": "2026-08-20T00:00:00Z"
@@ -10851,16 +11066,15 @@
       "description": "jsPDF - injection d'objet PDF via la couleur FreeText. Corrige en 4.2.1.",
       "affects": [
         {
-          "ref": "js-jspdf-4.2.1"
+          "ref": "js-jspdf-2.5.1-trace-scan-ref"
         }
       ],
       "analysis": {
-        "state": "resolved",
-        "justification": "code_not_present",
+        "state": "exploitable",
         "response": [
           "update"
         ],
-        "detail": "Corrige le 20/08/2026 : fichier vendorise mis a jour de jsPDF 2.5.1 (vulnerable) vers 4.2.1 (trace-server 1.0.2), qui integre le correctif amont pour cette CVE. jsPDF-AutoTable mis a jour en parallele vers 5.0.8 (compatibilite jsPDF 4.x). Verifie fonctionnel en conditions reelles (navigateur, doc.autoTable() + generation de blob PDF)."
+        "detail": "jsPDF 2.5.1 : remplace par 4.2.1 dans trace-server 1.0.2 (utils/), mais une copie 2.5.1 restait dans utils/archives/ et etait servie par nginx jusqu'a trace-server 1.0.2 inclus ; retiree en 1.0.3 (19/11/2026). Reste une copie dans TRACE-SCAN/ref code générator/ (hors paquet, non chargee par la PWA) : a retirer ou mettre a jour."
       },
       "recommendation": "Corrige - jsPDF 4.2.1 vendorise depuis le 20/08/2026 (trace-server 1.0.2).",
       "updated": "2026-08-20T00:00:00Z"
@@ -10892,16 +11106,15 @@
       "description": "jsPDF - deni de service (DoS). Corrige en 3.0.2.",
       "affects": [
         {
-          "ref": "js-jspdf-4.2.1"
+          "ref": "js-jspdf-2.5.1-trace-scan-ref"
         }
       ],
       "analysis": {
-        "state": "resolved",
-        "justification": "code_not_present",
+        "state": "exploitable",
         "response": [
           "update"
         ],
-        "detail": "Corrige le 20/08/2026 : fichier vendorise mis a jour de jsPDF 2.5.1 (vulnerable) vers 4.2.1 (trace-server 1.0.2), qui integre le correctif amont pour cette CVE. jsPDF-AutoTable mis a jour en parallele vers 5.0.8 (compatibilite jsPDF 4.x). Verifie fonctionnel en conditions reelles (navigateur, doc.autoTable() + generation de blob PDF)."
+        "detail": "jsPDF 2.5.1 : remplace par 4.2.1 dans trace-server 1.0.2 (utils/), mais une copie 2.5.1 restait dans utils/archives/ et etait servie par nginx jusqu'a trace-server 1.0.2 inclus ; retiree en 1.0.3 (19/11/2026). Reste une copie dans TRACE-SCAN/ref code générator/ (hors paquet, non chargee par la PWA) : a retirer ou mettre a jour."
       },
       "recommendation": "Corrige - jsPDF 4.2.1 vendorise depuis le 20/08/2026 (trace-server 1.0.2).",
       "updated": "2026-08-20T00:00:00Z"
@@ -10933,16 +11146,15 @@
       "description": "jsPDF - deni de service via dimensions BMP non validees (BMPDecoder). Corrige en 4.1.0.",
       "affects": [
         {
-          "ref": "js-jspdf-4.2.1"
+          "ref": "js-jspdf-2.5.1-trace-scan-ref"
         }
       ],
       "analysis": {
-        "state": "resolved",
-        "justification": "code_not_present",
+        "state": "exploitable",
         "response": [
           "update"
         ],
-        "detail": "Corrige le 20/08/2026 : fichier vendorise mis a jour de jsPDF 2.5.1 (vulnerable) vers 4.2.1 (trace-server 1.0.2), qui integre le correctif amont pour cette CVE. jsPDF-AutoTable mis a jour en parallele vers 5.0.8 (compatibilite jsPDF 4.x). Verifie fonctionnel en conditions reelles (navigateur, doc.autoTable() + generation de blob PDF)."
+        "detail": "jsPDF 2.5.1 : remplace par 4.2.1 dans trace-server 1.0.2 (utils/), mais une copie 2.5.1 restait dans utils/archives/ et etait servie par nginx jusqu'a trace-server 1.0.2 inclus ; retiree en 1.0.3 (19/11/2026). Reste une copie dans TRACE-SCAN/ref code générator/ (hors paquet, non chargee par la PWA) : a retirer ou mettre a jour."
       },
       "recommendation": "Corrige - jsPDF 4.2.1 vendorise depuis le 20/08/2026 (trace-server 1.0.2).",
       "updated": "2026-08-20T00:00:00Z"
@@ -10974,16 +11186,15 @@
       "description": "jsPDF - injection d'objet PDF via entree non desinfectee dans la methode addJS. Corrige en 4.2.0.",
       "affects": [
         {
-          "ref": "js-jspdf-4.2.1"
+          "ref": "js-jspdf-2.5.1-trace-scan-ref"
         }
       ],
       "analysis": {
-        "state": "resolved",
-        "justification": "code_not_present",
+        "state": "exploitable",
         "response": [
           "update"
         ],
-        "detail": "Corrige le 20/08/2026 : fichier vendorise mis a jour de jsPDF 2.5.1 (vulnerable) vers 4.2.1 (trace-server 1.0.2), qui integre le correctif amont pour cette CVE. jsPDF-AutoTable mis a jour en parallele vers 5.0.8 (compatibilite jsPDF 4.x). Verifie fonctionnel en conditions reelles (navigateur, doc.autoTable() + generation de blob PDF)."
+        "detail": "jsPDF 2.5.1 : remplace par 4.2.1 dans trace-server 1.0.2 (utils/), mais une copie 2.5.1 restait dans utils/archives/ et etait servie par nginx jusqu'a trace-server 1.0.2 inclus ; retiree en 1.0.3 (19/11/2026). Reste une copie dans TRACE-SCAN/ref code générator/ (hors paquet, non chargee par la PWA) : a retirer ou mettre a jour."
       },
       "recommendation": "Corrige - jsPDF 4.2.1 vendorise depuis le 20/08/2026 (trace-server 1.0.2).",
       "updated": "2026-08-20T00:00:00Z"
@@ -11015,16 +11226,15 @@
       "description": "jsPDF - condition de course sur l'etat partage du plugin addJS. Corrige en 4.1.0.",
       "affects": [
         {
-          "ref": "js-jspdf-4.2.1"
+          "ref": "js-jspdf-2.5.1-trace-scan-ref"
         }
       ],
       "analysis": {
-        "state": "resolved",
-        "justification": "code_not_present",
+        "state": "exploitable",
         "response": [
           "update"
         ],
-        "detail": "Corrige le 20/08/2026 : fichier vendorise mis a jour de jsPDF 2.5.1 (vulnerable) vers 4.2.1 (trace-server 1.0.2), qui integre le correctif amont pour cette CVE. jsPDF-AutoTable mis a jour en parallele vers 5.0.8 (compatibilite jsPDF 4.x). Verifie fonctionnel en conditions reelles (navigateur, doc.autoTable() + generation de blob PDF)."
+        "detail": "jsPDF 2.5.1 : remplace par 4.2.1 dans trace-server 1.0.2 (utils/), mais une copie 2.5.1 restait dans utils/archives/ et etait servie par nginx jusqu'a trace-server 1.0.2 inclus ; retiree en 1.0.3 (19/11/2026). Reste une copie dans TRACE-SCAN/ref code générator/ (hors paquet, non chargee par la PWA) : a retirer ou mettre a jour."
       },
       "recommendation": "Corrige - jsPDF 4.2.1 vendorise depuis le 20/08/2026 (trace-server 1.0.2).",
       "updated": "2026-08-20T00:00:00Z"
@@ -11056,16 +11266,15 @@
       "description": "jsPDF - injection PDF dans le module AcroForm permettant l'execution de JavaScript arbitraire (RadioButton). Corrige en 4.2.0.",
       "affects": [
         {
-          "ref": "js-jspdf-4.2.1"
+          "ref": "js-jspdf-2.5.1-trace-scan-ref"
         }
       ],
       "analysis": {
-        "state": "resolved",
-        "justification": "code_not_present",
+        "state": "exploitable",
         "response": [
           "update"
         ],
-        "detail": "Corrige le 20/08/2026 : fichier vendorise mis a jour de jsPDF 2.5.1 (vulnerable) vers 4.2.1 (trace-server 1.0.2), qui integre le correctif amont pour cette CVE. jsPDF-AutoTable mis a jour en parallele vers 5.0.8 (compatibilite jsPDF 4.x). Verifie fonctionnel en conditions reelles (navigateur, doc.autoTable() + generation de blob PDF)."
+        "detail": "jsPDF 2.5.1 : remplace par 4.2.1 dans trace-server 1.0.2 (utils/), mais une copie 2.5.1 restait dans utils/archives/ et etait servie par nginx jusqu'a trace-server 1.0.2 inclus ; retiree en 1.0.3 (19/11/2026). Reste une copie dans TRACE-SCAN/ref code générator/ (hors paquet, non chargee par la PWA) : a retirer ou mettre a jour."
       },
       "recommendation": "Corrige - jsPDF 4.2.1 vendorise depuis le 20/08/2026 (trace-server 1.0.2).",
       "updated": "2026-08-20T00:00:00Z"
@@ -11097,16 +11306,15 @@
       "description": "jsPDF - injection PDF dans AcroFormChoiceField permettant l'execution de JavaScript arbitraire. Corrige en 4.1.0.",
       "affects": [
         {
-          "ref": "js-jspdf-4.2.1"
+          "ref": "js-jspdf-2.5.1-trace-scan-ref"
         }
       ],
       "analysis": {
-        "state": "resolved",
-        "justification": "code_not_present",
+        "state": "exploitable",
         "response": [
           "update"
         ],
-        "detail": "Corrige le 20/08/2026 : fichier vendorise mis a jour de jsPDF 2.5.1 (vulnerable) vers 4.2.1 (trace-server 1.0.2), qui integre le correctif amont pour cette CVE. jsPDF-AutoTable mis a jour en parallele vers 5.0.8 (compatibilite jsPDF 4.x). Verifie fonctionnel en conditions reelles (navigateur, doc.autoTable() + generation de blob PDF)."
+        "detail": "jsPDF 2.5.1 : remplace par 4.2.1 dans trace-server 1.0.2 (utils/), mais une copie 2.5.1 restait dans utils/archives/ et etait servie par nginx jusqu'a trace-server 1.0.2 inclus ; retiree en 1.0.3 (19/11/2026). Reste une copie dans TRACE-SCAN/ref code générator/ (hors paquet, non chargee par la PWA) : a retirer ou mettre a jour."
       },
       "recommendation": "Corrige - jsPDF 4.2.1 vendorise depuis le 20/08/2026 (trace-server 1.0.2).",
       "updated": "2026-08-20T00:00:00Z"
@@ -11138,16 +11346,15 @@
       "description": "jsPDF - injection de metadonnees XMP stockees (usurpation, atteinte a l'integrite). Corrige en 4.1.0.",
       "affects": [
         {
-          "ref": "js-jspdf-4.2.1"
+          "ref": "js-jspdf-2.5.1-trace-scan-ref"
         }
       ],
       "analysis": {
-        "state": "resolved",
-        "justification": "code_not_present",
+        "state": "exploitable",
         "response": [
           "update"
         ],
-        "detail": "Corrige le 20/08/2026 : fichier vendorise mis a jour de jsPDF 2.5.1 (vulnerable) vers 4.2.1 (trace-server 1.0.2), qui integre le correctif amont pour cette CVE. jsPDF-AutoTable mis a jour en parallele vers 5.0.8 (compatibilite jsPDF 4.x). Verifie fonctionnel en conditions reelles (navigateur, doc.autoTable() + generation de blob PDF)."
+        "detail": "jsPDF 2.5.1 : remplace par 4.2.1 dans trace-server 1.0.2 (utils/), mais une copie 2.5.1 restait dans utils/archives/ et etait servie par nginx jusqu'a trace-server 1.0.2 inclus ; retiree en 1.0.3 (19/11/2026). Reste une copie dans TRACE-SCAN/ref code générator/ (hors paquet, non chargee par la PWA) : a retirer ou mettre a jour."
       },
       "recommendation": "Corrige - jsPDF 4.2.1 vendorise depuis le 20/08/2026 (trace-server 1.0.2).",
       "updated": "2026-08-20T00:00:00Z"
@@ -11179,16 +11386,15 @@
       "description": "jsPDF - contournement du correctif ReDoS precedent (deni de service par expression reguliere). Corrige en 3.0.1.",
       "affects": [
         {
-          "ref": "js-jspdf-4.2.1"
+          "ref": "js-jspdf-2.5.1-trace-scan-ref"
         }
       ],
       "analysis": {
-        "state": "resolved",
-        "justification": "code_not_present",
+        "state": "exploitable",
         "response": [
           "update"
         ],
-        "detail": "Corrige le 20/08/2026 : fichier vendorise mis a jour de jsPDF 2.5.1 (vulnerable) vers 4.2.1 (trace-server 1.0.2), qui integre le correctif amont pour cette CVE. jsPDF-AutoTable mis a jour en parallele vers 5.0.8 (compatibilite jsPDF 4.x). Verifie fonctionnel en conditions reelles (navigateur, doc.autoTable() + generation de blob PDF)."
+        "detail": "jsPDF 2.5.1 : remplace par 4.2.1 dans trace-server 1.0.2 (utils/), mais une copie 2.5.1 restait dans utils/archives/ et etait servie par nginx jusqu'a trace-server 1.0.2 inclus ; retiree en 1.0.3 (19/11/2026). Reste une copie dans TRACE-SCAN/ref code générator/ (hors paquet, non chargee par la PWA) : a retirer ou mettre a jour."
       },
       "recommendation": "Corrige - jsPDF 4.2.1 vendorise depuis le 20/08/2026 (trace-server 1.0.2).",
       "updated": "2026-08-20T00:00:00Z"

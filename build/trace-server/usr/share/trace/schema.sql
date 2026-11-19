@@ -107,9 +107,12 @@ END;$$ LANGUAGE plpgsql SECURITY DEFINER;
 -- Rôles et Droits
 DO $$BEGIN
     IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'divagil') THEN 
-        CREATE ROLE divagil WITH LOGIN PASSWORD '__DB_PASS__'; 
+        -- NOINHERIT : divagil est à la fois le rôle de connexion de PostgREST et le rôle
+        -- anonyme (db-anon-role). Il ne doit JAMAIS hériter des droits des rôles métier,
+        -- sinon une requête sans jeton s'exécute avec les droits administrateur (TRACE-2026-001).
+        CREATE ROLE divagil WITH LOGIN NOINHERIT PASSWORD '__DB_PASS__'; 
     ELSE
-        ALTER ROLE divagil WITH PASSWORD '__DB_PASS__';
+        ALTER ROLE divagil WITH NOINHERIT PASSWORD '__DB_PASS__';
     END IF;
     
     IF NOT EXISTS (SELECT FROM pg_roles WHERE rolname = 'agent') THEN CREATE ROLE agent NOLOGIN; END IF;
@@ -150,9 +153,10 @@ FROM public.mobiliers m JOIN public.gabarits g ON m.gabarit_id = g.id JOIN publi
 
 GRANT SELECT ON public.vue_mobiliers_recherche TO divagil, agent, administrateur, lecteur;
 
-GRANT agent TO divagil;
-GRANT administrateur TO divagil;
-GRANT lecteur TO divagil;
+-- divagil peut basculer (SET ROLE) vers le rôle porté par le JWT, sans en hériter les droits.
+GRANT agent TO divagil WITH INHERIT FALSE, SET TRUE;
+GRANT administrateur TO divagil WITH INHERIT FALSE, SET TRUE;
+GRANT lecteur TO divagil WITH INHERIT FALSE, SET TRUE;
 GRANT USAGE ON SCHEMA public TO divagil, agent, administrateur, lecteur;
 
 -- Droits du Lecteur (Consultation seule sur toutes les tables)
